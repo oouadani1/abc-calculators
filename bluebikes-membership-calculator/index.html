@@ -1,0 +1,87 @@
+<!doctype html>
+<!--
+  Local dev / preview page only. NOT what gets pasted into ModX —
+  see ../dist/bluebikes-chunk.html for the ModX-ready bundle.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bluebikes Corporate Membership Calculator — Dev Preview</title>
+  <link rel="stylesheet" href="../shared/styles/base.css" />
+  <link rel="stylesheet" href="calculator.css" />
+  <style>
+    body { margin: 2rem; background: #eef1f4; }
+  </style>
+</head>
+<body>
+
+  <!-- ABC-CALC-HTML-START -->
+  <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root>
+    <h2 class="abc-bikecalc-title">Bluebikes Corporate Membership Calculator</h2>
+    <p class="abc-bikecalc-subtitle">
+      Estimate the cost of offering Bluebikes memberships to your employees at
+      Gold, Silver, or Bronze subsidy tiers.
+    </p>
+
+    <div class="abc-input-row">
+      <div class="abc-field">
+        <label for="abc-bikecalc-employees">Number of employees to enroll</label>
+        <input
+          id="abc-bikecalc-employees"
+          class="abc-number-input"
+          type="number"
+          min="0"
+          step="1"
+          value="50"
+          data-abc-employee-input
+        />
+      </div>
+
+      <div class="abc-field">
+        <label>Highlight tier</label>
+        <div class="abc-button-group">
+          <button type="button" data-abc-tier-select="gold">Gold</button>
+          <button type="button" data-abc-tier-select="silver">Silver</button>
+          <button type="button" data-abc-tier-select="bronze">Bronze</button>
+        </div>
+      </div>
+
+      <div class="abc-field">
+        <label for="abc-bikecalc-overage">Est. overage minutes / rider / month (optional)</label>
+        <input
+          id="abc-bikecalc-overage"
+          class="abc-number-input"
+          type="number"
+          min="0"
+          step="1"
+          value="0"
+          data-abc-overage-input
+        />
+        <span class="abc-bikecalc-overage-hint"></span>
+      </div>
+    </div>
+
+    <div class="abc-cards" data-abc-cards-container></div>
+
+    <div class="abc-callout">
+      <h4>Next steps</h4>
+      <p data-abc-takeaway></p>
+    </div>
+
+    <p class="abc-disclaimer">
+      Gold and Silver pricing sourced from bluebikes.com, verified 2026-07-10
+      ($101.50/employee/year corporate rate; individual retail annual
+      membership is a separate $133.50/year and not used here). The Bronze
+      tier ($26/$75.50 employer/employee split) is tentative, pending internal confirmation &mdash;
+      do not publish before verifying with Bluebikes. Ride overage minutes
+      are modeled as paid by the employee, not the employer, across all
+      tiers &mdash; confirm this matches your contract.
+    </p>
+  </div>
+  <!-- ABC-CALC-HTML-END -->
+
+  <script src="../shared/utils/format.js"></script>
+  <script src="calculator.js"></script>
+</body>
+</html>
