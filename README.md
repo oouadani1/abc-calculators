@@ -6,6 +6,14 @@ Calculator** and the **Bluebikes Corporate Membership Calculator**. Both are
 plain HTML/CSS/JS — no build step, no framework, no iframe — designed to be
 pasted directly into a ModX Chunk.
 
+## Live preview (GitHub Pages test space, pre-ModX approval)
+
+- MBTA Fare Calculator: https://oouadani1.github.io/abc-calculators/mbta-fare-calculator/index.html
+- Bluebikes Membership Calculator: https://oouadani1.github.io/abc-calculators/bluebikes-membership-calculator/index.html
+
+These are the dev-preview pages, served as-is from the repo — not the final
+ModX embed. Useful for sharing a live link before internal approval.
+
 ## Repo structure
 
 ```
