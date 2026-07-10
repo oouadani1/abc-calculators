@@ -1,31 +1,10 @@
 /* ============================================================
    MBTA Fare Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-farecalc-*
+   Kept intentionally small: almost everything now lives in the
+   shared glass design system.
    ============================================================ */
 
-.abc-farecalc-title {
-  font-size: var(--abc-font-size-xl);
-  margin: 0 0 var(--abc-space-xs);
-}
-
-.abc-farecalc-subtitle {
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-color-ink-muted);
-  margin: 0 0 var(--abc-space-lg);
-}
-
-.abc-farecalc-perq-row {
-  display: flex;
-  align-items: center;
-  gap: var(--abc-space-sm);
-  flex: 1 1 100%;
-}
-
-.abc-farecalc-perq-row input[type="number"] {
-  width: 80px;
-}
-
-.abc-farecalc-perq-hint {
-  font-size: 0.75rem;
-  color: var(--abc-color-ink-muted);
+.abc-farecalc .abc-choice-grid .abc-choice-button {
+  flex: 1 1 auto;
 }

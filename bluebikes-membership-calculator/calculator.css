@@ -1,40 +1,26 @@
 /* ============================================================
    Bluebikes Corporate Membership Calculator — tool-specific
    overrides on top of shared/styles/base.css. Prefix: .abc-bikecalc-*
+   Kept intentionally small: almost everything now lives in the
+   shared glass design system.
    ============================================================ */
 
-.abc-bikecalc-title {
-  font-size: var(--abc-font-size-xl);
-  margin: 0 0 var(--abc-space-xs);
+.abc-bikecalc-card {
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.abc-bikecalc-subtitle {
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-color-ink-muted);
-  margin: 0 0 var(--abc-space-lg);
+.abc-bikecalc-card:hover {
+  transform: translateY(-2px);
 }
 
-.abc-bikecalc-tentative-flag {
-  font-size: 0.7rem;
+.abc-bikecalc-card:focus-visible {
+  outline: 2px solid var(--abc-teal);
+  outline-offset: 2px;
+}
+
+.abc-bikecalc-blurb {
   font-weight: 600;
-  color: #b3610a;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
-.abc-bikecalc-tentative-note {
-  margin: var(--abc-space-sm) 0 0;
-  padding: var(--abc-space-sm);
-  background: #fff6e9;
-  border: 1px solid #f0d9b0;
-  border-radius: var(--abc-radius-sm);
-  font-size: 0.75rem;
-  color: #8a5a1c;
-  line-height: 1.4;
-}
-
-.abc-bikecalc-overage-hint {
-  font-size: 0.75rem;
-  color: var(--abc-color-ink-muted);
-  margin-top: var(--abc-space-xs);
+  color: var(--abc-navy);
+  margin-bottom: var(--abc-space-sm);
 }
