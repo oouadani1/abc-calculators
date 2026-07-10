@@ -5,15 +5,21 @@ employees at Gold/Silver/Bronze subsidy tiers.
 
 ## What it does
 
-- User enters a number of employees to enroll and (optionally) an estimated
-  overage-minutes-per-rider-per-month.
-- Shows three cards side by side — Gold, Silver, Bronze — each with total
-  annual/monthly employer cost, cost per employee per day (the figure ABC's
-  marketing already uses), and what the employee pays out of pocket.
-- Clicking a tier button highlights that card as "Selected" for the
-  "Next steps" takeaway. There's no cost-based "winner" here (all three are
-  valid business choices, unlike the fare calculator) — the highlight just
-  tracks which tier the user is currently comparing against.
+A 2-step, plain-language flow (see the root [README's design
+system](../README.md#design-system) for the shared voice/look rules):
+
+1. **Your team** — a slider for how many people to enroll. Ride overage
+   minutes are optional and tucked behind a collapsed "Some riders go over
+   their ride time" `<details>` toggle rather than shown by default.
+2. **Compare your options** — three glass cards, Gold/Silver/Bronze, each
+   framed in plain language ("We cover it all" / "We split it" / "We help a
+   little") instead of raw percentages, with total annual/monthly employer
+   cost, cost per person per day (the figure ABC's marketing already uses),
+   and what the employee pays. **Tapping a card selects it** — there's no
+   separate tier-selector control — and updates the "Next steps" sentence
+   below. There's no cost-based "winner" here (all three are valid business
+   choices, unlike the fare calculator); the selection just tracks which
+   tier the user is currently comparing against.
 
 ## Key modeling assumption
 
@@ -38,7 +44,7 @@ Bluebikes' live corporate page currently only lists Gold and Silver — **no
 Bronze tier exists there today.** The Bronze figures in `BIKE_CONFIG`
 ($26 employer / $75.50 employee, summing to the same $101.50 base rate) were
 provided directly and are marked `tentative: true` in the config, which:
-- Flags the card in the UI with an orange "(tentative)" label and a warning note
+- Flags the card in the UI with an orange "Not confirmed" tag and a plain-language caution note
 - Should **not** be treated as confirmed until verified internally or with
   `corporateaccounts@bluebikes.com`
 

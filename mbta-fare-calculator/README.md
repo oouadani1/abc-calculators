@@ -6,13 +6,20 @@ transit subsidy and Perq pre-tax purchase savings.
 
 ## What it does
 
-- User picks a pass type (LinkPass, or a Commuter Rail zone/interzone), an
-  estimated number of one-way trips/month, an employer subsidy percentage,
-  and whether they'd buy the pass pre-tax through Perq.
-- Shows two cards side by side: effective monthly pass cost vs. pay-per-ride
-  cost at that trip count, with the cheaper option highlighted.
-- Shows the break-even trip count (one-way and round trip) — the number of
-  rides at which the pass becomes worth it.
+A 3-step, plain-language flow (see the root [README's design
+system](../README.md#design-system) for the shared voice/look rules):
+
+1. **How you get to work** — Subway & Bus, or Commuter Rail (picks the zone
+   only if rail is chosen), plus a slider for about how many one-way trips a
+   month, with a live "about N days a week" hint.
+2. **Employer perks** — plain buttons for how much the employer covers (No /
+   A little / Half / Most / All of it), and a toggle for buying pre-tax
+   through Perq, which reveals an adjustable savings-rate slider.
+3. **Your answer** — two cards, effective monthly pass cost vs. pay-per-ride
+   cost at that trip count, cheaper one highlighted with a "Recommended"
+   badge; a plain-language "Next steps" takeaway; break-even trip count
+   folded into that sentence rather than shown as a separate stat; sourcing
+   detail tucked behind a collapsed "Where these numbers come from" toggle.
 
 ## Key modeling assumption
 
@@ -48,8 +55,9 @@ for the general process. For this tool specifically:
    `monthlyPrice` per row.
 3. Update `fareSource.lastVerified` to today's date.
 4. If Perq publishes an official savings percentage (rather than the
-   "typical ~30%" language), update `perq.defaultSavingsRate` and remove the
-   estimate disclaimer in `index.html`'s `.abc-disclaimer` paragraph.
+   "typical ~30%" language), update `perq.defaultSavingsRate` and the note
+   in `index.html`'s "Where these numbers come from" `<details>` block
+   (step 3).
 5. Run `../build.sh` from the repo root and re-paste `dist/mbta-fare-chunk.html`
    into the ModX chunk.
 

@@ -19,7 +19,8 @@ ModX embed. Useful for sharing a live link before internal approval.
 ```
 abc-calculators/
 ├── shared/
-│   ├── styles/base.css      # design tokens + shared components (cards, badges, inputs, callout)
+│   ├── styles/fonts.css     # self-hosted IBM Plex Sans/Mono, base64-embedded (no CDN)
+│   ├── styles/base.css      # design tokens + glass components (cards, badges, steps, callout)
 │   └── utils/format.js      # currency/number formatting helpers
 ├── mbta-fare-calculator/
 │   ├── index.html           # local dev preview only — NOT what gets pasted into ModX
@@ -54,6 +55,31 @@ CSS classes are prefixed per tool (`.abc-farecalc-*`, `.abc-bikecalc-*`) so
 nothing collides with the ModX site theme when embedded; shared primitives
 in `shared/styles/base.css` use a plain `.abc-*` prefix.
 
+## Design system
+
+- **Voice:** plain, second-person language throughout ("Does your employer
+  help pay?" not "Employer subsidy (%)"). Results read like a sentence a
+  person would say out loud, not a spreadsheet cell.
+- **Flow:** each calculator is a short multi-step form (progress dots +
+  Back/Continue) instead of one dense page of fields — one plain-language
+  question at a time, results as the last step. Optional/rare inputs (Perq's
+  exact tax rate, Bluebikes ride overage) are tucked behind a toggle or a
+  native `<details>` disclosure instead of shown by default.
+- **Look:** a light glassmorphic style — translucent blurred cards over a
+  soft gradient, generous rounding, pill buttons — using two colors pulled
+  directly from abettercity.org's live site: electric teal (`--abc-teal`,
+  `#1FAEBD`) for selected/winning states, and bold orange (`--abc-orange`,
+  `#E96E17`) for the "Next steps" callout and caution flags, both against a
+  deep navy (`--abc-navy`, `#134072`) base. All defined as CSS custom
+  properties in `shared/styles/base.css` — change the palette in one place.
+- **Type:** IBM Plex Sans for everything, IBM Plex Mono for the big dollar
+  figures in result cards (a small deliberate "calculator" accent). Both are
+  self-hosted as base64-embedded `@font-face` rules in
+  `shared/styles/fonts.css` — no Google Fonts CDN call at render time, so a
+  ModX page with a strict CSP or no internet reachability to Google still
+  renders correctly. IBM Plex Sans is embedded once as a variable font
+  (400–700 weight range) rather than four separate static files.
+
 ## Local development
 
 Each tool's `index.html` is a standalone preview page — open it directly in
@@ -67,8 +93,8 @@ path. It is **never** what gets pasted into ModX.
 ./build.sh
 ```
 
-This concatenates `shared/styles/base.css` + the tool's `calculator.css`
-into a `<style>` block, extracts the calculator's HTML (the markup between
+This concatenates `shared/styles/fonts.css` + `shared/styles/base.css` +
+the tool's `calculator.css` into a `<style>` block, extracts the calculator's HTML (the markup between
 `<!-- ABC-CALC-HTML-START -->` / `<!-- ABC-CALC-HTML-END -->` markers in its
 `index.html`), and concatenates `shared/utils/format.js` + the tool's
 `calculator.js` into a `<script>` block — writing the result to

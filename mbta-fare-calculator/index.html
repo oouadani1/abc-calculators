@@ -8,125 +8,168 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MBTA Fare Calculator — Dev Preview</title>
+  <link rel="stylesheet" href="../shared/styles/fonts.css" />
   <link rel="stylesheet" href="../shared/styles/base.css" />
   <link rel="stylesheet" href="calculator.css" />
   <style>
-    body { margin: 2rem; background: #eef1f4; }
+    body { margin: 2rem; background: #E4EEF4; font-family: "IBM Plex Sans", sans-serif; }
   </style>
 </head>
 <body>
 
   <!-- ABC-CALC-HTML-START -->
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <h2 class="abc-farecalc-title">MBTA Fare vs. Monthly Pass Calculator</h2>
-    <p class="abc-farecalc-subtitle">
-      Figure out how many trips a month you need to take for a monthly pass to
-      beat paying per ride &mdash; factoring in your employer's transit subsidy and
-      Perq pre-tax savings.
-    </p>
+    <p class="abc-eyebrow">A Better City</p>
+    <h2 class="abc-title">Is a monthly pass worth it?</h2>
+    <p class="abc-subtitle">Answer three quick questions and we'll tell you whether a pass or paying per ride saves you more.</p>
 
-    <div class="abc-input-row">
-      <div class="abc-field">
-        <label for="abc-farecalc-pass">Pass type</label>
-        <select id="abc-farecalc-pass" class="abc-select" data-abc-pass-select></select>
+    <div class="abc-progress">
+      <div class="abc-progress-dots">
+        <span class="abc-progress-dot" data-abc-progress-dot></span>
+        <span class="abc-progress-dot" data-abc-progress-dot></span>
+        <span class="abc-progress-dot" data-abc-progress-dot></span>
       </div>
+      <span class="abc-progress-label" data-abc-progress-label></span>
+    </div>
 
-      <div class="abc-field">
-        <label for="abc-farecalc-trips">Estimated one-way trips / month</label>
-        <input
-          id="abc-farecalc-trips"
-          class="abc-number-input"
-          type="number"
-          min="0"
-          step="1"
-          value="20"
-          data-abc-trips-input
-        />
-      </div>
+    <!-- Step 1 -->
+    <div class="abc-step" data-abc-step="1">
+      <p class="abc-question">How do you get to work?</p>
+      <div class="abc-input-row">
+        <div class="abc-field" style="flex-basis: 100%;">
+          <div class="abc-choice-grid">
+            <button type="button" class="abc-choice-button abc-active" data-abc-route-select="subway">Subway & Bus</button>
+            <button type="button" class="abc-choice-button" data-abc-route-select="rail">Commuter Rail</button>
+          </div>
+        </div>
 
-      <div class="abc-field">
-        <label for="abc-farecalc-subsidy">Employer subsidy (%)</label>
-        <input
-          id="abc-farecalc-subsidy"
-          class="abc-number-input"
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          value="0"
-          data-abc-subsidy-input
-        />
-        <div class="abc-button-group">
-          <button type="button" data-abc-subsidy-preset="0">0%</button>
-          <button type="button" data-abc-subsidy-preset="25">25%</button>
-          <button type="button" data-abc-subsidy-preset="50">50%</button>
-          <button type="button" data-abc-subsidy-preset="75">75%</button>
-          <button type="button" data-abc-subsidy-preset="100">100%</button>
+        <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
+          <label for="abc-farecalc-zone">Which zone?</label>
+          <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
+          <span class="abc-field-hint">Not sure? Check your zone at mbta.com/fares.</span>
+        </div>
+
+        <div class="abc-field" style="flex-basis: 100%;">
+          <label for="abc-farecalc-trips">About how many one-way trips a month?</label>
+          <div class="abc-slider-row">
+            <input
+              id="abc-farecalc-trips"
+              class="abc-slider"
+              type="range"
+              min="0"
+              max="44"
+              step="1"
+              value="20"
+              data-abc-trips-input
+            />
+            <span class="abc-slider-value" data-abc-trips-value>20</span>
+          </div>
+          <span class="abc-field-hint"><span data-abc-trips-days-hint></span></span>
         </div>
       </div>
 
-      <div class="abc-field">
-        <label>Pre-tax (Perq) purchase</label>
-        <div class="abc-toggle-row">
-          <label class="abc-toggle">
-            <input type="checkbox" data-abc-pretax-toggle />
-            <span class="abc-toggle-slider"></span>
-          </label>
-          <span class="abc-farecalc-perq-hint">Buy the pass pre-tax through Perq</span>
+      <div class="abc-stepnav">
+        <span></span>
+        <button type="button" class="abc-btn abc-btn-primary" data-abc-next>Continue</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="abc-step" data-abc-step="2">
+      <p class="abc-question">Does your employer help pay?</p>
+      <div class="abc-input-row">
+        <div class="abc-field" style="flex-basis: 100%;">
+          <label>How much do they cover?</label>
+          <div class="abc-choice-grid">
+            <button type="button" class="abc-choice-button abc-active" data-abc-subsidy-preset="0">No</button>
+            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="25">A little</button>
+            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="50">Half</button>
+            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="75">Most</button>
+            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="100">All of it</button>
+          </div>
+        </div>
+
+        <div class="abc-field" style="flex-basis: 100%;">
+          <label>Do you buy it pre-tax through Perq?</label>
+          <div class="abc-toggle-row">
+            <label class="abc-toggle">
+              <input type="checkbox" data-abc-pretax-toggle />
+              <span class="abc-toggle-slider"></span>
+            </label>
+            <span class="abc-field-hint">This can shrink your real cost.</span>
+          </div>
+        </div>
+
+        <div class="abc-field" data-abc-perq-rate-row style="display: none; flex-basis: 100%;">
+          <label for="abc-farecalc-perq-rate">About how much do you save on taxes?</label>
+          <div class="abc-slider-row">
+            <input
+              id="abc-farecalc-perq-rate"
+              class="abc-slider"
+              type="range"
+              min="0"
+              max="45"
+              step="1"
+              value="30"
+              data-abc-perq-rate
+            />
+            <span class="abc-slider-value" data-abc-perq-rate-value>30%</span>
+          </div>
+          <span class="abc-field-hint">Most people save around 30% &mdash; adjust if you know your rate.</span>
         </div>
       </div>
 
-      <div class="abc-farecalc-perq-row" data-abc-perq-rate-row style="display: none">
-        <label for="abc-farecalc-perq-rate" style="font-size: 0.875rem; font-weight: 600; color: var(--abc-color-ink-muted);">
-          Perq savings rate (%)
-        </label>
-        <input
-          id="abc-farecalc-perq-rate"
-          class="abc-number-input"
-          type="number"
-          min="0"
-          max="100"
-          step="1"
-          value="30"
-          data-abc-perq-rate
-        />
-        <span class="abc-farecalc-perq-hint">Default 30% &mdash; MBTA's own typical estimate, adjust to your tax bracket</span>
+      <div class="abc-stepnav">
+        <button type="button" class="abc-btn abc-btn-ghost" data-abc-back>Back</button>
+        <button type="button" class="abc-btn abc-btn-primary" data-abc-next>See my answer</button>
       </div>
     </div>
 
-    <div class="abc-cards">
-      <div class="abc-card" data-abc-card-pass>
-        <span class="abc-badge" data-abc-badge>Recommended</span>
-        <h3>Monthly Pass</h3>
-        <div class="abc-card-figure" data-abc-pass-figure>$0.00</div>
-        <div class="abc-card-sub" data-abc-pass-sticker></div>
-        <ul>
-          <li data-abc-pass-subsidy-line></li>
-          <li data-abc-pass-pretax-line></li>
-        </ul>
+    <!-- Step 3 -->
+    <div class="abc-step" data-abc-step="3">
+      <p class="abc-question">Here's what we found</p>
+
+      <div class="abc-cards">
+        <div class="abc-card" data-abc-card-pass>
+          <span class="abc-badge" data-abc-badge>Recommended</span>
+          <h3>Monthly Pass</h3>
+          <div class="abc-card-figure" data-abc-pass-figure>$0.00</div>
+          <div class="abc-card-sub" data-abc-pass-sticker></div>
+          <ul>
+            <li data-abc-pass-subsidy-line></li>
+            <li data-abc-pass-pretax-line></li>
+          </ul>
+        </div>
+
+        <div class="abc-card" data-abc-card-ride>
+          <span class="abc-badge" data-abc-badge>Recommended</span>
+          <h3>Pay As You Go</h3>
+          <div class="abc-card-figure" data-abc-ride-figure>$0.00</div>
+          <div class="abc-card-sub" data-abc-ride-sticker></div>
+        </div>
       </div>
 
-      <div class="abc-card" data-abc-card-ride>
-        <span class="abc-badge" data-abc-badge>Recommended</span>
-        <h3>Pay Per Ride</h3>
-        <div class="abc-card-figure" data-abc-ride-figure>$0.00</div>
-        <div class="abc-card-sub" data-abc-ride-sticker></div>
+      <div class="abc-callout">
+        <h4>Next steps</h4>
+        <p data-abc-takeaway></p>
+      </div>
+
+      <details class="abc-details">
+        <summary>Where these numbers come from</summary>
+        <div class="abc-details-body">
+          Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
+          rate is an estimate you can adjust, not an exact published number.
+          We assume pay-as-you-go rides are paid full price, after taxes.
+          Fares change over time &mdash; treat this as a helpful estimate, not a
+          guarantee.
+        </div>
+      </details>
+
+      <div class="abc-stepnav">
+        <button type="button" class="abc-text-link" data-abc-edit-answers>Edit your answers</button>
+        <span></span>
       </div>
     </div>
-
-    <div class="abc-callout">
-      <h4>Next steps</h4>
-      <p data-abc-takeaway></p>
-    </div>
-
-    <p class="abc-disclaimer">
-      Fares sourced from mbta.com, verified 2026-07-10 &mdash; MBTA fares typically
-      change annually, re-verify before relying on this for budgeting. Pay-per-ride
-      costs assume full fare paid out of pocket, post-tax; employer subsidy and
-      Perq pre-tax savings are modeled as applying only to the monthly pass
-      purchase, consistent with how Perq is actually sold. Perq pre-tax savings
-      rate is a user-adjustable estimate, not an official MBTA-published figure.
-    </p>
   </div>
   <!-- ABC-CALC-HTML-END -->
 
