@@ -1,10 +1,94 @@
 /* ============================================================
    MBTA Fare Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-farecalc-*
-   Kept intentionally small: almost everything now lives in the
-   shared glass design system.
+
+   Route buttons get MBTA's own line colors instead of the shared
+   ABC palette, since that's contextually accurate here: Commuter
+   Rail is a real, single MBTA line with an official color. Subway &
+   Bus spans multiple lines, so instead of picking one, hovering it
+   cycles through the real line colors and settles on ABC teal —
+   playful, but still grounded in MBTA's actual brand colors.
    ============================================================ */
 
-.abc-farecalc .abc-choice-grid .abc-choice-button {
-  flex: 1 1 auto;
+:root {
+  --mbta-red: #DA291C;
+  --mbta-orange: #ED8B00;
+  --mbta-green: #00843D;
+  --mbta-blue: #003DA5;
+  --mbta-silver: #7C878E;
+  --mbta-purple: #80276C; /* Commuter Rail's own official color */
+}
+
+/* ---- Commuter Rail: solid purple, no animation needed ---- */
+.abc-farecalc-btn-rail:hover,
+.abc-farecalc-btn-rail.abc-active {
+  background: var(--mbta-purple);
+  border-color: var(--mbta-purple);
+  color: #fff;
+}
+
+/* ---- Subway & Bus: cycles through MBTA line colors on hover, settles on ABC teal ---- */
+.abc-farecalc-btn-subway.abc-active {
+  background: var(--abc-teal);
+  border-color: var(--abc-teal);
+  color: #fff;
+}
+
+.abc-farecalc-btn-subway:hover {
+  animation: abc-farecalc-line-cycle 1.2s ease forwards;
+  color: #fff;
+  border-color: transparent;
+}
+
+@keyframes abc-farecalc-line-cycle {
+  0%   { background: var(--mbta-red); }
+  20%  { background: var(--mbta-orange); }
+  40%  { background: var(--mbta-green); }
+  60%  { background: var(--mbta-blue); }
+  80%  { background: var(--mbta-silver); }
+  100% { background: var(--abc-teal); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abc-farecalc-btn-subway:hover {
+    animation: none;
+    background: var(--abc-teal);
+    color: #fff;
+  }
+}
+
+/* ---- Result panel ---- */
+.abc-farecalc-result {
+  border: 2px solid var(--abc-teal);
+  background: var(--abc-teal-tint);
+}
+
+.abc-farecalc-result .abc-card-figure {
+  color: var(--abc-teal-deep);
+}
+
+.abc-farecalc-stats {
+  display: flex;
+  gap: var(--abc-space-lg);
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-lg);
+  border-top: 1px solid rgba(19, 64, 114, 0.12);
+}
+
+.abc-farecalc-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.abc-farecalc-stat-figure {
+  font-family: var(--abc-font-mono);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-stat-label {
+  font-size: 0.78rem;
+  color: var(--abc-ink-muted);
+  margin-top: 2px;
 }

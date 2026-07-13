@@ -57,21 +57,26 @@ in `shared/styles/base.css` use a plain `.abc-*` prefix.
 
 ## Design system
 
-- **Voice:** plain, second-person language throughout ("Does your employer
-  help pay?" not "Employer subsidy (%)"). Results read like a sentence a
-  person would say out loud, not a spreadsheet cell.
-- **Flow:** each calculator is a short multi-step form (progress dots +
-  Back/Continue) instead of one dense page of fields — one plain-language
-  question at a time, results as the last step. Optional/rare inputs (Perq's
-  exact tax rate, Bluebikes ride overage) are tucked behind a toggle or a
-  native `<details>` disclosure instead of shown by default.
-- **Look:** a light glassmorphic style — translucent blurred cards over a
-  soft gradient, generous rounding, pill buttons — using two colors pulled
-  directly from abettercity.org's live site: electric teal (`--abc-teal`,
-  `#1FAEBD`) for selected/winning states, and bold orange (`--abc-orange`,
-  `#E96E17`) for the "Next steps" callout and caution flags, both against a
-  deep navy (`--abc-navy`, `#134072`) base. All defined as CSS custom
-  properties in `shared/styles/base.css` — change the palette in one place.
+- **Voice:** plain, friendly, full-sentence language throughout ("Does your
+  employer help pay for your commute?" not "Employer subsidy (%)"). Results
+  read like a sentence a person would say out loud, not a spreadsheet cell.
+- **Flow:** ask only what's mission-critical, on one live-updating page —
+  no wizard, no submit button, matching the original brief's "live-updating,
+  no submit button" instruction. Before adding an input, check whether it's
+  actually load-bearing for the output or something we're tempted to add for
+  polish (see the MBTA README's "what changed from the first rebuild"
+  section for a worked example of walking one back). Optional/rare detail is
+  tucked behind a native `<details>` disclosure instead of shown by default.
+- **Look:** flat, solid, bold — no gradients, no glass/blur. Two colors
+  pulled directly from abettercity.org's live site: electric teal
+  (`--abc-teal`, `#13A6B5`) for selected/winning states, and bold orange
+  (`--abc-orange`, `#E96E17`) for the "Next steps" callout and caution
+  flags, both against a deep navy (`--abc-navy`, `#134072`) base. All
+  defined as CSS custom properties in `shared/styles/base.css` — change the
+  palette in one place. Where a tool has its own real-world color system
+  (e.g. MBTA's official line colors), use it directly rather than forcing
+  everything through the shared ABC palette — see the MBTA calculator's
+  Commuter Rail purple (`#80276C`, MBTA's actual line color) for an example.
 - **Type:** IBM Plex Sans for everything, IBM Plex Mono for the big dollar
   figures in result cards (a small deliberate "calculator" accent). Both are
   self-hosted as base64-embedded `@font-face` rules in
