@@ -2,6 +2,12 @@
    ABC MBTA Fare / Monthly Pass Break-Even Calculator
    Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
+
+   Rebuilt to match the shape of ABC's original Calconic tool: three
+   inputs (zone, employer subsidy, pre-tax %), no trip-count input.
+   The tool reports your real cost and the breakeven pace (trips/days
+   per week) — it does not ask how often you personally ride, so it
+   can't tell you whether the pass "wins" for you specifically.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -12,7 +18,6 @@
    and commuter rail zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
-  // Source of truth for all fares below. Check this page first each year.
   fareSource: {
     url: "https://www.mbta.com/fares",
     lastVerified: "2026-07-10",
@@ -23,16 +28,19 @@ const MBTA_CONFIG = {
       "since it's not a permanent rate.",
   },
 
-  // Perq (MBTA's pre-tax commuter benefit program) pricing impact.
-  // MBTA's own Perq materials describe the discount as "roughly equal to
-  // your tax rate, typically around 30%" but do not publish an exact
-  // official percentage — this is a user-adjustable estimate, not a fact.
+  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
+  // Linked out to rather than embedded — keeps this tool dependency-free.
+  zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
+
+  // Perq (MBTA's pre-tax commuter benefit program). ABC's original tool
+  // exposed this as a plain editable percentage (defaulting to 25%), not a
+  // toggle — matched here. No official MBTA-published rate; this is always
+  // an estimate the user can tune.
   perq: {
-    defaultSavingsRate: 0.30, // 30% — MBTA Perq page's own "typical" figure
+    defaultPct: 25,
     source: "https://www.mbta.com/pass-program/perq/perq-employers",
   },
 
-  // Employer subsidy presets, in plain language for the UI + the % each maps to.
   subsidyPresets: [
     { pct: 0, label: "No" },
     { pct: 25, label: "A little" },
@@ -40,9 +48,6 @@ const MBTA_CONFIG = {
     { pct: 75, label: "Most" },
     { pct: 100, label: "All of it" },
   ],
-
-  defaultTripsPerMonth: 20,
-  maxTripsPerMonth: 44, // ~5 round trips/week, generous slider ceiling
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -77,111 +82,72 @@ const MBTA_CONFIG = {
 /* ------------------------------------------------------------
    2. CALC LOGIC
    Pure functions: config + inputs in, numbers out. No DOM access.
-
-   Modeling assumption (documented because it drives the whole tool):
-   employer subsidy and Perq pre-tax savings apply ONLY to the monthly
-   pass purchase, matching how Perq is actually sold (subsidized/pre-tax
-   passes, not per-ride stored value). Pay-per-ride fares are assumed
-   paid out of pocket at full post-tax price. This is what makes subsidy
-   and pre-tax status change the break-even point.
    ------------------------------------------------------------ */
 
 function mbtaGetPassOption(config, passId) {
   return config.passOptions.find((p) => p.id === passId);
 }
 
-/** Employee's out-of-pocket monthly cost for the pass after employer subsidy. */
+/** Cost after employer subsidy only. */
 function mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct) {
   return monthlyPrice * (1 - subsidyPct / 100);
 }
 
-/** Effective real cost after also applying Perq pre-tax savings, if enabled. */
-function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, pretaxOn, perqSavingsPct) {
+/** Real cost after subsidy, then pre-tax savings on top — matches ABC's original tool's math exactly. */
+function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, perqPct) {
   const afterSubsidy = mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct);
-  if (!pretaxOn) return afterSubsidy;
-  return afterSubsidy * (1 - perqSavingsPct / 100);
+  return afterSubsidy * (1 - perqPct / 100);
 }
 
-/** Total pay-per-ride cost for a given number of one-way trips, full fare. */
-function mbtaCalcPayPerRideCost(oneWayFare, trips) {
-  return oneWayFare * trips;
-}
-
-/** Break-even one-way trip count: trips at which pass cost == pay-per-ride cost. */
-function mbtaCalcBreakEvenOneWayTrips(effectivePassCost, oneWayFare) {
+/** One-way trips per week needed for the pass to break even. Fractional on purpose — this is a pace, not a hard count. */
+function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, oneWayFare) {
   if (oneWayFare <= 0) return 0;
-  return abcRoundUp(effectivePassCost / oneWayFare);
+  const tripsPerMonth = effectivePassCost / oneWayFare;
+  return tripsPerMonth / 4.345; // avg weeks/month
 }
 
-function mbtaCalcBreakEvenRoundTrips(breakEvenOneWayTrips) {
-  return abcRoundUp(breakEvenOneWayTrips / 2);
-}
-
-/** Friendly "about N days a week" estimate from one-way trips/month. Display only. */
-function mbtaEstimateDaysPerWeek(oneWayTripsPerMonth) {
-  const roundTripsPerWeek = oneWayTripsPerMonth / 2 / 4.345;
-  return Math.round(roundTripsPerWeek * 2) / 2; // nearest half day
+/** Each in-office day = one round trip = two one-way trips. */
+function mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek) {
+  return tripsPerWeek / 2;
 }
 
 /** Bundles every derived number the UI needs for one pass option + inputs. */
-function mbtaCalcAll(config, passId, subsidyPct, pretaxOn, perqSavingsPct, tripsPerMonth) {
+function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
   const afterSubsidy = mbtaCalcSubsidizedCost(pass.monthlyPrice, subsidyPct);
-  const effectivePassCost = mbtaCalcEffectivePassCost(
-    pass.monthlyPrice,
-    subsidyPct,
-    pretaxOn,
-    perqSavingsPct
-  );
-  const payPerRideCost = mbtaCalcPayPerRideCost(pass.oneWayFare, tripsPerMonth);
-  const breakEvenOneWayTrips = mbtaCalcBreakEvenOneWayTrips(effectivePassCost, pass.oneWayFare);
-  const breakEvenRoundTrips = mbtaCalcBreakEvenRoundTrips(breakEvenOneWayTrips);
+  const effectivePassCost = mbtaCalcEffectivePassCost(pass.monthlyPrice, subsidyPct, perqPct);
+  const tripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, pass.oneWayFare);
+  const daysPerWeek = mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek);
 
   return {
     pass,
-    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
-    pretaxDollarSavings: pretaxOn ? afterSubsidy - effectivePassCost : 0,
+    afterSubsidy,
     effectivePassCost,
-    payPerRideCost,
-    breakEvenOneWayTrips,
-    breakEvenRoundTrips,
-    passWins: effectivePassCost < payPerRideCost,
+    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
+    pretaxDollarSavings: afterSubsidy - effectivePassCost,
+    tripsPerWeek,
+    daysPerWeek,
   };
 }
 
 /* ------------------------------------------------------------
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
-   No math happens in this section. Also owns the 3-step flow
-   (state, progress dots, back/continue nav) so the form asks one
-   plain question at a time instead of a dense wall of fields.
+   No math happens in this section. Single live-updating view —
+   no steps, no submit button, per the project's original brief.
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
-  const STEP_LABELS = ["How you get to work", "Employer perks", "Your answer"];
-  let currentStep = 1;
   let routeType = "subway"; // "subway" | "rail"
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
 
-  const tripsSlider = rootEl.querySelector("[data-abc-trips-input]");
-  const tripsValueEl = rootEl.querySelector("[data-abc-trips-value]");
-  const tripsDaysHint = rootEl.querySelector("[data-abc-trips-days-hint]");
-
   const subsidyButtons = rootEl.querySelectorAll("[data-abc-subsidy-preset]");
   let subsidyPct = 0;
 
-  const pretaxToggle = rootEl.querySelector("[data-abc-pretax-toggle]");
-  const perqRateRow = rootEl.querySelector("[data-abc-perq-rate-row]");
-  const perqRateSlider = rootEl.querySelector("[data-abc-perq-rate]");
-  const perqRateValueEl = rootEl.querySelector("[data-abc-perq-rate-value]");
-
-  const progressDots = rootEl.querySelectorAll("[data-abc-progress-dot]");
-  const progressLabel = rootEl.querySelector("[data-abc-progress-label]");
-  const steps = rootEl.querySelectorAll("[data-abc-step]");
-  const editAnswersLink = rootEl.querySelector("[data-abc-edit-answers]");
+  const perqInput = rootEl.querySelector("[data-abc-perq-pct]");
 
   // Populate the rail zone dropdown from config (everything except linkpass).
   MBTA_CONFIG.passOptions
@@ -197,104 +163,54 @@ function mbtaInitCalculator(rootEl) {
     return routeType === "subway" ? "linkpass" : railZoneSelect.value;
   }
 
-  function goToStep(n) {
-    currentStep = n;
-    steps.forEach((stepEl) => {
-      stepEl.classList.toggle("abc-step-active", Number(stepEl.dataset.abcStep) === n);
-    });
-    progressDots.forEach((dot, i) => {
-      dot.classList.toggle("abc-dot-active", i === n - 1);
-      dot.classList.toggle("abc-dot-done", i < n - 1);
-    });
-    progressLabel.textContent = `Step ${n} of ${steps.length} \u2014 ${STEP_LABELS[n - 1]}`;
-    if (n === steps.length) render();
-  }
-
   routeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       railZoneField.style.display = routeType === "rail" ? "flex" : "none";
+      rootEl.classList.toggle("abc-farecalc-rail-active", routeType === "rail");
+      render();
     });
   });
-
-  function updateTripsDisplay() {
-    const trips = Number(tripsSlider.value);
-    tripsValueEl.textContent = abcFormatNumber(trips);
-    const days = mbtaEstimateDaysPerWeek(trips);
-    tripsDaysHint.textContent = days > 0 ? `about ${days} day${days === 1 ? "" : "s"} a week` : "not a regular commute";
-  }
-  tripsSlider.addEventListener("input", updateTripsDisplay);
-  updateTripsDisplay();
 
   subsidyButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       subsidyPct = Number(btn.dataset.abcSubsidyPreset);
       subsidyButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
     });
   });
 
-  function updatePerqRateDisplay() {
-    perqRateValueEl.textContent = `${perqRateSlider.value}%`;
-  }
-  pretaxToggle.addEventListener("change", () => {
-    perqRateRow.style.display = pretaxToggle.checked ? "flex" : "none";
-  });
-  perqRateSlider.addEventListener("input", updatePerqRateDisplay);
-  updatePerqRateDisplay();
-
-  rootEl.querySelectorAll("[data-abc-next]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(currentStep + 1));
-  });
-  rootEl.querySelectorAll("[data-abc-back]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(currentStep - 1));
-  });
-  editAnswersLink.addEventListener("click", () => goToStep(1));
+  railZoneSelect.addEventListener("change", render);
+  perqInput.addEventListener("input", render);
 
   function render() {
-    const trips = Number(tripsSlider.value);
-    const pretaxOn = pretaxToggle.checked;
-    const perqRate = Number(perqRateSlider.value);
+    const perqPct = Math.min(100, Math.max(0, Number(perqInput.value) || 0));
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, perqPct);
 
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, pretaxOn, perqRate, trips);
+    rootEl.querySelector("[data-abc-real-cost]").textContent = abcFormatCurrency(result.effectivePassCost);
+    rootEl.querySelector("[data-abc-full-price]").textContent =
+      `Full price: ${abcFormatCurrencyWhole(result.pass.monthlyPrice)} a month`;
+    rootEl.querySelector("[data-abc-after-subsidy]").textContent =
+      subsidyPct > 0
+        ? `After your employer's help: ${abcFormatCurrency(result.afterSubsidy)} a month`
+        : `Your employer isn't covering any of this`;
+    rootEl.querySelector("[data-abc-after-pretax]").textContent =
+      perqPct > 0
+        ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
+        : `Add a pre-tax percentage above if you buy this through Perq`;
 
-    const passCard = rootEl.querySelector("[data-abc-card-pass]");
-    const rideCard = rootEl.querySelector("[data-abc-card-ride]");
-    passCard.classList.toggle("abc-card-winner", result.passWins);
-    rideCard.classList.toggle("abc-card-winner", !result.passWins);
-    passCard.querySelector("[data-abc-badge]").style.visibility = result.passWins ? "visible" : "hidden";
-    rideCard.querySelector("[data-abc-badge]").style.visibility = !result.passWins ? "visible" : "hidden";
-
-    rootEl.querySelector("[data-abc-pass-figure]").textContent = abcFormatCurrency(result.effectivePassCost);
-    rootEl.querySelector("[data-abc-pass-sticker]").textContent =
-      `Full price is ${abcFormatCurrencyWhole(result.pass.monthlyPrice)}/month`;
-    rootEl.querySelector("[data-abc-pass-subsidy-line]").textContent =
-      subsidyPct > 0 ? `Your employer covers ${abcFormatCurrency(result.subsidyDollarSavings)} of that` : "Your employer isn't covering any of this";
-    rootEl.querySelector("[data-abc-pass-pretax-line]").textContent = pretaxOn
-      ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
-      : "You're not buying this pre-tax";
-
-    rootEl.querySelector("[data-abc-ride-figure]").textContent = abcFormatCurrency(result.payPerRideCost);
-    rootEl.querySelector("[data-abc-ride-sticker]").textContent =
-      `${abcFormatCurrency(result.pass.oneWayFare)} a ride \u00D7 ${abcFormatNumber(trips)} rides a month`;
+    rootEl.querySelector("[data-abc-trips-week]").textContent = result.tripsPerWeek.toFixed(1);
+    rootEl.querySelector("[data-abc-days-week]").textContent = result.daysPerWeek.toFixed(1);
 
     const takeawayEl = rootEl.querySelector("[data-abc-takeaway]");
-    const diff = Math.abs(result.effectivePassCost - result.payPerRideCost);
-    if (trips === 0) {
-      takeawayEl.textContent = "You told us you're not taking any trips this month, so paying as you go costs nothing \u2014 the pass isn't worth it unless your commute picks up.";
-    } else if (result.passWins) {
-      takeawayEl.textContent =
-        `Get the pass. At ${abcFormatNumber(trips)} rides a month, it saves you about ` +
-        `${abcFormatCurrency(diff)} compared to paying per ride.`;
-    } else {
-      takeawayEl.textContent =
-        `Stick with paying per ride for now \u2014 it's about ${abcFormatCurrency(diff)} cheaper at your pace. ` +
-        `If you get to ${abcFormatNumber(result.breakEvenOneWayTrips)} one-way trips ` +
-        `(${abcFormatNumber(result.breakEvenRoundTrips)} round trips) a month, the pass starts to pay off.`;
-    }
+    const days = result.daysPerWeek.toFixed(1);
+    takeawayEl.textContent =
+      `If you're commuting in about ${days} days a week or more, this pass is worth it. ` +
+      `Fewer days than that, and paying per ride will usually cost less.`;
   }
 
-  goToStep(1);
+  render();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

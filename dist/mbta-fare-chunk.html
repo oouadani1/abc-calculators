@@ -45,30 +45,29 @@
    own prefixed classes (.abc-farecalc-*, .abc-bikecalc-*) — this file
    only defines shared primitives, never tool-specific selectors.
 
-   Palette pulled directly from abettercity.org's live site (screenshot-
-   verified, 2026-07-10): teal #30B7C5 and orange #E96E17 are ABC's two
-   boldest accent colors, paired with navy #134072 as the deep base.
+   Flat, solid, bold — no gradients, no glass/blur. Palette pulled from
+   abettercity.org's live site (screenshot-verified, 2026-07-10): teal
+   and orange are ABC's boldest accents, paired with navy as the base.
    ============================================================ */
 
 :root {
   /* ABC brand colors */
-  --abc-teal: #1FAEBD;
-  --abc-teal-deep: #128494;
-  --abc-teal-tint: rgba(31, 174, 189, 0.12);
+  --abc-teal: #13A6B5;
+  --abc-teal-deep: #0E7F8B;
+  --abc-teal-tint: #E4F5F7;
   --abc-orange: #E96E17;
   --abc-orange-deep: #C25A0E;
-  --abc-orange-tint: rgba(233, 110, 23, 0.10);
+  --abc-orange-tint: #FDEEE2;
   --abc-navy: #134072;
   --abc-navy-deep: #0C2C50;
-  --abc-mist: #D3E7F3;
 
   /* Semantic colors */
   --abc-ink: #142433;
   --abc-ink-muted: #5B6B7A;
   --abc-ink-faint: #8B9AA8;
-  --abc-border-glass: rgba(255, 255, 255, 0.55);
-  --abc-card-glass: rgba(255, 255, 255, 0.58);
-  --abc-card-glass-strong: rgba(255, 255, 255, 0.78);
+  --abc-page-bg: #F6F8FA;
+  --abc-card-bg: #FFFFFF;
+  --abc-border: #DDE4EA;
 
   /* Spacing */
   --abc-space-xs: 4px;
@@ -87,59 +86,27 @@
   --abc-font-size-xxl: 2.25rem;
 
   /* Radius / shadow */
-  --abc-radius: 20px;
-  --abc-radius-sm: 12px;
+  --abc-radius: 16px;
+  --abc-radius-sm: 10px;
   --abc-radius-pill: 999px;
-  --abc-shadow-card: 0 8px 30px rgba(19, 64, 114, 0.10), 0 2px 8px rgba(19, 64, 114, 0.06);
-  --abc-shadow-lift: 0 12px 40px rgba(19, 64, 114, 0.16);
+  --abc-shadow-card: 0 1px 2px rgba(19, 64, 114, 0.06), 0 4px 12px rgba(19, 64, 114, 0.06);
 }
 
 /* ---- Layout shell ---- */
 .abc-calc {
-  position: relative;
-  isolation: isolate;
   font-family: var(--abc-font-sans);
   color: var(--abc-ink);
   padding: var(--abc-space-xl);
-  border-radius: calc(var(--abc-radius) + 8px);
+  border-radius: var(--abc-radius);
   max-width: 720px;
   margin: 0 auto;
   box-sizing: border-box;
-  overflow: hidden;
-  background: linear-gradient(180deg, #F3F9FC 0%, #EAF3F8 100%);
+  background: var(--abc-page-bg);
+  border: 1px solid var(--abc-border);
 }
 
 .abc-calc * {
   box-sizing: border-box;
-}
-
-/* Soft electric glow blobs behind the glass — decorative only, no images */
-.abc-calc::before,
-.abc-calc::after {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.abc-calc::before {
-  width: 320px;
-  height: 320px;
-  top: -140px;
-  right: -100px;
-  background: var(--abc-teal);
-}
-
-.abc-calc::after {
-  width: 280px;
-  height: 280px;
-  bottom: -120px;
-  left: -90px;
-  background: var(--abc-orange);
-  opacity: 0.22;
 }
 
 .abc-eyebrow {
@@ -167,66 +134,18 @@
   color: var(--abc-ink-muted);
   margin: 0 0 var(--abc-space-lg);
   line-height: 1.5;
-  max-width: 46ch;
-}
-
-/* ---- Progress / step indicator ---- */
-.abc-progress {
-  display: flex;
-  align-items: center;
-  gap: var(--abc-space-sm);
-  margin-bottom: var(--abc-space-lg);
-}
-
-.abc-progress-dots {
-  display: flex;
-  gap: 6px;
-}
-
-.abc-progress-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(19, 64, 114, 0.15);
-  transition: background 0.2s ease, transform 0.2s ease;
-}
-
-.abc-progress-dot.abc-dot-active {
-  background: var(--abc-teal);
-  transform: scale(1.3);
-}
-
-.abc-progress-dot.abc-dot-done {
-  background: var(--abc-teal-deep);
-}
-
-.abc-progress-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--abc-ink-faint);
-  letter-spacing: 0.02em;
-}
-
-/* ---- Steps ---- */
-.abc-step {
-  display: none;
-}
-
-.abc-step.abc-step-active {
-  display: block;
-  animation: abc-fade-in 0.25s ease;
-}
-
-@keyframes abc-fade-in {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  max-width: 50ch;
 }
 
 .abc-question {
   font-size: var(--abc-font-size-lg);
   font-weight: 600;
   color: var(--abc-navy-deep);
-  margin: 0 0 var(--abc-space-md);
+  margin: var(--abc-space-lg) 0 var(--abc-space-md);
+}
+
+.abc-question:first-of-type {
+  margin-top: 0;
 }
 
 /* ---- Input row / fields ---- */
@@ -235,7 +154,7 @@
   flex-wrap: wrap;
   gap: var(--abc-space-md);
   align-items: flex-start;
-  margin-bottom: var(--abc-space-lg);
+  margin-bottom: var(--abc-space-md);
 }
 
 .abc-field {
@@ -257,16 +176,19 @@
   line-height: 1.4;
 }
 
+.abc-field-hint a {
+  color: var(--abc-teal-deep);
+  font-weight: 600;
+}
+
 .abc-select,
 .abc-number-input {
   font-family: inherit;
   font-size: var(--abc-font-size-base);
-  padding: 11px var(--abc-space-md);
-  border: 1px solid rgba(19, 64, 114, 0.14);
+  padding: 10px var(--abc-space-md);
+  border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-sm);
-  background: var(--abc-card-glass-strong);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--abc-card-bg);
   color: var(--abc-ink);
 }
 
@@ -290,29 +212,29 @@
   -webkit-appearance: none;
   height: 6px;
   border-radius: var(--abc-radius-pill);
-  background: rgba(19, 64, 114, 0.12);
+  background: var(--abc-border);
   outline: none;
 }
 
 .abc-slider::-webkit-slider-thumb {
   appearance: none;
   -webkit-appearance: none;
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: var(--abc-teal);
   border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(19, 64, 114, 0.3);
+  box-shadow: 0 1px 4px rgba(19, 64, 114, 0.35);
   cursor: pointer;
 }
 
 .abc-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
   background: var(--abc-teal);
   border: 3px solid #fff;
-  box-shadow: 0 2px 8px rgba(19, 64, 114, 0.3);
+  box-shadow: 0 1px 4px rgba(19, 64, 114, 0.35);
   cursor: pointer;
 }
 
@@ -325,7 +247,7 @@
   text-align: right;
 }
 
-/* ---- Choice buttons (plain-language multiple choice, replaces raw %s) ---- */
+/* ---- Choice buttons (plain-language multiple choice) ---- */
 .abc-choice-grid {
   display: flex;
   flex-wrap: wrap;
@@ -337,19 +259,16 @@
   font-size: var(--abc-font-size-sm);
   font-weight: 600;
   padding: 10px var(--abc-space-md);
-  border: 1px solid rgba(19, 64, 114, 0.14);
+  border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
-  background: var(--abc-card-glass-strong);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--abc-card-bg);
   color: var(--abc-ink);
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .abc-choice-button:hover {
   border-color: var(--abc-teal);
-  transform: translateY(-1px);
 }
 
 .abc-choice-button.abc-active {
@@ -357,10 +276,6 @@
   border-color: var(--abc-navy);
   color: #fff;
 }
-
-/* legacy alias so any old references keep working */
-.abc-button-group { display: flex; flex-wrap: wrap; gap: var(--abc-space-sm); }
-.abc-button-group button { font-family: inherit; }
 
 /* ---- Toggle switch ---- */
 .abc-toggle-row {
@@ -387,7 +302,7 @@
   position: absolute;
   cursor: pointer;
   inset: 0;
-  background: rgba(19, 64, 114, 0.18);
+  background: var(--abc-border);
   border-radius: var(--abc-radius-pill);
   transition: background 0.15s ease;
 }
@@ -413,14 +328,7 @@
   transform: translateX(18px);
 }
 
-/* ---- Step nav (Back / Continue) ---- */
-.abc-stepnav {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: var(--abc-space-lg);
-}
-
+/* ---- Buttons ---- */
 .abc-btn {
   font-family: inherit;
   font-size: var(--abc-font-size-base);
@@ -429,18 +337,16 @@
   border-radius: var(--abc-radius-pill);
   border: none;
   cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+  transition: opacity 0.12s ease;
 }
 
 .abc-btn-primary {
   background: var(--abc-teal);
   color: #fff;
-  box-shadow: 0 6px 18px rgba(31, 174, 189, 0.35);
 }
 
 .abc-btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 22px rgba(31, 174, 189, 0.42);
+  opacity: 0.9;
 }
 
 .abc-btn-ghost {
@@ -463,10 +369,8 @@
 
 .abc-card {
   flex: 1 1 220px;
-  background: var(--abc-card-glass);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid var(--abc-border-glass);
+  background: var(--abc-card-bg);
+  border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius);
   padding: var(--abc-space-lg);
   box-shadow: var(--abc-shadow-card);
@@ -476,7 +380,6 @@
 .abc-card-winner {
   border: 2px solid var(--abc-teal);
   background: var(--abc-teal-tint);
-  box-shadow: var(--abc-shadow-lift);
 }
 
 .abc-badge {
@@ -532,7 +435,7 @@
 /* ---- Next steps callout (orange — the second electric accent) ---- */
 .abc-callout {
   background: var(--abc-orange-tint);
-  border: 1px solid rgba(233, 110, 23, 0.22);
+  border: 1.5px solid var(--abc-orange);
   border-radius: var(--abc-radius-sm);
   padding: var(--abc-space-lg);
   margin-bottom: var(--abc-space-md);
@@ -588,7 +491,7 @@
   margin-top: var(--abc-space-sm);
   line-height: 1.6;
   padding-left: var(--abc-space-sm);
-  border-left: 2px solid rgba(19, 64, 114, 0.12);
+  border-left: 2px solid var(--abc-border);
 }
 
 /* ---- Small caution tag (plain-language "not confirmed yet") ---- */
@@ -646,180 +549,199 @@
   .abc-cards {
     flex-direction: column;
   }
-  .abc-stepnav {
-    flex-direction: column-reverse;
-    gap: var(--abc-space-sm);
-    align-items: stretch;
-  }
-  .abc-btn {
-    text-align: center;
-  }
 }
 
 /* ============================================================
    MBTA Fare Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-farecalc-*
-   Kept intentionally small: almost everything now lives in the
-   shared glass design system.
+
+   Route buttons get MBTA's own line colors instead of the shared
+   ABC palette, since that's contextually accurate here: Commuter
+   Rail is a real, single MBTA line with an official color. Subway &
+   Bus spans multiple lines, so instead of picking one, hovering it
+   cycles through the real line colors and settles on ABC teal —
+   playful, but still grounded in MBTA's actual brand colors.
    ============================================================ */
 
-.abc-farecalc .abc-choice-grid .abc-choice-button {
-  flex: 1 1 auto;
+:root {
+  --mbta-red: #DA291C;
+  --mbta-orange: #ED8B00;
+  --mbta-green: #00843D;
+  --mbta-blue: #003DA5;
+  --mbta-silver: #7C878E;
+  --mbta-purple: #80276C; /* Commuter Rail's own official color */
+}
+
+/* ---- Commuter Rail: solid purple, no animation needed ---- */
+.abc-farecalc-btn-rail:hover,
+.abc-farecalc-btn-rail.abc-active {
+  background: var(--mbta-purple);
+  border-color: var(--mbta-purple);
+  color: #fff;
+}
+
+/* ---- Subway & Bus: cycles through MBTA line colors on hover, settles on ABC teal ---- */
+.abc-farecalc-btn-subway.abc-active {
+  background: var(--abc-teal);
+  border-color: var(--abc-teal);
+  color: #fff;
+}
+
+.abc-farecalc-btn-subway:hover {
+  animation: abc-farecalc-line-cycle 1.2s ease forwards;
+  color: #fff;
+  border-color: transparent;
+}
+
+@keyframes abc-farecalc-line-cycle {
+  0%   { background: var(--mbta-red); }
+  20%  { background: var(--mbta-orange); }
+  40%  { background: var(--mbta-green); }
+  60%  { background: var(--mbta-blue); }
+  80%  { background: var(--mbta-silver); }
+  100% { background: var(--abc-teal); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abc-farecalc-btn-subway:hover {
+    animation: none;
+    background: var(--abc-teal);
+    color: #fff;
+  }
+}
+
+/* ---- Result panel ---- */
+.abc-farecalc-result {
+  border: 2px solid var(--abc-teal);
+  background: var(--abc-teal-tint);
+}
+
+.abc-farecalc-result .abc-card-figure {
+  color: var(--abc-teal-deep);
+}
+
+.abc-farecalc-stats {
+  display: flex;
+  gap: var(--abc-space-lg);
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-lg);
+  border-top: 1px solid rgba(19, 64, 114, 0.12);
+}
+
+.abc-farecalc-stat {
+  flex: 1;
+  text-align: center;
+}
+
+.abc-farecalc-stat-figure {
+  font-family: var(--abc-font-mono);
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-stat-label {
+  font-size: 0.78rem;
+  color: var(--abc-ink-muted);
+  margin-top: 2px;
 }
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
     <p class="abc-eyebrow">A Better City</p>
-    <h2 class="abc-title">Is a monthly pass worth it?</h2>
-    <p class="abc-subtitle">Answer three quick questions and we'll tell you whether a pass or paying per ride saves you more.</p>
+    <h2 class="abc-title">Is an MBTA monthly pass worth it for you?</h2>
+    <p class="abc-subtitle">Answer a few quick questions about your commute and we'll show you the real cost of a pass, and how often you'd need to ride for it to pay off.</p>
 
-    <div class="abc-progress">
-      <div class="abc-progress-dots">
-        <span class="abc-progress-dot" data-abc-progress-dot></span>
-        <span class="abc-progress-dot" data-abc-progress-dot></span>
-        <span class="abc-progress-dot" data-abc-progress-dot></span>
-      </div>
-      <span class="abc-progress-label" data-abc-progress-label></span>
-    </div>
-
-    <!-- Step 1 -->
-    <div class="abc-step" data-abc-step="1">
-      <p class="abc-question">How do you get to work?</p>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-choice-grid">
-            <button type="button" class="abc-choice-button abc-active" data-abc-route-select="subway">Subway & Bus</button>
-            <button type="button" class="abc-choice-button" data-abc-route-select="rail">Commuter Rail</button>
-          </div>
-        </div>
-
-        <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
-          <label for="abc-farecalc-zone">Which zone?</label>
-          <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
-          <span class="abc-field-hint">Not sure? Check your zone at mbta.com/fares.</span>
-        </div>
-
-        <div class="abc-field" style="flex-basis: 100%;">
-          <label for="abc-farecalc-trips">About how many one-way trips a month?</label>
-          <div class="abc-slider-row">
-            <input
-              id="abc-farecalc-trips"
-              class="abc-slider"
-              type="range"
-              min="0"
-              max="44"
-              step="1"
-              value="20"
-              data-abc-trips-input
-            />
-            <span class="abc-slider-value" data-abc-trips-value>20</span>
-          </div>
-          <span class="abc-field-hint"><span data-abc-trips-days-hint></span></span>
+    <p class="abc-question">How do you get to work?</p>
+    <div class="abc-input-row">
+      <div class="abc-field" style="flex-basis: 100%;">
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
+          <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail</button>
         </div>
       </div>
 
-      <div class="abc-stepnav">
-        <span></span>
-        <button type="button" class="abc-btn abc-btn-primary" data-abc-next>Continue</button>
+      <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
+        <label for="abc-farecalc-zone">Which zone do you commute from?</label>
+        <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
+        <span class="abc-field-hint">
+          Not sure which zone you're in?
+          <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
+        </span>
       </div>
     </div>
 
-    <!-- Step 2 -->
-    <div class="abc-step" data-abc-step="2">
-      <p class="abc-question">Does your employer help pay?</p>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <label>How much do they cover?</label>
-          <div class="abc-choice-grid">
-            <button type="button" class="abc-choice-button abc-active" data-abc-subsidy-preset="0">No</button>
-            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="25">A little</button>
-            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="50">Half</button>
-            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="75">Most</button>
-            <button type="button" class="abc-choice-button" data-abc-subsidy-preset="100">All of it</button>
-          </div>
+    <p class="abc-question">Does your employer help pay for your commute?</p>
+    <div class="abc-input-row">
+      <div class="abc-field" style="flex-basis: 100%;">
+        <label>How much do they cover?</label>
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button abc-active" data-abc-subsidy-preset="0">No</button>
+          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="25">A little</button>
+          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="50">Half</button>
+          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="75">Most</button>
+          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="100">All of it</button>
         </div>
-
-        <div class="abc-field" style="flex-basis: 100%;">
-          <label>Do you buy it pre-tax through Perq?</label>
-          <div class="abc-toggle-row">
-            <label class="abc-toggle">
-              <input type="checkbox" data-abc-pretax-toggle />
-              <span class="abc-toggle-slider"></span>
-            </label>
-            <span class="abc-field-hint">This can shrink your real cost.</span>
-          </div>
-        </div>
-
-        <div class="abc-field" data-abc-perq-rate-row style="display: none; flex-basis: 100%;">
-          <label for="abc-farecalc-perq-rate">About how much do you save on taxes?</label>
-          <div class="abc-slider-row">
-            <input
-              id="abc-farecalc-perq-rate"
-              class="abc-slider"
-              type="range"
-              min="0"
-              max="45"
-              step="1"
-              value="30"
-              data-abc-perq-rate
-            />
-            <span class="abc-slider-value" data-abc-perq-rate-value>30%</span>
-          </div>
-          <span class="abc-field-hint">Most people save around 30% &mdash; adjust if you know your rate.</span>
-        </div>
-      </div>
-
-      <div class="abc-stepnav">
-        <button type="button" class="abc-btn abc-btn-ghost" data-abc-back>Back</button>
-        <button type="button" class="abc-btn abc-btn-primary" data-abc-next>See my answer</button>
       </div>
     </div>
 
-    <!-- Step 3 -->
-    <div class="abc-step" data-abc-step="3">
-      <p class="abc-question">Here's what we found</p>
-
-      <div class="abc-cards">
-        <div class="abc-card" data-abc-card-pass>
-          <span class="abc-badge" data-abc-badge>Recommended</span>
-          <h3>Monthly Pass</h3>
-          <div class="abc-card-figure" data-abc-pass-figure>$0.00</div>
-          <div class="abc-card-sub" data-abc-pass-sticker></div>
-          <ul>
-            <li data-abc-pass-subsidy-line></li>
-            <li data-abc-pass-pretax-line></li>
-          </ul>
+    <p class="abc-question">Do you buy your pass before taxes come out?</p>
+    <div class="abc-input-row">
+      <div class="abc-field" style="flex-basis: 100%; max-width: 220px;">
+        <label for="abc-farecalc-perq">Your pre-tax savings</label>
+        <div class="abc-slider-row" style="gap: 6px;">
+          <input
+            id="abc-farecalc-perq"
+            class="abc-number-input"
+            type="number"
+            min="0"
+            max="100"
+            step="1"
+            value="25"
+            data-abc-perq-pct
+            style="max-width: 90px;"
+          />
+          <span>%</span>
         </div>
-
-        <div class="abc-card" data-abc-card-ride>
-          <span class="abc-badge" data-abc-badge>Recommended</span>
-          <h3>Pay As You Go</h3>
-          <div class="abc-card-figure" data-abc-ride-figure>$0.00</div>
-          <div class="abc-card-sub" data-abc-ride-sticker></div>
-        </div>
-      </div>
-
-      <div class="abc-callout">
-        <h4>Next steps</h4>
-        <p data-abc-takeaway></p>
-      </div>
-
-      <details class="abc-details">
-        <summary>Where these numbers come from</summary>
-        <div class="abc-details-body">
-          Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
-          rate is an estimate you can adjust, not an exact published number.
-          We assume pay-as-you-go rides are paid full price, after taxes.
-          Fares change over time &mdash; treat this as a helpful estimate, not a
-          guarantee.
-        </div>
-      </details>
-
-      <div class="abc-stepnav">
-        <button type="button" class="abc-text-link" data-abc-edit-answers>Edit your answers</button>
-        <span></span>
+        <span class="abc-field-hint">This is called Perq. If you're not sure, ask your HR team &mdash; most people save around 25%. Leave at 0 if you don't buy it pre-tax.</span>
       </div>
     </div>
+
+    <div class="abc-card abc-farecalc-result">
+      <h3>Your real cost, after subsidy and pre-tax savings</h3>
+      <div class="abc-card-figure" data-abc-real-cost>$0.00</div>
+      <ul>
+        <li data-abc-full-price></li>
+        <li data-abc-after-subsidy></li>
+        <li data-abc-after-pretax></li>
+      </ul>
+
+      <div class="abc-farecalc-stats">
+        <div class="abc-farecalc-stat">
+          <div class="abc-farecalc-stat-figure" data-abc-trips-week>0.0</div>
+          <div class="abc-farecalc-stat-label">trips a week to break even</div>
+        </div>
+        <div class="abc-farecalc-stat">
+          <div class="abc-farecalc-stat-figure" data-abc-days-week>0.0</div>
+          <div class="abc-farecalc-stat-label">days a week in the office</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="abc-callout">
+      <h4>Next steps</h4>
+      <p data-abc-takeaway></p>
+    </div>
+
+    <details class="abc-details">
+      <summary>Where we got these numbers</summary>
+      <div class="abc-details-body">
+        Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
+        percentage isn't an official published number &mdash; it's an estimate
+        you can adjust to match your own tax rate. Fares change over time,
+        so treat this as a helpful estimate, not a guarantee.
+      </div>
+    </details>
   </div>
 
 <script>
@@ -871,6 +793,12 @@ function abcFormatPercent(value) {
    ABC MBTA Fare / Monthly Pass Break-Even Calculator
    Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
+
+   Rebuilt to match the shape of ABC's original Calconic tool: three
+   inputs (zone, employer subsidy, pre-tax %), no trip-count input.
+   The tool reports your real cost and the breakeven pace (trips/days
+   per week) — it does not ask how often you personally ride, so it
+   can't tell you whether the pass "wins" for you specifically.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -881,7 +809,6 @@ function abcFormatPercent(value) {
    and commuter rail zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
-  // Source of truth for all fares below. Check this page first each year.
   fareSource: {
     url: "https://www.mbta.com/fares",
     lastVerified: "2026-07-10",
@@ -892,16 +819,19 @@ const MBTA_CONFIG = {
       "since it's not a permanent rate.",
   },
 
-  // Perq (MBTA's pre-tax commuter benefit program) pricing impact.
-  // MBTA's own Perq materials describe the discount as "roughly equal to
-  // your tax rate, typically around 30%" but do not publish an exact
-  // official percentage — this is a user-adjustable estimate, not a fact.
+  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
+  // Linked out to rather than embedded — keeps this tool dependency-free.
+  zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
+
+  // Perq (MBTA's pre-tax commuter benefit program). ABC's original tool
+  // exposed this as a plain editable percentage (defaulting to 25%), not a
+  // toggle — matched here. No official MBTA-published rate; this is always
+  // an estimate the user can tune.
   perq: {
-    defaultSavingsRate: 0.30, // 30% — MBTA Perq page's own "typical" figure
+    defaultPct: 25,
     source: "https://www.mbta.com/pass-program/perq/perq-employers",
   },
 
-  // Employer subsidy presets, in plain language for the UI + the % each maps to.
   subsidyPresets: [
     { pct: 0, label: "No" },
     { pct: 25, label: "A little" },
@@ -909,9 +839,6 @@ const MBTA_CONFIG = {
     { pct: 75, label: "Most" },
     { pct: 100, label: "All of it" },
   ],
-
-  defaultTripsPerMonth: 20,
-  maxTripsPerMonth: 44, // ~5 round trips/week, generous slider ceiling
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -946,111 +873,72 @@ const MBTA_CONFIG = {
 /* ------------------------------------------------------------
    2. CALC LOGIC
    Pure functions: config + inputs in, numbers out. No DOM access.
-
-   Modeling assumption (documented because it drives the whole tool):
-   employer subsidy and Perq pre-tax savings apply ONLY to the monthly
-   pass purchase, matching how Perq is actually sold (subsidized/pre-tax
-   passes, not per-ride stored value). Pay-per-ride fares are assumed
-   paid out of pocket at full post-tax price. This is what makes subsidy
-   and pre-tax status change the break-even point.
    ------------------------------------------------------------ */
 
 function mbtaGetPassOption(config, passId) {
   return config.passOptions.find((p) => p.id === passId);
 }
 
-/** Employee's out-of-pocket monthly cost for the pass after employer subsidy. */
+/** Cost after employer subsidy only. */
 function mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct) {
   return monthlyPrice * (1 - subsidyPct / 100);
 }
 
-/** Effective real cost after also applying Perq pre-tax savings, if enabled. */
-function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, pretaxOn, perqSavingsPct) {
+/** Real cost after subsidy, then pre-tax savings on top — matches ABC's original tool's math exactly. */
+function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, perqPct) {
   const afterSubsidy = mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct);
-  if (!pretaxOn) return afterSubsidy;
-  return afterSubsidy * (1 - perqSavingsPct / 100);
+  return afterSubsidy * (1 - perqPct / 100);
 }
 
-/** Total pay-per-ride cost for a given number of one-way trips, full fare. */
-function mbtaCalcPayPerRideCost(oneWayFare, trips) {
-  return oneWayFare * trips;
-}
-
-/** Break-even one-way trip count: trips at which pass cost == pay-per-ride cost. */
-function mbtaCalcBreakEvenOneWayTrips(effectivePassCost, oneWayFare) {
+/** One-way trips per week needed for the pass to break even. Fractional on purpose — this is a pace, not a hard count. */
+function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, oneWayFare) {
   if (oneWayFare <= 0) return 0;
-  return abcRoundUp(effectivePassCost / oneWayFare);
+  const tripsPerMonth = effectivePassCost / oneWayFare;
+  return tripsPerMonth / 4.345; // avg weeks/month
 }
 
-function mbtaCalcBreakEvenRoundTrips(breakEvenOneWayTrips) {
-  return abcRoundUp(breakEvenOneWayTrips / 2);
-}
-
-/** Friendly "about N days a week" estimate from one-way trips/month. Display only. */
-function mbtaEstimateDaysPerWeek(oneWayTripsPerMonth) {
-  const roundTripsPerWeek = oneWayTripsPerMonth / 2 / 4.345;
-  return Math.round(roundTripsPerWeek * 2) / 2; // nearest half day
+/** Each in-office day = one round trip = two one-way trips. */
+function mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek) {
+  return tripsPerWeek / 2;
 }
 
 /** Bundles every derived number the UI needs for one pass option + inputs. */
-function mbtaCalcAll(config, passId, subsidyPct, pretaxOn, perqSavingsPct, tripsPerMonth) {
+function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
   const afterSubsidy = mbtaCalcSubsidizedCost(pass.monthlyPrice, subsidyPct);
-  const effectivePassCost = mbtaCalcEffectivePassCost(
-    pass.monthlyPrice,
-    subsidyPct,
-    pretaxOn,
-    perqSavingsPct
-  );
-  const payPerRideCost = mbtaCalcPayPerRideCost(pass.oneWayFare, tripsPerMonth);
-  const breakEvenOneWayTrips = mbtaCalcBreakEvenOneWayTrips(effectivePassCost, pass.oneWayFare);
-  const breakEvenRoundTrips = mbtaCalcBreakEvenRoundTrips(breakEvenOneWayTrips);
+  const effectivePassCost = mbtaCalcEffectivePassCost(pass.monthlyPrice, subsidyPct, perqPct);
+  const tripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, pass.oneWayFare);
+  const daysPerWeek = mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek);
 
   return {
     pass,
-    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
-    pretaxDollarSavings: pretaxOn ? afterSubsidy - effectivePassCost : 0,
+    afterSubsidy,
     effectivePassCost,
-    payPerRideCost,
-    breakEvenOneWayTrips,
-    breakEvenRoundTrips,
-    passWins: effectivePassCost < payPerRideCost,
+    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
+    pretaxDollarSavings: afterSubsidy - effectivePassCost,
+    tripsPerWeek,
+    daysPerWeek,
   };
 }
 
 /* ------------------------------------------------------------
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
-   No math happens in this section. Also owns the 3-step flow
-   (state, progress dots, back/continue nav) so the form asks one
-   plain question at a time instead of a dense wall of fields.
+   No math happens in this section. Single live-updating view —
+   no steps, no submit button, per the project's original brief.
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
-  const STEP_LABELS = ["How you get to work", "Employer perks", "Your answer"];
-  let currentStep = 1;
   let routeType = "subway"; // "subway" | "rail"
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
 
-  const tripsSlider = rootEl.querySelector("[data-abc-trips-input]");
-  const tripsValueEl = rootEl.querySelector("[data-abc-trips-value]");
-  const tripsDaysHint = rootEl.querySelector("[data-abc-trips-days-hint]");
-
   const subsidyButtons = rootEl.querySelectorAll("[data-abc-subsidy-preset]");
   let subsidyPct = 0;
 
-  const pretaxToggle = rootEl.querySelector("[data-abc-pretax-toggle]");
-  const perqRateRow = rootEl.querySelector("[data-abc-perq-rate-row]");
-  const perqRateSlider = rootEl.querySelector("[data-abc-perq-rate]");
-  const perqRateValueEl = rootEl.querySelector("[data-abc-perq-rate-value]");
-
-  const progressDots = rootEl.querySelectorAll("[data-abc-progress-dot]");
-  const progressLabel = rootEl.querySelector("[data-abc-progress-label]");
-  const steps = rootEl.querySelectorAll("[data-abc-step]");
-  const editAnswersLink = rootEl.querySelector("[data-abc-edit-answers]");
+  const perqInput = rootEl.querySelector("[data-abc-perq-pct]");
 
   // Populate the rail zone dropdown from config (everything except linkpass).
   MBTA_CONFIG.passOptions
@@ -1066,104 +954,54 @@ function mbtaInitCalculator(rootEl) {
     return routeType === "subway" ? "linkpass" : railZoneSelect.value;
   }
 
-  function goToStep(n) {
-    currentStep = n;
-    steps.forEach((stepEl) => {
-      stepEl.classList.toggle("abc-step-active", Number(stepEl.dataset.abcStep) === n);
-    });
-    progressDots.forEach((dot, i) => {
-      dot.classList.toggle("abc-dot-active", i === n - 1);
-      dot.classList.toggle("abc-dot-done", i < n - 1);
-    });
-    progressLabel.textContent = `Step ${n} of ${steps.length} \u2014 ${STEP_LABELS[n - 1]}`;
-    if (n === steps.length) render();
-  }
-
   routeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       railZoneField.style.display = routeType === "rail" ? "flex" : "none";
+      rootEl.classList.toggle("abc-farecalc-rail-active", routeType === "rail");
+      render();
     });
   });
-
-  function updateTripsDisplay() {
-    const trips = Number(tripsSlider.value);
-    tripsValueEl.textContent = abcFormatNumber(trips);
-    const days = mbtaEstimateDaysPerWeek(trips);
-    tripsDaysHint.textContent = days > 0 ? `about ${days} day${days === 1 ? "" : "s"} a week` : "not a regular commute";
-  }
-  tripsSlider.addEventListener("input", updateTripsDisplay);
-  updateTripsDisplay();
 
   subsidyButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       subsidyPct = Number(btn.dataset.abcSubsidyPreset);
       subsidyButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
     });
   });
 
-  function updatePerqRateDisplay() {
-    perqRateValueEl.textContent = `${perqRateSlider.value}%`;
-  }
-  pretaxToggle.addEventListener("change", () => {
-    perqRateRow.style.display = pretaxToggle.checked ? "flex" : "none";
-  });
-  perqRateSlider.addEventListener("input", updatePerqRateDisplay);
-  updatePerqRateDisplay();
-
-  rootEl.querySelectorAll("[data-abc-next]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(currentStep + 1));
-  });
-  rootEl.querySelectorAll("[data-abc-back]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(currentStep - 1));
-  });
-  editAnswersLink.addEventListener("click", () => goToStep(1));
+  railZoneSelect.addEventListener("change", render);
+  perqInput.addEventListener("input", render);
 
   function render() {
-    const trips = Number(tripsSlider.value);
-    const pretaxOn = pretaxToggle.checked;
-    const perqRate = Number(perqRateSlider.value);
+    const perqPct = Math.min(100, Math.max(0, Number(perqInput.value) || 0));
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, perqPct);
 
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, pretaxOn, perqRate, trips);
+    rootEl.querySelector("[data-abc-real-cost]").textContent = abcFormatCurrency(result.effectivePassCost);
+    rootEl.querySelector("[data-abc-full-price]").textContent =
+      `Full price: ${abcFormatCurrencyWhole(result.pass.monthlyPrice)} a month`;
+    rootEl.querySelector("[data-abc-after-subsidy]").textContent =
+      subsidyPct > 0
+        ? `After your employer's help: ${abcFormatCurrency(result.afterSubsidy)} a month`
+        : `Your employer isn't covering any of this`;
+    rootEl.querySelector("[data-abc-after-pretax]").textContent =
+      perqPct > 0
+        ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
+        : `Add a pre-tax percentage above if you buy this through Perq`;
 
-    const passCard = rootEl.querySelector("[data-abc-card-pass]");
-    const rideCard = rootEl.querySelector("[data-abc-card-ride]");
-    passCard.classList.toggle("abc-card-winner", result.passWins);
-    rideCard.classList.toggle("abc-card-winner", !result.passWins);
-    passCard.querySelector("[data-abc-badge]").style.visibility = result.passWins ? "visible" : "hidden";
-    rideCard.querySelector("[data-abc-badge]").style.visibility = !result.passWins ? "visible" : "hidden";
-
-    rootEl.querySelector("[data-abc-pass-figure]").textContent = abcFormatCurrency(result.effectivePassCost);
-    rootEl.querySelector("[data-abc-pass-sticker]").textContent =
-      `Full price is ${abcFormatCurrencyWhole(result.pass.monthlyPrice)}/month`;
-    rootEl.querySelector("[data-abc-pass-subsidy-line]").textContent =
-      subsidyPct > 0 ? `Your employer covers ${abcFormatCurrency(result.subsidyDollarSavings)} of that` : "Your employer isn't covering any of this";
-    rootEl.querySelector("[data-abc-pass-pretax-line]").textContent = pretaxOn
-      ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
-      : "You're not buying this pre-tax";
-
-    rootEl.querySelector("[data-abc-ride-figure]").textContent = abcFormatCurrency(result.payPerRideCost);
-    rootEl.querySelector("[data-abc-ride-sticker]").textContent =
-      `${abcFormatCurrency(result.pass.oneWayFare)} a ride \u00D7 ${abcFormatNumber(trips)} rides a month`;
+    rootEl.querySelector("[data-abc-trips-week]").textContent = result.tripsPerWeek.toFixed(1);
+    rootEl.querySelector("[data-abc-days-week]").textContent = result.daysPerWeek.toFixed(1);
 
     const takeawayEl = rootEl.querySelector("[data-abc-takeaway]");
-    const diff = Math.abs(result.effectivePassCost - result.payPerRideCost);
-    if (trips === 0) {
-      takeawayEl.textContent = "You told us you're not taking any trips this month, so paying as you go costs nothing \u2014 the pass isn't worth it unless your commute picks up.";
-    } else if (result.passWins) {
-      takeawayEl.textContent =
-        `Get the pass. At ${abcFormatNumber(trips)} rides a month, it saves you about ` +
-        `${abcFormatCurrency(diff)} compared to paying per ride.`;
-    } else {
-      takeawayEl.textContent =
-        `Stick with paying per ride for now \u2014 it's about ${abcFormatCurrency(diff)} cheaper at your pace. ` +
-        `If you get to ${abcFormatNumber(result.breakEvenOneWayTrips)} one-way trips ` +
-        `(${abcFormatNumber(result.breakEvenRoundTrips)} round trips) a month, the pass starts to pay off.`;
-    }
+    const days = result.daysPerWeek.toFixed(1);
+    takeawayEl.textContent =
+      `If you're commuting in about ${days} days a week or more, this pass is worth it. ` +
+      `Fewer days than that, and paying per ride will usually cost less.`;
   }
 
-  goToStep(1);
+  render();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
