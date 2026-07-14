@@ -3,23 +3,45 @@
    shared/styles/base.css. Prefix: .abc-farecalc-*
 
    Route buttons get MBTA's own line colors instead of the shared
-   ABC palette, since that's contextually accurate here: Commuter
-   Rail is a real, single MBTA line with an official color. Subway &
-   Bus spans multiple lines, so instead of picking one, hovering it
-   cycles through the real line colors and settles on ABC teal —
-   playful, but still grounded in MBTA's actual brand colors.
+   ABC palette: Commuter Rail is a real, single MBTA line with an
+   official color; Subway & Bus defaults to Red (MBTA's busiest
+   line) since it can't map to one line honestly. Whichever route is
+   selected becomes the accent color (--abc-farecalc-accent) for the
+   rest of the form's interactive controls — a deliberate "theme"
+   that ties every highlight back to the transit mode you picked.
+   "Recommended for you" stays a fixed green regardless of theme —
+   that's a distinct "this one wins" signal, not a route identity.
    ============================================================ */
 
 :root {
   --mbta-red: #DA291C;
+  --mbta-red-tint: #FBEAE9;
   --mbta-orange: #ED8B00;
   --mbta-green: #00843D;
+  --mbta-green-tint: #E5F3EB;
   --mbta-blue: #003DA5;
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
+  --mbta-purple-tint: #F3E7F0;
 }
 
-/* ---- Commuter Rail: solid purple, no animation needed ---- */
+.abc-farecalc {
+  --abc-farecalc-accent: var(--mbta-red);
+  --abc-farecalc-accent-tint: var(--mbta-red-tint);
+}
+
+.abc-farecalc.abc-theme-rail {
+  --abc-farecalc-accent: var(--mbta-purple);
+  --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+}
+
+/* ---- Bolder title, per the "make it memorable" direction ---- */
+.abc-farecalc-title {
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Route buttons ---- */
 .abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
@@ -27,68 +49,193 @@
   color: #fff;
 }
 
-/* ---- Subway & Bus: cycles through MBTA line colors on hover, settles on ABC teal ---- */
 .abc-farecalc-btn-subway.abc-active {
-  background: var(--abc-teal);
-  border-color: var(--abc-teal);
+  background: var(--mbta-red);
+  border-color: var(--mbta-red);
   color: #fff;
+}
+
+/* Swipe flourish: a wide hard-stop gradient strip slides across the
+   button on hover (not a color crossfade) and the animation is only
+   ever a hover preview — the persistent "selected" look is the solid
+   red above, not whatever frame the swipe happens to end on. */
+.abc-farecalc-btn-subway {
+  overflow: hidden;
+  position: relative;
 }
 
 .abc-farecalc-btn-subway:hover {
-  animation: abc-farecalc-line-cycle 1.2s ease forwards;
-  color: #fff;
   border-color: transparent;
+  color: #fff;
+  animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes abc-farecalc-line-cycle {
-  0%   { background: var(--mbta-red); }
-  20%  { background: var(--mbta-orange); }
-  40%  { background: var(--mbta-green); }
-  60%  { background: var(--mbta-blue); }
-  80%  { background: var(--mbta-silver); }
-  100% { background: var(--abc-teal); }
+@keyframes abc-farecalc-line-swipe {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
+      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
+      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
+      var(--mbta-red) 80%, var(--mbta-red) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
+      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
+      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
+      var(--mbta-red) 80%, var(--mbta-red) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
-    background: var(--abc-teal);
+    background: var(--mbta-red);
     color: #fff;
   }
 }
 
-/* ---- Result panel ---- */
-.abc-farecalc-result {
-  border: 2px solid var(--abc-teal);
-  background: var(--abc-teal-tint);
+/* ---- Day-per-week picker: bold chips ---- */
+.abc-farecalc-day-grid {
+  gap: 10px;
 }
 
-.abc-farecalc-result .abc-card-figure {
-  color: var(--abc-teal-deep);
+.abc-farecalc-day-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--abc-navy-deep);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.abc-farecalc-stats {
-  display: flex;
-  gap: var(--abc-space-lg);
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
-  border-top: 1px solid rgba(19, 64, 114, 0.12);
+.abc-farecalc-day-btn:hover {
+  transform: translateY(-2px);
 }
 
-.abc-farecalc-stat {
-  flex: 1;
+.abc-farecalc-day-btn.abc-active {
+  background: var(--abc-farecalc-accent);
+}
+
+/* ---- Stepper (subsidy / pre-tax) ---- */
+.abc-farecalc-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--abc-farecalc-accent);
+  border-radius: var(--abc-radius-pill);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.abc-farecalc-stepper-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--abc-farecalc-accent);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.abc-farecalc-stepper-btn:hover {
+  filter: brightness(1.1);
+}
+
+.abc-farecalc-stepper-btn:active {
+  filter: brightness(0.95);
+}
+
+.abc-farecalc-stepper-value {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  min-width: 76px;
   text-align: center;
 }
 
-.abc-farecalc-stat-figure {
-  font-family: var(--abc-font-mono);
-  font-size: 1.75rem;
+/* ---- Zone select picks up the route theme too ---- */
+.abc-farecalc .abc-select:focus {
+  border-color: var(--abc-farecalc-accent);
+  box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
+}
+
+/* ---- Field hints: let them breathe, per feedback that they read
+   cramped when confined to a narrow column ---- */
+.abc-farecalc .abc-field-hint {
+  display: block;
+  max-width: none;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ---- Comparison cards: generous spacing, arithmetic layout ---- */
+.abc-farecalc-cards {
+  margin-top: var(--abc-space-xl);
+  gap: var(--abc-space-lg);
+}
+
+.abc-farecalc-cards .abc-card {
+  padding: var(--abc-space-xl) var(--abc-space-lg);
+}
+
+.abc-farecalc-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-line-final {
+  border-bottom: none;
+  border-top: 2px solid var(--abc-ink);
+  margin-top: 6px;
+  padding-top: var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
   font-weight: 600;
   color: var(--abc-navy-deep);
 }
 
-.abc-farecalc-stat-label {
-  font-size: 0.78rem;
-  color: var(--abc-ink-muted);
-  margin-top: 2px;
+.abc-farecalc-line-final span:last-child {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+}
+
+.abc-farecalc-savings-line {
+  margin: var(--abc-space-md) 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mbta-green);
+}
+
+/* Recommended card: fixed green, regardless of route theme */
+.abc-farecalc-cards .abc-card-winner {
+  border-color: var(--mbta-green);
+  background: var(--mbta-green-tint);
+}
+
+.abc-farecalc-cards .abc-card-winner .abc-badge {
+  background: var(--mbta-green);
+}
+
+.abc-farecalc-cards .abc-card-winner .abc-farecalc-line-final span:last-child {
+  color: var(--mbta-green);
 }
