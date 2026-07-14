@@ -23,11 +23,12 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --abc-navy-light: #46C3D3; /* ABC's lighter blue, used for non-header navy fills */
 }
 
 .abc-farecalc {
-  --abc-farecalc-accent: var(--mbta-red);
-  --abc-farecalc-accent-tint: var(--mbta-red-tint);
+  --abc-farecalc-accent: var(--mbta-green);
+  --abc-farecalc-accent-tint: var(--mbta-green-tint);
 }
 
 .abc-farecalc.abc-theme-rail {
@@ -50,15 +51,15 @@
 }
 
 .abc-farecalc-btn-subway.abc-active {
-  background: var(--mbta-red);
-  border-color: var(--mbta-red);
+  background: var(--mbta-green);
+  border-color: var(--mbta-green);
   color: #fff;
 }
 
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
-   red above, not whatever frame the swipe happens to end on. */
+   green above, not whatever frame the swipe happens to end on. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
@@ -73,21 +74,21 @@
 @keyframes abc-farecalc-line-swipe {
   0% {
     background-image: linear-gradient(to right,
-      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
-      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
-      var(--mbta-red) 80%, var(--mbta-red) 100%);
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
     background-size: 500% 100%;
     background-position: 0% 0%;
   }
   100% {
     background-image: linear-gradient(to right,
-      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
-      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
-      var(--mbta-red) 80%, var(--mbta-red) 100%);
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
     background-size: 500% 100%;
     background-position: 100% 0%;
   }
@@ -96,7 +97,7 @@
 @media (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
-    background: var(--mbta-red);
+    background: var(--mbta-green);
     color: #fff;
   }
 }
@@ -114,7 +115,7 @@
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--abc-navy-deep);
+  background: var(--abc-navy-light);
   color: #fff;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
@@ -164,7 +165,7 @@
   font-family: var(--abc-font-mono);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--abc-navy-deep);
+  color: var(--abc-navy-light);
   min-width: 76px;
   text-align: center;
 }
@@ -211,7 +212,7 @@
   padding-top: var(--abc-space-md);
   font-size: var(--abc-font-size-lg);
   font-weight: 600;
-  color: var(--abc-navy-deep);
+  color: var(--abc-navy-light);
 }
 
 .abc-farecalc-line-final span:last-child {
@@ -224,6 +225,65 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--mbta-green);
+}
+
+/* ---- Perq yes/no also picks up the route theme ---- */
+.abc-farecalc [data-abc-perq-select].abc-active {
+  background: var(--abc-farecalc-accent);
+  border-color: var(--abc-farecalc-accent);
+}
+
+/* ---- Perq explainer + conditional advocacy line ---- */
+.abc-farecalc-perq-intro {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink);
+  line-height: 1.6;
+  margin: 0 0 var(--abc-space-md);
+  max-width: 62ch;
+}
+
+.abc-farecalc-perq-intro a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+}
+
+.abc-farecalc-perq-advocacy {
+  margin-top: var(--abc-space-md);
+}
+
+.abc-farecalc-perq-advocacy a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+}
+
+/* ---- Embed footer ---- */
+.abc-farecalc-embed {
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-md);
+  border-top: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-embed-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.abc-farecalc-embed-btn:hover {
+  color: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-embed-hint {
+  display: block;
+  margin-top: 4px;
 }
 
 /* Recommended card: fixed green, regardless of route theme */
