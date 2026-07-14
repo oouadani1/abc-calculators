@@ -556,23 +556,45 @@
    shared/styles/base.css. Prefix: .abc-farecalc-*
 
    Route buttons get MBTA's own line colors instead of the shared
-   ABC palette, since that's contextually accurate here: Commuter
-   Rail is a real, single MBTA line with an official color. Subway &
-   Bus spans multiple lines, so instead of picking one, hovering it
-   cycles through the real line colors and settles on ABC teal —
-   playful, but still grounded in MBTA's actual brand colors.
+   ABC palette: Commuter Rail is a real, single MBTA line with an
+   official color; Subway & Bus defaults to Red (MBTA's busiest
+   line) since it can't map to one line honestly. Whichever route is
+   selected becomes the accent color (--abc-farecalc-accent) for the
+   rest of the form's interactive controls — a deliberate "theme"
+   that ties every highlight back to the transit mode you picked.
+   "Recommended for you" stays a fixed green regardless of theme —
+   that's a distinct "this one wins" signal, not a route identity.
    ============================================================ */
 
 :root {
   --mbta-red: #DA291C;
+  --mbta-red-tint: #FBEAE9;
   --mbta-orange: #ED8B00;
   --mbta-green: #00843D;
+  --mbta-green-tint: #E5F3EB;
   --mbta-blue: #003DA5;
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
+  --mbta-purple-tint: #F3E7F0;
 }
 
-/* ---- Commuter Rail: solid purple, no animation needed ---- */
+.abc-farecalc {
+  --abc-farecalc-accent: var(--mbta-red);
+  --abc-farecalc-accent-tint: var(--mbta-red-tint);
+}
+
+.abc-farecalc.abc-theme-rail {
+  --abc-farecalc-accent: var(--mbta-purple);
+  --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+}
+
+/* ---- Bolder title, per the "make it memorable" direction ---- */
+.abc-farecalc-title {
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Route buttons ---- */
 .abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
@@ -580,77 +602,202 @@
   color: #fff;
 }
 
-/* ---- Subway & Bus: cycles through MBTA line colors on hover, settles on ABC teal ---- */
 .abc-farecalc-btn-subway.abc-active {
-  background: var(--abc-teal);
-  border-color: var(--abc-teal);
+  background: var(--mbta-red);
+  border-color: var(--mbta-red);
   color: #fff;
+}
+
+/* Swipe flourish: a wide hard-stop gradient strip slides across the
+   button on hover (not a color crossfade) and the animation is only
+   ever a hover preview — the persistent "selected" look is the solid
+   red above, not whatever frame the swipe happens to end on. */
+.abc-farecalc-btn-subway {
+  overflow: hidden;
+  position: relative;
 }
 
 .abc-farecalc-btn-subway:hover {
-  animation: abc-farecalc-line-cycle 1.2s ease forwards;
-  color: #fff;
   border-color: transparent;
+  color: #fff;
+  animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
-@keyframes abc-farecalc-line-cycle {
-  0%   { background: var(--mbta-red); }
-  20%  { background: var(--mbta-orange); }
-  40%  { background: var(--mbta-green); }
-  60%  { background: var(--mbta-blue); }
-  80%  { background: var(--mbta-silver); }
-  100% { background: var(--abc-teal); }
+@keyframes abc-farecalc-line-swipe {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
+      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
+      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
+      var(--mbta-red) 80%, var(--mbta-red) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
+      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
+      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
+      var(--mbta-red) 80%, var(--mbta-red) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
-    background: var(--abc-teal);
+    background: var(--mbta-red);
     color: #fff;
   }
 }
 
-/* ---- Result panel ---- */
-.abc-farecalc-result {
-  border: 2px solid var(--abc-teal);
-  background: var(--abc-teal-tint);
+/* ---- Day-per-week picker: bold chips ---- */
+.abc-farecalc-day-grid {
+  gap: 10px;
 }
 
-.abc-farecalc-result .abc-card-figure {
-  color: var(--abc-teal-deep);
+.abc-farecalc-day-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.1rem;
+  font-weight: 600;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: var(--abc-navy-deep);
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.abc-farecalc-stats {
-  display: flex;
-  gap: var(--abc-space-lg);
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
-  border-top: 1px solid rgba(19, 64, 114, 0.12);
+.abc-farecalc-day-btn:hover {
+  transform: translateY(-2px);
 }
 
-.abc-farecalc-stat {
-  flex: 1;
+.abc-farecalc-day-btn.abc-active {
+  background: var(--abc-farecalc-accent);
+}
+
+/* ---- Stepper (subsidy / pre-tax) ---- */
+.abc-farecalc-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--abc-farecalc-accent);
+  border-radius: var(--abc-radius-pill);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.abc-farecalc-stepper-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--abc-farecalc-accent);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.abc-farecalc-stepper-btn:hover {
+  filter: brightness(1.1);
+}
+
+.abc-farecalc-stepper-btn:active {
+  filter: brightness(0.95);
+}
+
+.abc-farecalc-stepper-value {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  min-width: 76px;
   text-align: center;
 }
 
-.abc-farecalc-stat-figure {
-  font-family: var(--abc-font-mono);
-  font-size: 1.75rem;
+/* ---- Zone select picks up the route theme too ---- */
+.abc-farecalc .abc-select:focus {
+  border-color: var(--abc-farecalc-accent);
+  box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
+}
+
+/* ---- Field hints: let them breathe, per feedback that they read
+   cramped when confined to a narrow column ---- */
+.abc-farecalc .abc-field-hint {
+  display: block;
+  max-width: none;
+  font-size: 0.85rem;
+  margin-top: 4px;
+}
+
+/* ---- Comparison cards: generous spacing, arithmetic layout ---- */
+.abc-farecalc-cards {
+  margin-top: var(--abc-space-xl);
+  gap: var(--abc-space-lg);
+}
+
+.abc-farecalc-cards .abc-card {
+  padding: var(--abc-space-xl) var(--abc-space-lg);
+}
+
+.abc-farecalc-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-line-final {
+  border-bottom: none;
+  border-top: 2px solid var(--abc-ink);
+  margin-top: 6px;
+  padding-top: var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
   font-weight: 600;
   color: var(--abc-navy-deep);
 }
 
-.abc-farecalc-stat-label {
-  font-size: 0.78rem;
-  color: var(--abc-ink-muted);
-  margin-top: 2px;
+.abc-farecalc-line-final span:last-child {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+}
+
+.abc-farecalc-savings-line {
+  margin: var(--abc-space-md) 0 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--mbta-green);
+}
+
+/* Recommended card: fixed green, regardless of route theme */
+.abc-farecalc-cards .abc-card-winner {
+  border-color: var(--mbta-green);
+  background: var(--mbta-green-tint);
+}
+
+.abc-farecalc-cards .abc-card-winner .abc-badge {
+  background: var(--mbta-green);
+}
+
+.abc-farecalc-cards .abc-card-winner .abc-farecalc-line-final span:last-child {
+  color: var(--mbta-green);
 }
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
     <p class="abc-eyebrow">A Better City</p>
-    <h2 class="abc-title">Is an MBTA monthly pass worth it for you?</h2>
-    <p class="abc-subtitle">Answer a few quick questions about your commute and we'll show you the real cost of a pass, and how often you'd need to ride for it to pay off.</p>
+    <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
+    <p class="abc-subtitle">Answer a few quick questions about your commute and we'll compare your real costs side by side.</p>
 
     <p class="abc-question">How do you get to work?</p>
     <div class="abc-input-row">
@@ -671,75 +818,105 @@
       </div>
     </div>
 
+    <p class="abc-question">How many days a week do you commute?</p>
+    <div class="abc-input-row">
+      <div class="abc-field" style="flex-basis: 100%;">
+        <div class="abc-choice-grid abc-farecalc-day-grid">
+          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="1">1</button>
+          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="2">2</button>
+          <button type="button" class="abc-farecalc-day-btn abc-active" data-abc-day-select="3">3</button>
+          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="4">4</button>
+          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="5">5</button>
+        </div>
+      </div>
+    </div>
+
     <p class="abc-question">Does your employer help pay for your commute?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
         <label>How much do they cover?</label>
-        <div class="abc-choice-grid">
-          <button type="button" class="abc-choice-button abc-active" data-abc-subsidy-preset="0">No</button>
-          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="25">A little</button>
-          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="50">Half</button>
-          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="75">Most</button>
-          <button type="button" class="abc-choice-button" data-abc-subsidy-preset="100">All of it</button>
+        <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
+          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+          <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
+          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
         </div>
+        <span class="abc-field-hint">In 5% steps. Set to 0% if they don't help.</span>
       </div>
     </div>
 
-    <p class="abc-question">Do you buy your pass before taxes come out?</p>
+    <p class="abc-question">How much do you save by paying pre-tax?</p>
     <div class="abc-input-row">
-      <div class="abc-field" style="flex-basis: 100%; max-width: 220px;">
-        <label for="abc-farecalc-perq">Your pre-tax savings</label>
-        <div class="abc-slider-row" style="gap: 6px;">
-          <input
-            id="abc-farecalc-perq"
-            class="abc-number-input"
-            type="number"
-            min="0"
-            max="100"
-            step="1"
-            value="25"
-            data-abc-perq-pct
-            style="max-width: 90px;"
-          />
-          <span>%</span>
+      <div class="abc-field" style="flex-basis: 100%;">
+        <div class="abc-farecalc-stepper" data-abc-perq-stepper>
+          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+          <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
+          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
         </div>
-        <span class="abc-field-hint">This is called Perq. If you're not sure, ask your HR team &mdash; most people save around 25%. Leave at 0 if you don't buy it pre-tax.</span>
+        <span class="abc-field-hint">This is called Perq &mdash; it lets you pay with pre-tax dollars. If you're not sure, ask your HR team; most people save around 25%. Set to 0% if you don't use it.</span>
       </div>
     </div>
 
-    <div class="abc-card abc-farecalc-result">
-      <h3>Your real cost, after subsidy and pre-tax savings</h3>
-      <div class="abc-card-figure" data-abc-real-cost>$0.00</div>
-      <ul>
-        <li data-abc-full-price></li>
-        <li data-abc-after-subsidy></li>
-        <li data-abc-after-pretax></li>
-      </ul>
+    <div class="abc-cards abc-farecalc-cards">
+      <div class="abc-card" data-abc-card-ride>
+        <span class="abc-badge" data-abc-badge>Recommended for you</span>
+        <h3>Pay-Per-Ride</h3>
 
-      <div class="abc-farecalc-stats">
-        <div class="abc-farecalc-stat">
-          <div class="abc-farecalc-stat-figure" data-abc-trips-week>0.0</div>
-          <div class="abc-farecalc-stat-label">trips a week to break even</div>
+        <div class="abc-farecalc-line">
+          <span>Total monthly cost</span>
+          <span data-abc-ride-total>$0.00</span>
         </div>
-        <div class="abc-farecalc-stat">
-          <div class="abc-farecalc-stat-figure" data-abc-days-week>0.0</div>
-          <div class="abc-farecalc-stat-label">days a week in the office</div>
+        <div class="abc-farecalc-line">
+          <span data-abc-ride-subsidy-label>Employer subsidy (0%)</span>
+          <span data-abc-ride-subsidy-amt>$0.00</span>
         </div>
+        <div class="abc-farecalc-line" data-abc-ride-pretax-row style="display: none;">
+          <span data-abc-ride-pretax-label>Pre-tax savings (0%)</span>
+          <span data-abc-ride-pretax-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-final">
+          <span>Your estimated monthly cost</span>
+          <span data-abc-ride-final>$0.00</span>
+        </div>
+        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
+          You save <span data-abc-savings-amt>$0</span> a year versus the other option.
+        </p>
       </div>
-    </div>
 
-    <div class="abc-callout">
-      <h4>Next steps</h4>
-      <p data-abc-takeaway></p>
+      <div class="abc-card" data-abc-card-pass>
+        <span class="abc-badge" data-abc-badge>Recommended for you</span>
+        <h3>Monthly Pass</h3>
+
+        <div class="abc-farecalc-line">
+          <span>Total monthly cost</span>
+          <span data-abc-pass-total>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line">
+          <span data-abc-pass-subsidy-label>Employer subsidy (0%)</span>
+          <span data-abc-pass-subsidy-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-pass-pretax-row style="display: none;">
+          <span data-abc-pass-pretax-label>Pre-tax savings (0%)</span>
+          <span data-abc-pass-pretax-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-final">
+          <span>Your estimated monthly cost</span>
+          <span data-abc-pass-final>$0.00</span>
+        </div>
+        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
+          You save <span data-abc-savings-amt>$0</span> a year versus the other option.
+        </p>
+      </div>
     </div>
 
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
         Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
-        percentage isn't an official published number &mdash; it's an estimate
-        you can adjust to match your own tax rate. Fares change over time,
-        so treat this as a helpful estimate, not a guarantee.
+        percentage isn't an official published number &mdash; it's an
+        estimate you can adjust to match your own tax rate. Employer
+        subsidy and pre-tax savings are applied to both options the same
+        way. Fares change over time, so treat this as a helpful estimate,
+        not a guarantee.
       </div>
     </details>
   </div>
@@ -794,11 +971,12 @@ function abcFormatPercent(value) {
    Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
 
-   Rebuilt to match the shape of ABC's original Calconic tool: three
-   inputs (zone, employer subsidy, pre-tax %), no trip-count input.
-   The tool reports your real cost and the breakeven pace (trips/days
-   per week) — it does not ask how often you personally ride, so it
-   can't tell you whether the pass "wins" for you specifically.
+   Architecture note: this tool now mirrors Jawnt's own comparison-card
+   pattern (the original design reference from the project brief) rather
+   than ABC's older single-panel Calconic tool. That means trip frequency
+   IS an input again — asked as "days per week you commute" rather than
+   raw one-way trips — because a real side-by-side dollar comparison
+   needs usage data; you can't compare two totals without it.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -823,22 +1001,18 @@ const MBTA_CONFIG = {
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
-  // Perq (MBTA's pre-tax commuter benefit program). ABC's original tool
-  // exposed this as a plain editable percentage (defaulting to 25%), not a
-  // toggle — matched here. No official MBTA-published rate; this is always
-  // an estimate the user can tune.
-  perq: {
-    defaultPct: 25,
-    source: "https://www.mbta.com/pass-program/perq/perq-employers",
-  },
+  weeksPerMonth: 4.345,
+  daysPerWeekOptions: [1, 2, 3, 4, 5],
+  defaultDaysPerWeek: 3,
 
-  subsidyPresets: [
-    { pct: 0, label: "No" },
-    { pct: 25, label: "A little" },
-    { pct: 50, label: "Half" },
-    { pct: 75, label: "Most" },
-    { pct: 100, label: "All of it" },
-  ],
+  // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
+  // BOTH the pass and pay-per-ride totals — matching how Jawnt's own tool
+  // treats these benefits (they're transit-benefit-account features, not
+  // pass-specific ones), not the pass-only assumption used previously.
+  subsidyStepPct: 5,
+  defaultSubsidyPct: 0,
+  perqStepPct: 5,
+  defaultPerqPct: 0,
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -879,45 +1053,37 @@ function mbtaGetPassOption(config, passId) {
   return config.passOptions.find((p) => p.id === passId);
 }
 
-/** Cost after employer subsidy only. */
-function mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct) {
-  return monthlyPrice * (1 - subsidyPct / 100);
+/** Total monthly pay-per-ride cost at a given commute frequency, full fare. */
+function mbtaCalcPayPerRideTotal(oneWayFare, daysPerWeek, weeksPerMonth) {
+  return oneWayFare * 2 * daysPerWeek * weeksPerMonth;
 }
 
-/** Real cost after subsidy, then pre-tax savings on top — matches ABC's original tool's math exactly. */
-function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, perqPct) {
-  const afterSubsidy = mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct);
-  return afterSubsidy * (1 - perqPct / 100);
+/** Applies subsidy, then pre-tax savings, to any monthly total. Returns each step. */
+function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
+  const subsidyAmt = total * (subsidyPct / 100);
+  const afterSubsidy = total - subsidyAmt;
+  const pretaxAmt = afterSubsidy * (perqPct / 100);
+  const finalCost = afterSubsidy - pretaxAmt;
+  return { total, subsidyAmt, afterSubsidy, pretaxAmt, finalCost };
 }
 
-/** One-way trips per week needed for the pass to break even. Fractional on purpose — this is a pace, not a hard count. */
-function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, oneWayFare) {
-  if (oneWayFare <= 0) return 0;
-  const tripsPerMonth = effectivePassCost / oneWayFare;
-  return tripsPerMonth / 4.345; // avg weeks/month
-}
-
-/** Each in-office day = one round trip = two one-way trips. */
-function mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek) {
-  return tripsPerWeek / 2;
-}
-
-/** Bundles every derived number the UI needs for one pass option + inputs. */
-function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
+/** Bundles every derived number the UI needs for both options + inputs. */
+function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
-  const afterSubsidy = mbtaCalcSubsidizedCost(pass.monthlyPrice, subsidyPct);
-  const effectivePassCost = mbtaCalcEffectivePassCost(pass.monthlyPrice, subsidyPct, perqPct);
-  const tripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, pass.oneWayFare);
-  const daysPerWeek = mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek);
+  const rideTotal = mbtaCalcPayPerRideTotal(pass.oneWayFare, daysPerWeek, config.weeksPerMonth);
+
+  const passBreakdown = mbtaCalcBreakdown(pass.monthlyPrice, subsidyPct, perqPct);
+  const rideBreakdown = mbtaCalcBreakdown(rideTotal, subsidyPct, perqPct);
+
+  const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
+  const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
 
   return {
     pass,
-    afterSubsidy,
-    effectivePassCost,
-    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
-    pretaxDollarSavings: afterSubsidy - effectivePassCost,
-    tripsPerWeek,
-    daysPerWeek,
+    passBreakdown,
+    rideBreakdown,
+    winner,
+    annualSavings: monthlyDiff * 12,
   };
 }
 
@@ -925,20 +1091,19 @@ function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
    No math happens in this section. Single live-updating view —
-   no steps, no submit button, per the project's original brief.
+   no steps, no submit button.
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
   let routeType = "subway"; // "subway" | "rail"
+  let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
+  let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqPct = MBTA_CONFIG.defaultPerqPct;
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
-
-  const subsidyButtons = rootEl.querySelectorAll("[data-abc-subsidy-preset]");
-  let subsidyPct = 0;
-
-  const perqInput = rootEl.querySelector("[data-abc-perq-pct]");
+  const dayButtons = rootEl.querySelectorAll("[data-abc-day-select]");
 
   // Populate the rail zone dropdown from config (everything except linkpass).
   MBTA_CONFIG.passOptions
@@ -959,46 +1124,85 @@ function mbtaInitCalculator(rootEl) {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       railZoneField.style.display = routeType === "rail" ? "flex" : "none";
-      rootEl.classList.toggle("abc-farecalc-rail-active", routeType === "rail");
+      rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
       render();
     });
   });
 
-  subsidyButtons.forEach((btn) => {
+  dayButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      subsidyPct = Number(btn.dataset.abcSubsidyPreset);
-      subsidyButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      daysPerWeek = Number(btn.dataset.abcDaySelect);
+      dayButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
   });
 
   railZoneSelect.addEventListener("change", render);
-  perqInput.addEventListener("input", render);
+
+  // Generic stepper wiring: works for both the subsidy and pre-tax controls.
+  function initStepper(rootAttr, step, getValue, setValue) {
+    const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
+    const valueEl = stepperEl.querySelector("[data-abc-stepper-value]");
+    const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
+    const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
+
+    function paint() {
+      valueEl.textContent = getValue();
+    }
+    minusBtn.addEventListener("click", () => {
+      setValue(Math.max(0, getValue() - step));
+      paint();
+      render();
+    });
+    plusBtn.addEventListener("click", () => {
+      setValue(Math.min(100, getValue() + step));
+      paint();
+      render();
+    });
+    paint();
+  }
+
+  initStepper(
+    "data-abc-subsidy-stepper",
+    MBTA_CONFIG.subsidyStepPct,
+    () => subsidyPct,
+    (v) => { subsidyPct = v; }
+  );
+  initStepper(
+    "data-abc-perq-stepper",
+    MBTA_CONFIG.perqStepPct,
+    () => perqPct,
+    (v) => { perqPct = v; }
+  );
+
+  function paintCard(prefix, breakdown, subsidyPctVal, perqPctVal) {
+    rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
+    rootEl.querySelector(`[data-abc-${prefix}-subsidy-label]`).textContent = `Employer subsidy (${subsidyPctVal}%)`;
+    rootEl.querySelector(`[data-abc-${prefix}-subsidy-amt]`).textContent = subsidyPctVal > 0 ? `-${abcFormatCurrency(breakdown.subsidyAmt)}` : abcFormatCurrency(0);
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-row]`).style.display = perqPctVal > 0 ? "flex" : "none";
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-label]`).textContent = `Pre-tax savings (${perqPctVal}%)`;
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-amt]`).textContent = `-${abcFormatCurrency(breakdown.pretaxAmt)}`;
+    rootEl.querySelector(`[data-abc-${prefix}-final]`).textContent = abcFormatCurrency(breakdown.finalCost);
+  }
 
   function render() {
-    const perqPct = Math.min(100, Math.max(0, Number(perqInput.value) || 0));
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, perqPct);
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, perqPct);
 
-    rootEl.querySelector("[data-abc-real-cost]").textContent = abcFormatCurrency(result.effectivePassCost);
-    rootEl.querySelector("[data-abc-full-price]").textContent =
-      `Full price: ${abcFormatCurrencyWhole(result.pass.monthlyPrice)} a month`;
-    rootEl.querySelector("[data-abc-after-subsidy]").textContent =
-      subsidyPct > 0
-        ? `After your employer's help: ${abcFormatCurrency(result.afterSubsidy)} a month`
-        : `Your employer isn't covering any of this`;
-    rootEl.querySelector("[data-abc-after-pretax]").textContent =
-      perqPct > 0
-        ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
-        : `Add a pre-tax percentage above if you buy this through Perq`;
+    paintCard("ride", result.rideBreakdown, subsidyPct, perqPct);
+    paintCard("pass", result.passBreakdown, subsidyPct, perqPct);
 
-    rootEl.querySelector("[data-abc-trips-week]").textContent = result.tripsPerWeek.toFixed(1);
-    rootEl.querySelector("[data-abc-days-week]").textContent = result.daysPerWeek.toFixed(1);
+    const rideCard = rootEl.querySelector("[data-abc-card-ride]");
+    const passCard = rootEl.querySelector("[data-abc-card-pass]");
+    rideCard.classList.toggle("abc-card-winner", result.winner === "ride");
+    passCard.classList.toggle("abc-card-winner", result.winner === "pass");
+    rideCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "ride" ? "visible" : "hidden";
+    passCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "pass" ? "visible" : "hidden";
 
-    const takeawayEl = rootEl.querySelector("[data-abc-takeaway]");
-    const days = result.daysPerWeek.toFixed(1);
-    takeawayEl.textContent =
-      `If you're commuting in about ${days} days a week or more, this pass is worth it. ` +
-      `Fewer days than that, and paying per ride will usually cost less.`;
+    const winnerCard = result.winner === "ride" ? rideCard : passCard;
+    const loserCard = result.winner === "ride" ? passCard : rideCard;
+    winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
+    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
+    loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
   render();

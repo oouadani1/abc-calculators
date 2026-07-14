@@ -3,11 +3,12 @@
    Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
 
-   Rebuilt to match the shape of ABC's original Calconic tool: three
-   inputs (zone, employer subsidy, pre-tax %), no trip-count input.
-   The tool reports your real cost and the breakeven pace (trips/days
-   per week) — it does not ask how often you personally ride, so it
-   can't tell you whether the pass "wins" for you specifically.
+   Architecture note: this tool now mirrors Jawnt's own comparison-card
+   pattern (the original design reference from the project brief) rather
+   than ABC's older single-panel Calconic tool. That means trip frequency
+   IS an input again — asked as "days per week you commute" rather than
+   raw one-way trips — because a real side-by-side dollar comparison
+   needs usage data; you can't compare two totals without it.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -32,22 +33,18 @@ const MBTA_CONFIG = {
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
-  // Perq (MBTA's pre-tax commuter benefit program). ABC's original tool
-  // exposed this as a plain editable percentage (defaulting to 25%), not a
-  // toggle — matched here. No official MBTA-published rate; this is always
-  // an estimate the user can tune.
-  perq: {
-    defaultPct: 25,
-    source: "https://www.mbta.com/pass-program/perq/perq-employers",
-  },
+  weeksPerMonth: 4.345,
+  daysPerWeekOptions: [1, 2, 3, 4, 5],
+  defaultDaysPerWeek: 3,
 
-  subsidyPresets: [
-    { pct: 0, label: "No" },
-    { pct: 25, label: "A little" },
-    { pct: 50, label: "Half" },
-    { pct: 75, label: "Most" },
-    { pct: 100, label: "All of it" },
-  ],
+  // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
+  // BOTH the pass and pay-per-ride totals — matching how Jawnt's own tool
+  // treats these benefits (they're transit-benefit-account features, not
+  // pass-specific ones), not the pass-only assumption used previously.
+  subsidyStepPct: 5,
+  defaultSubsidyPct: 0,
+  perqStepPct: 5,
+  defaultPerqPct: 0,
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -88,45 +85,37 @@ function mbtaGetPassOption(config, passId) {
   return config.passOptions.find((p) => p.id === passId);
 }
 
-/** Cost after employer subsidy only. */
-function mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct) {
-  return monthlyPrice * (1 - subsidyPct / 100);
+/** Total monthly pay-per-ride cost at a given commute frequency, full fare. */
+function mbtaCalcPayPerRideTotal(oneWayFare, daysPerWeek, weeksPerMonth) {
+  return oneWayFare * 2 * daysPerWeek * weeksPerMonth;
 }
 
-/** Real cost after subsidy, then pre-tax savings on top — matches ABC's original tool's math exactly. */
-function mbtaCalcEffectivePassCost(monthlyPrice, subsidyPct, perqPct) {
-  const afterSubsidy = mbtaCalcSubsidizedCost(monthlyPrice, subsidyPct);
-  return afterSubsidy * (1 - perqPct / 100);
+/** Applies subsidy, then pre-tax savings, to any monthly total. Returns each step. */
+function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
+  const subsidyAmt = total * (subsidyPct / 100);
+  const afterSubsidy = total - subsidyAmt;
+  const pretaxAmt = afterSubsidy * (perqPct / 100);
+  const finalCost = afterSubsidy - pretaxAmt;
+  return { total, subsidyAmt, afterSubsidy, pretaxAmt, finalCost };
 }
 
-/** One-way trips per week needed for the pass to break even. Fractional on purpose — this is a pace, not a hard count. */
-function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, oneWayFare) {
-  if (oneWayFare <= 0) return 0;
-  const tripsPerMonth = effectivePassCost / oneWayFare;
-  return tripsPerMonth / 4.345; // avg weeks/month
-}
-
-/** Each in-office day = one round trip = two one-way trips. */
-function mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek) {
-  return tripsPerWeek / 2;
-}
-
-/** Bundles every derived number the UI needs for one pass option + inputs. */
-function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
+/** Bundles every derived number the UI needs for both options + inputs. */
+function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
-  const afterSubsidy = mbtaCalcSubsidizedCost(pass.monthlyPrice, subsidyPct);
-  const effectivePassCost = mbtaCalcEffectivePassCost(pass.monthlyPrice, subsidyPct, perqPct);
-  const tripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, pass.oneWayFare);
-  const daysPerWeek = mbtaCalcBreakEvenDaysPerWeek(tripsPerWeek);
+  const rideTotal = mbtaCalcPayPerRideTotal(pass.oneWayFare, daysPerWeek, config.weeksPerMonth);
+
+  const passBreakdown = mbtaCalcBreakdown(pass.monthlyPrice, subsidyPct, perqPct);
+  const rideBreakdown = mbtaCalcBreakdown(rideTotal, subsidyPct, perqPct);
+
+  const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
+  const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
 
   return {
     pass,
-    afterSubsidy,
-    effectivePassCost,
-    subsidyDollarSavings: pass.monthlyPrice - afterSubsidy,
-    pretaxDollarSavings: afterSubsidy - effectivePassCost,
-    tripsPerWeek,
-    daysPerWeek,
+    passBreakdown,
+    rideBreakdown,
+    winner,
+    annualSavings: monthlyDiff * 12,
   };
 }
 
@@ -134,20 +123,19 @@ function mbtaCalcAll(config, passId, subsidyPct, perqPct) {
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
    No math happens in this section. Single live-updating view —
-   no steps, no submit button, per the project's original brief.
+   no steps, no submit button.
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
   let routeType = "subway"; // "subway" | "rail"
+  let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
+  let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqPct = MBTA_CONFIG.defaultPerqPct;
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
-
-  const subsidyButtons = rootEl.querySelectorAll("[data-abc-subsidy-preset]");
-  let subsidyPct = 0;
-
-  const perqInput = rootEl.querySelector("[data-abc-perq-pct]");
+  const dayButtons = rootEl.querySelectorAll("[data-abc-day-select]");
 
   // Populate the rail zone dropdown from config (everything except linkpass).
   MBTA_CONFIG.passOptions
@@ -168,46 +156,85 @@ function mbtaInitCalculator(rootEl) {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       railZoneField.style.display = routeType === "rail" ? "flex" : "none";
-      rootEl.classList.toggle("abc-farecalc-rail-active", routeType === "rail");
+      rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
       render();
     });
   });
 
-  subsidyButtons.forEach((btn) => {
+  dayButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      subsidyPct = Number(btn.dataset.abcSubsidyPreset);
-      subsidyButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      daysPerWeek = Number(btn.dataset.abcDaySelect);
+      dayButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
   });
 
   railZoneSelect.addEventListener("change", render);
-  perqInput.addEventListener("input", render);
+
+  // Generic stepper wiring: works for both the subsidy and pre-tax controls.
+  function initStepper(rootAttr, step, getValue, setValue) {
+    const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
+    const valueEl = stepperEl.querySelector("[data-abc-stepper-value]");
+    const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
+    const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
+
+    function paint() {
+      valueEl.textContent = getValue();
+    }
+    minusBtn.addEventListener("click", () => {
+      setValue(Math.max(0, getValue() - step));
+      paint();
+      render();
+    });
+    plusBtn.addEventListener("click", () => {
+      setValue(Math.min(100, getValue() + step));
+      paint();
+      render();
+    });
+    paint();
+  }
+
+  initStepper(
+    "data-abc-subsidy-stepper",
+    MBTA_CONFIG.subsidyStepPct,
+    () => subsidyPct,
+    (v) => { subsidyPct = v; }
+  );
+  initStepper(
+    "data-abc-perq-stepper",
+    MBTA_CONFIG.perqStepPct,
+    () => perqPct,
+    (v) => { perqPct = v; }
+  );
+
+  function paintCard(prefix, breakdown, subsidyPctVal, perqPctVal) {
+    rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
+    rootEl.querySelector(`[data-abc-${prefix}-subsidy-label]`).textContent = `Employer subsidy (${subsidyPctVal}%)`;
+    rootEl.querySelector(`[data-abc-${prefix}-subsidy-amt]`).textContent = subsidyPctVal > 0 ? `-${abcFormatCurrency(breakdown.subsidyAmt)}` : abcFormatCurrency(0);
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-row]`).style.display = perqPctVal > 0 ? "flex" : "none";
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-label]`).textContent = `Pre-tax savings (${perqPctVal}%)`;
+    rootEl.querySelector(`[data-abc-${prefix}-pretax-amt]`).textContent = `-${abcFormatCurrency(breakdown.pretaxAmt)}`;
+    rootEl.querySelector(`[data-abc-${prefix}-final]`).textContent = abcFormatCurrency(breakdown.finalCost);
+  }
 
   function render() {
-    const perqPct = Math.min(100, Math.max(0, Number(perqInput.value) || 0));
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), subsidyPct, perqPct);
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, perqPct);
 
-    rootEl.querySelector("[data-abc-real-cost]").textContent = abcFormatCurrency(result.effectivePassCost);
-    rootEl.querySelector("[data-abc-full-price]").textContent =
-      `Full price: ${abcFormatCurrencyWhole(result.pass.monthlyPrice)} a month`;
-    rootEl.querySelector("[data-abc-after-subsidy]").textContent =
-      subsidyPct > 0
-        ? `After your employer's help: ${abcFormatCurrency(result.afterSubsidy)} a month`
-        : `Your employer isn't covering any of this`;
-    rootEl.querySelector("[data-abc-after-pretax]").textContent =
-      perqPct > 0
-        ? `Buying pre-tax saves you about ${abcFormatCurrency(result.pretaxDollarSavings)} more`
-        : `Add a pre-tax percentage above if you buy this through Perq`;
+    paintCard("ride", result.rideBreakdown, subsidyPct, perqPct);
+    paintCard("pass", result.passBreakdown, subsidyPct, perqPct);
 
-    rootEl.querySelector("[data-abc-trips-week]").textContent = result.tripsPerWeek.toFixed(1);
-    rootEl.querySelector("[data-abc-days-week]").textContent = result.daysPerWeek.toFixed(1);
+    const rideCard = rootEl.querySelector("[data-abc-card-ride]");
+    const passCard = rootEl.querySelector("[data-abc-card-pass]");
+    rideCard.classList.toggle("abc-card-winner", result.winner === "ride");
+    passCard.classList.toggle("abc-card-winner", result.winner === "pass");
+    rideCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "ride" ? "visible" : "hidden";
+    passCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "pass" ? "visible" : "hidden";
 
-    const takeawayEl = rootEl.querySelector("[data-abc-takeaway]");
-    const days = result.daysPerWeek.toFixed(1);
-    takeawayEl.textContent =
-      `If you're commuting in about ${days} days a week or more, this pass is worth it. ` +
-      `Fewer days than that, and paying per ride will usually cost less.`;
+    const winnerCard = result.winner === "ride" ? rideCard : passCard;
+    const loserCard = result.winner === "ride" ? passCard : rideCard;
+    winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
+    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
+    loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
   render();
