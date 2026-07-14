@@ -174,6 +174,17 @@ function mbtaInitCalculator(rootEl) {
 
   railZoneSelect.addEventListener("change", render);
 
+  // "What is Perq?" toggle: sits beside the question instead of a
+  // block-level accordion between the question and the yes/no buttons.
+  const perqInfoToggle = rootEl.querySelector("[data-abc-perq-info-toggle]");
+  const perqInfoBody = rootEl.querySelector("[data-abc-perq-info-body]");
+  perqInfoToggle.addEventListener("click", () => {
+    const isOpen = perqInfoBody.style.display !== "none";
+    perqInfoBody.style.display = isOpen ? "none" : "block";
+    perqInfoToggle.setAttribute("aria-expanded", String(!isOpen));
+    perqInfoToggle.textContent = isOpen ? "What is Perq?" : "Hide";
+  });
+
   // Perq yes/no: only reveals the stepper (and only counts toward the
   // math) when "yes" is picked. "No" shows a short advocacy line instead.
   const perqButtons = rootEl.querySelectorAll("[data-abc-perq-select]");

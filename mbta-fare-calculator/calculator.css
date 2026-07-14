@@ -54,6 +54,52 @@
   max-width: none;
 }
 
+/* Tighter vertical rhythm than the shared default — this tool packs in
+   more questions than the base pattern assumed, so section-to-section
+   gaps are pulled in to keep the whole thing closer to one scroll. */
+.abc-farecalc .abc-question {
+  margin: var(--abc-space-md) 0 var(--abc-space-sm);
+}
+
+.abc-farecalc .abc-question:first-of-type {
+  margin-top: 0;
+}
+
+.abc-farecalc .abc-input-row {
+  margin-bottom: var(--abc-space-sm);
+}
+
+/* Question + inline "what is this?" toggle share a row instead of the
+   toggle sitting on its own line between the question and the answer. */
+.abc-farecalc-question-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--abc-space-md);
+  margin: var(--abc-space-md) 0 var(--abc-space-sm);
+}
+
+.abc-farecalc-question-row .abc-question {
+  margin: 0;
+}
+
+.abc-farecalc-info-toggle {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--abc-farecalc-accent);
+  cursor: pointer;
+  padding: 0;
+  white-space: nowrap;
+}
+
+.abc-farecalc-info-toggle:hover {
+  text-decoration: underline;
+}
+
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
@@ -235,24 +281,35 @@
   margin-top: var(--abc-space-md);
 }
 
-/* ---- Comparison cards: generous spacing, arithmetic layout ---- */
+/* ---- Comparison cards: arithmetic layout. Stacked by default — the
+   real embed target (abettercity.org's content column) measures well
+   under 480px even on a wide desktop browser, so side-by-side is the
+   exception, enabled only once the container actually has room for it
+   (see the @container rule below), not the default assumption. ---- */
 .abc-farecalc-cards {
-  margin-top: var(--abc-space-xl);
-  gap: var(--abc-space-lg);
+  margin-top: var(--abc-space-lg);
+  gap: var(--abc-space-md);
+  flex-direction: column;
 }
 
 .abc-farecalc-cards .abc-card {
-  padding: var(--abc-space-xl) var(--abc-space-lg);
+  padding: var(--abc-space-lg) var(--abc-space-md);
 }
 
 .abc-farecalc-line {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 10px 0;
+  padding: 8px 0;
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
   border-bottom: 1px solid var(--abc-border);
+}
+
+@container abc-calc (min-width: 560px) {
+  .abc-farecalc-cards {
+    flex-direction: row;
+  }
 }
 
 .abc-farecalc-line-final {
@@ -290,15 +347,12 @@
   border-color: var(--mbta-red);
 }
 
-/* ---- Perq explainer accordion + conditional advocacy line ---- */
-.abc-farecalc-perq-details {
-  margin-bottom: var(--abc-space-md);
-}
-
+/* ---- Perq explainer (toggled by .abc-farecalc-info-toggle) + advocacy line ---- */
 .abc-farecalc-perq-intro {
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink);
   line-height: 1.6;
+  margin-bottom: var(--abc-space-md);
 }
 
 .abc-farecalc-perq-intro a,
@@ -350,8 +404,13 @@
   color: var(--mbta-green);
 }
 
-/* ---- Mobile ---- */
-@media (max-width: 480px) {
+/* ---- Narrow layout: keyed off the actual container width (see
+   container-type on .abc-calc in base.css), so this applies whenever
+   this widget is rendered narrow — a phone screen, or a narrow desktop
+   column like abettercity.org's real content area — not just small
+   browser viewports. A plain @media fallback covers browsers old
+   enough to not support container queries at all. ---- */
+@container abc-calc (max-width: 480px) {
   .abc-farecalc-title {
     font-size: 1.4rem;
   }
@@ -371,11 +430,30 @@
     width: 48px;
     height: 48px;
   }
-  .abc-farecalc-cards {
-    gap: var(--abc-space-md);
+  .abc-farecalc-line-final span:last-child {
+    font-size: 1.35rem;
   }
-  .abc-farecalc-cards .abc-card {
-    padding: var(--abc-space-lg) var(--abc-space-md);
+}
+
+@media (max-width: 480px) {
+  .abc-farecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-farecalc-day-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+  .abc-farecalc-day-grid {
+    gap: 8px;
+  }
+  .abc-farecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-farecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
   }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;

@@ -70,16 +70,16 @@
       </div>
     </div>
 
-    <p class="abc-question">Does your employer offer Perq?</p>
+    <div class="abc-farecalc-question-row">
+      <p class="abc-question">Does your employer offer Perq?</p>
+      <button type="button" class="abc-farecalc-info-toggle" data-abc-perq-info-toggle aria-expanded="false">What is Perq?</button>
+    </div>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
-        <details class="abc-details abc-farecalc-perq-details">
-          <summary>What is Perq?</summary>
-          <div class="abc-details-body abc-farecalc-perq-intro">
-            If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
-            <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
-          </div>
-        </details>
+        <div class="abc-farecalc-perq-intro" data-abc-perq-info-body style="display: none;">
+          If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
+          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
+        </div>
 
         <div class="abc-choice-grid">
           <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
