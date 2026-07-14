@@ -557,13 +557,18 @@
 
    Route buttons get MBTA's own line colors instead of the shared
    ABC palette: Commuter Rail is a real, single MBTA line with an
-   official color; Subway & Bus defaults to Red (MBTA's busiest
-   line) since it can't map to one line honestly. Whichever route is
+   official color; Subway & Bus uses MBTA Blue. Whichever route is
    selected becomes the accent color (--abc-farecalc-accent) for the
    rest of the form's interactive controls — a deliberate "theme"
    that ties every highlight back to the transit mode you picked.
-   "Recommended for you" stays a fixed green regardless of theme —
-   that's a distinct "this one wins" signal, not a route identity.
+   "Recommended for you" stays a fixed green, and Perq "No" stays a
+   fixed red, regardless of theme — those are distinct signals
+   ("this one wins" / "you said no"), not route identity.
+
+   Spacing: every field-hint, every conditional-reveal block, and
+   every question-to-question gap uses the same --abc-space-* value
+   consistently — see the "Spacing rhythm" section below before
+   adding a new one-off margin.
    ============================================================ */
 
 :root {
@@ -573,15 +578,15 @@
   --mbta-green: #00843D;
   --mbta-green-tint: #E5F3EB;
   --mbta-blue: #003DA5;
+  --mbta-blue-tint: #E6ECF8;
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
-  --abc-navy-light: #46C3D3; /* ABC's lighter blue, used for non-header navy fills */
 }
 
 .abc-farecalc {
-  --abc-farecalc-accent: var(--mbta-green);
-  --abc-farecalc-accent-tint: var(--mbta-green-tint);
+  --abc-farecalc-accent: var(--mbta-blue);
+  --abc-farecalc-accent-tint: var(--mbta-blue-tint);
 }
 
 .abc-farecalc.abc-theme-rail {
@@ -595,6 +600,13 @@
   letter-spacing: -0.02em;
 }
 
+/* Full-width text: nothing in this tool should wrap early inside a
+   narrow measure — let the subtitle and Perq copy use the whole card. */
+.abc-farecalc .abc-subtitle,
+.abc-farecalc-perq-intro {
+  max-width: none;
+}
+
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
@@ -604,15 +616,15 @@
 }
 
 .abc-farecalc-btn-subway.abc-active {
-  background: var(--mbta-green);
-  border-color: var(--mbta-green);
+  background: var(--mbta-blue);
+  border-color: var(--mbta-blue);
   color: #fff;
 }
 
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
-   green above, not whatever frame the swipe happens to end on. */
+   blue above, not whatever frame the swipe happens to end on. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
@@ -629,9 +641,9 @@
     background-image: linear-gradient(to right,
       var(--mbta-red) 0%, var(--mbta-red) 20%,
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
+      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
     background-size: 500% 100%;
     background-position: 0% 0%;
   }
@@ -639,9 +651,9 @@
     background-image: linear-gradient(to right,
       var(--mbta-red) 0%, var(--mbta-red) 20%,
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
+      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
     background-size: 500% 100%;
     background-position: 100% 0%;
   }
@@ -650,7 +662,7 @@
 @media (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
-    background: var(--mbta-green);
+    background: var(--mbta-blue);
     color: #fff;
   }
 }
@@ -668,7 +680,7 @@
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--abc-navy-light);
+  background: var(--abc-navy-deep);
   color: #fff;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
@@ -682,7 +694,8 @@
   background: var(--abc-farecalc-accent);
 }
 
-/* ---- Stepper (subsidy / pre-tax) ---- */
+/* ---- Stepper (subsidy / pre-tax): +/- buttons flank a real
+   <input type=number> so an exact value can be typed directly. ---- */
 .abc-farecalc-stepper {
   display: inline-flex;
   align-items: center;
@@ -704,6 +717,7 @@
   color: #fff;
   cursor: pointer;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .abc-farecalc-stepper-btn:hover {
@@ -714,13 +728,44 @@
   filter: brightness(0.95);
 }
 
-.abc-farecalc-stepper-value {
+.abc-farecalc-stepper-value-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  height: 44px;
+  gap: 2px;
+}
+
+.abc-farecalc-stepper-input {
   font-family: var(--abc-font-mono);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--abc-navy-light);
-  min-width: 76px;
-  text-align: center;
+  color: var(--abc-navy-deep);
+  text-align: right;
+  width: 3ch;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.abc-farecalc-stepper-input::-webkit-inner-spin-button,
+.abc-farecalc-stepper-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.abc-farecalc-stepper-input:focus {
+  color: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-stepper-percent {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
 }
 
 /* ---- Zone select picks up the route theme too ---- */
@@ -729,13 +774,18 @@
   box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
 }
 
-/* ---- Field hints: let them breathe, per feedback that they read
-   cramped when confined to a narrow column ---- */
+/* ---- Spacing rhythm: one value for "hint below a control," one
+   value for "conditionally-revealed block below a control." Applied
+   the same way everywhere it occurs in this tool. ---- */
 .abc-farecalc .abc-field-hint {
   display: block;
   max-width: none;
   font-size: 0.85rem;
-  margin-top: 4px;
+  margin-top: var(--abc-space-md);
+}
+
+.abc-farecalc-reveal {
+  margin-top: var(--abc-space-md);
 }
 
 /* ---- Comparison cards: generous spacing, arithmetic layout ---- */
@@ -765,7 +815,7 @@
   padding-top: var(--abc-space-md);
   font-size: var(--abc-font-size-lg);
   font-weight: 600;
-  color: var(--abc-navy-light);
+  color: var(--abc-navy-deep);
 }
 
 .abc-farecalc-line-final span:last-child {
@@ -780,22 +830,32 @@
   color: var(--mbta-green);
 }
 
-/* ---- Perq yes/no also picks up the route theme ---- */
+/* ---- Perq yes/no: "Yes" follows the route theme, "No" is a fixed
+   red — a consistent "you opted out" signal, not a route color. ---- */
 .abc-farecalc [data-abc-perq-select].abc-active {
   background: var(--abc-farecalc-accent);
   border-color: var(--abc-farecalc-accent);
+  color: #fff;
 }
 
-/* ---- Perq explainer + conditional advocacy line ---- */
+.abc-farecalc [data-abc-perq-select="no"].abc-active {
+  background: var(--mbta-red);
+  border-color: var(--mbta-red);
+}
+
+/* ---- Perq explainer accordion + conditional advocacy line ---- */
+.abc-farecalc-perq-details {
+  margin-bottom: var(--abc-space-md);
+}
+
 .abc-farecalc-perq-intro {
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink);
   line-height: 1.6;
-  margin: 0 0 var(--abc-space-md);
-  max-width: 62ch;
 }
 
-.abc-farecalc-perq-intro a {
+.abc-farecalc-perq-intro a,
+.abc-farecalc-perq-advocacy a {
   color: var(--abc-farecalc-accent);
   font-weight: 600;
 }
@@ -804,39 +864,29 @@
   margin-top: var(--abc-space-md);
 }
 
-.abc-farecalc-perq-advocacy a {
-  color: var(--abc-farecalc-accent);
-  font-weight: 600;
-}
-
-/* ---- Embed footer ---- */
+/* ---- Embed footer: one simple rounded button ---- */
 .abc-farecalc-embed {
   margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-md);
+  padding-top: var(--abc-space-lg);
   border-top: 1px solid var(--abc-border);
+  text-align: center;
 }
 
 .abc-farecalc-embed-btn {
-  background: none;
-  border: none;
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--abc-ink-muted);
+  color: var(--abc-navy-deep);
+  background: #fff;
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  padding: 10px 20px;
   cursor: pointer;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .abc-farecalc-embed-btn:hover {
+  border-color: var(--abc-farecalc-accent);
   color: var(--abc-farecalc-accent);
-}
-
-.abc-farecalc-embed-hint {
-  display: block;
-  margin-top: 4px;
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -851,6 +901,38 @@
 
 .abc-farecalc-cards .abc-card-winner .abc-farecalc-line-final span:last-child {
   color: var(--mbta-green);
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 480px) {
+  .abc-farecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-farecalc-day-btn {
+    width: 42px;
+    height: 42px;
+    font-size: 1rem;
+  }
+  .abc-farecalc-day-grid {
+    gap: 8px;
+  }
+  .abc-farecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-farecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .abc-farecalc-cards {
+    gap: var(--abc-space-md);
+  }
+  .abc-farecalc-cards .abc-card {
+    padding: var(--abc-space-lg) var(--abc-space-md);
+  }
+  .abc-farecalc-line-final span:last-child {
+    font-size: 1.35rem;
+  }
 }
 </style>
 
@@ -896,30 +978,39 @@
       <div class="abc-field" style="flex-basis: 100%;">
         <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
           <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-          <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
+          <div class="abc-farecalc-stepper-value-wrap">
+            <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="0" inputmode="numeric" aria-label="Employer subsidy percentage" />
+            <span class="abc-farecalc-stepper-percent">%</span>
+          </div>
           <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
         </div>
-        <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
+        <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. You can type an exact number, or use the buttons. If you're not sure how much they cover, ask your HR team.</span>
       </div>
     </div>
 
     <p class="abc-question">Does your employer offer Perq?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
-        <p class="abc-farecalc-perq-intro">
-          If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
-          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
-        </p>
+        <details class="abc-details abc-farecalc-perq-details">
+          <summary>What is Perq?</summary>
+          <div class="abc-details-body abc-farecalc-perq-intro">
+            If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
+            <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
+          </div>
+        </details>
 
         <div class="abc-choice-grid">
           <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
           <button type="button" class="abc-choice-button abc-active" data-abc-perq-select="no">No</button>
         </div>
 
-        <div data-abc-perq-stepper-field style="display: none; margin-top: 16px;">
+        <div class="abc-farecalc-reveal" data-abc-perq-stepper-field style="display: none;">
           <div class="abc-farecalc-stepper" data-abc-perq-stepper>
             <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-            <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>30</span>%</div>
+            <div class="abc-farecalc-stepper-value-wrap">
+              <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="30" inputmode="numeric" aria-label="Pre-tax savings percentage" />
+              <span class="abc-farecalc-stepper-percent">%</span>
+            </div>
             <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
           </div>
           <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
@@ -954,7 +1045,7 @@
           <span data-abc-ride-final>$0.00</span>
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
-          You save <span data-abc-savings-amt>$0</span> a year versus the other option.
+          You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>purchasing a monthly pass</span>.
         </p>
       </div>
 
@@ -979,7 +1070,7 @@
           <span data-abc-pass-final>$0.00</span>
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
-          You save <span data-abc-savings-amt>$0</span> a year versus the other option.
+          You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
         </p>
       </div>
     </div>
@@ -997,8 +1088,7 @@
     </details>
 
     <div class="abc-farecalc-embed">
-      <button type="button" class="abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code for your site</button>
-      <span class="abc-field-hint abc-farecalc-embed-hint">For other TMAs and ABC members: grab the full code for this calculator to add to your own site.</span>
+      <button type="button" class="abc-farecalc-embed-btn" data-abc-embed-btn>Copy the embed code for this tool</button>
     </div>
   </div>
 
@@ -1242,12 +1332,12 @@ function mbtaInitCalculator(rootEl) {
   // Generic stepper wiring: works for both the subsidy and pre-tax controls.
   function initStepper(rootAttr, step, getValue, setValue) {
     const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
-    const valueEl = stepperEl.querySelector("[data-abc-stepper-value]");
+    const input = stepperEl.querySelector("[data-abc-stepper-value]");
     const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
     const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
 
     function paint() {
-      valueEl.textContent = getValue();
+      input.value = getValue();
     }
     minusBtn.addEventListener("click", () => {
       setValue(Math.max(0, getValue() - step));
@@ -1259,6 +1349,17 @@ function mbtaInitCalculator(rootEl) {
       paint();
       render();
     });
+    // Typing a value updates live; +/- still moves in fixed steps, but a
+    // typed number isn't forced to snap to the nearest one — precision is
+    // the whole point of allowing manual entry.
+    input.addEventListener("input", () => {
+      const raw = Number(input.value);
+      if (!Number.isNaN(raw)) {
+        setValue(Math.min(100, Math.max(0, raw)));
+        render();
+      }
+    });
+    input.addEventListener("blur", paint);
     paint();
   }
 
@@ -1301,8 +1402,10 @@ function mbtaInitCalculator(rootEl) {
 
     const winnerCard = result.winner === "ride" ? rideCard : passCard;
     const loserCard = result.winner === "ride" ? passCard : rideCard;
+    const otherOptionLabel = result.winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
     winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
+    winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 

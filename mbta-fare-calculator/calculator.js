@@ -193,12 +193,12 @@ function mbtaInitCalculator(rootEl) {
   // Generic stepper wiring: works for both the subsidy and pre-tax controls.
   function initStepper(rootAttr, step, getValue, setValue) {
     const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
-    const valueEl = stepperEl.querySelector("[data-abc-stepper-value]");
+    const input = stepperEl.querySelector("[data-abc-stepper-value]");
     const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
     const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
 
     function paint() {
-      valueEl.textContent = getValue();
+      input.value = getValue();
     }
     minusBtn.addEventListener("click", () => {
       setValue(Math.max(0, getValue() - step));
@@ -210,6 +210,17 @@ function mbtaInitCalculator(rootEl) {
       paint();
       render();
     });
+    // Typing a value updates live; +/- still moves in fixed steps, but a
+    // typed number isn't forced to snap to the nearest one — precision is
+    // the whole point of allowing manual entry.
+    input.addEventListener("input", () => {
+      const raw = Number(input.value);
+      if (!Number.isNaN(raw)) {
+        setValue(Math.min(100, Math.max(0, raw)));
+        render();
+      }
+    });
+    input.addEventListener("blur", paint);
     paint();
   }
 
@@ -252,8 +263,10 @@ function mbtaInitCalculator(rootEl) {
 
     const winnerCard = result.winner === "ride" ? rideCard : passCard;
     const loserCard = result.winner === "ride" ? passCard : rideCard;
+    const otherOptionLabel = result.winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
     winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
+    winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
