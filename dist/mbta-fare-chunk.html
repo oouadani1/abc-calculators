@@ -576,11 +576,12 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --abc-navy-light: #46C3D3; /* ABC's lighter blue, used for non-header navy fills */
 }
 
 .abc-farecalc {
-  --abc-farecalc-accent: var(--mbta-red);
-  --abc-farecalc-accent-tint: var(--mbta-red-tint);
+  --abc-farecalc-accent: var(--mbta-green);
+  --abc-farecalc-accent-tint: var(--mbta-green-tint);
 }
 
 .abc-farecalc.abc-theme-rail {
@@ -603,15 +604,15 @@
 }
 
 .abc-farecalc-btn-subway.abc-active {
-  background: var(--mbta-red);
-  border-color: var(--mbta-red);
+  background: var(--mbta-green);
+  border-color: var(--mbta-green);
   color: #fff;
 }
 
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
-   red above, not whatever frame the swipe happens to end on. */
+   green above, not whatever frame the swipe happens to end on. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
@@ -626,21 +627,21 @@
 @keyframes abc-farecalc-line-swipe {
   0% {
     background-image: linear-gradient(to right,
-      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
-      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
-      var(--mbta-red) 80%, var(--mbta-red) 100%);
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
     background-size: 500% 100%;
     background-position: 0% 0%;
   }
   100% {
     background-image: linear-gradient(to right,
-      var(--mbta-silver) 0%, var(--mbta-silver) 20%,
-      var(--mbta-blue) 20%, var(--mbta-blue) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-orange) 60%, var(--mbta-orange) 80%,
-      var(--mbta-red) 80%, var(--mbta-red) 100%);
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
     background-size: 500% 100%;
     background-position: 100% 0%;
   }
@@ -649,7 +650,7 @@
 @media (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
-    background: var(--mbta-red);
+    background: var(--mbta-green);
     color: #fff;
   }
 }
@@ -667,7 +668,7 @@
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--abc-navy-deep);
+  background: var(--abc-navy-light);
   color: #fff;
   cursor: pointer;
   transition: background 0.15s ease, transform 0.1s ease;
@@ -717,7 +718,7 @@
   font-family: var(--abc-font-mono);
   font-size: 1.4rem;
   font-weight: 600;
-  color: var(--abc-navy-deep);
+  color: var(--abc-navy-light);
   min-width: 76px;
   text-align: center;
 }
@@ -764,7 +765,7 @@
   padding-top: var(--abc-space-md);
   font-size: var(--abc-font-size-lg);
   font-weight: 600;
-  color: var(--abc-navy-deep);
+  color: var(--abc-navy-light);
 }
 
 .abc-farecalc-line-final span:last-child {
@@ -777,6 +778,65 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--mbta-green);
+}
+
+/* ---- Perq yes/no also picks up the route theme ---- */
+.abc-farecalc [data-abc-perq-select].abc-active {
+  background: var(--abc-farecalc-accent);
+  border-color: var(--abc-farecalc-accent);
+}
+
+/* ---- Perq explainer + conditional advocacy line ---- */
+.abc-farecalc-perq-intro {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink);
+  line-height: 1.6;
+  margin: 0 0 var(--abc-space-md);
+  max-width: 62ch;
+}
+
+.abc-farecalc-perq-intro a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+}
+
+.abc-farecalc-perq-advocacy {
+  margin-top: var(--abc-space-md);
+}
+
+.abc-farecalc-perq-advocacy a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+}
+
+/* ---- Embed footer ---- */
+.abc-farecalc-embed {
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-md);
+  border-top: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-embed-btn {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.abc-farecalc-embed-btn:hover {
+  color: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-embed-hint {
+  display: block;
+  margin-top: 4px;
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -795,7 +855,7 @@
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <p class="abc-eyebrow">A Better City</p>
+    <p class="abc-eyebrow">A Better City &bull; MBTA Fare Calculator</p>
     <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
     <p class="abc-subtitle">Answer a few quick questions about your commute and we'll compare your real costs side by side.</p>
 
@@ -831,28 +891,44 @@
       </div>
     </div>
 
-    <p class="abc-question">Does your employer help pay for your commute?</p>
+    <p class="abc-question">How much does your employer cover?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
-        <label>How much do they cover?</label>
         <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
           <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
           <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
           <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
         </div>
-        <span class="abc-field-hint">In 5% steps. Set to 0% if they don't help.</span>
+        <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
       </div>
     </div>
 
-    <p class="abc-question">How much do you save by paying pre-tax?</p>
+    <p class="abc-question">Does your employer offer Perq?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-farecalc-stepper" data-abc-perq-stepper>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-          <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+        <p class="abc-farecalc-perq-intro">
+          If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
+          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
+        </p>
+
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-perq-select="no">No</button>
         </div>
-        <span class="abc-field-hint">This is called Perq &mdash; it lets you pay with pre-tax dollars. If you're not sure, ask your HR team; most people save around 25%. Set to 0% if you don't use it.</span>
+
+        <div data-abc-perq-stepper-field style="display: none; margin-top: 16px;">
+          <div class="abc-farecalc-stepper" data-abc-perq-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+            <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>30</span>%</div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+          </div>
+          <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
+        </div>
+
+        <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy>
+          Would a Perq pass be valuable to you? Let your employer know you'd like to participate &mdash;
+          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">see how Perq works</a>.
+        </p>
       </div>
     </div>
 
@@ -911,14 +987,19 @@
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
-        Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
-        percentage isn't an official published number &mdash; it's an
-        estimate you can adjust to match your own tax rate. Employer
+        Fares are from mbta.com, checked 2026-07-10. The 30% pre-tax
+        savings default is MBTA's own Perq page figure, not an exact
+        number &mdash; adjust it if you know your own tax rate. Employer
         subsidy and pre-tax savings are applied to both options the same
         way. Fares change over time, so treat this as a helpful estimate,
         not a guarantee.
       </div>
     </details>
+
+    <div class="abc-farecalc-embed">
+      <button type="button" class="abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code for your site</button>
+      <span class="abc-field-hint abc-farecalc-embed-hint">For other TMAs and ABC members: grab the full code for this calculator to add to your own site.</span>
+    </div>
   </div>
 
 <script>
@@ -1012,7 +1093,9 @@ const MBTA_CONFIG = {
   subsidyStepPct: 5,
   defaultSubsidyPct: 0,
   perqStepPct: 5,
-  defaultPerqPct: 0,
+  // MBTA's own Perq page cites ~30% as a typical pre-tax savings figure —
+  // used as the stepper's starting point once someone says "yes" to Perq.
+  defaultPerqPct: 30,
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -1098,6 +1181,7 @@ function mbtaInitCalculator(rootEl) {
   let routeType = "subway"; // "subway" | "rail"
   let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqEnabled = false;
   let perqPct = MBTA_CONFIG.defaultPerqPct;
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
@@ -1138,6 +1222,22 @@ function mbtaInitCalculator(rootEl) {
   });
 
   railZoneSelect.addEventListener("change", render);
+
+  // Perq yes/no: only reveals the stepper (and only counts toward the
+  // math) when "yes" is picked. "No" shows a short advocacy line instead.
+  const perqButtons = rootEl.querySelectorAll("[data-abc-perq-select]");
+  const perqStepperField = rootEl.querySelector("[data-abc-perq-stepper-field]");
+  const perqAdvocacy = rootEl.querySelector("[data-abc-perq-advocacy]");
+
+  perqButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      perqEnabled = btn.dataset.abcPerqSelect === "yes";
+      perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      perqStepperField.style.display = perqEnabled ? "block" : "none";
+      perqAdvocacy.style.display = perqEnabled ? "none" : "block";
+      render();
+    });
+  });
 
   // Generic stepper wiring: works for both the subsidy and pre-tax controls.
   function initStepper(rootAttr, step, getValue, setValue) {
@@ -1186,10 +1286,11 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function render() {
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, perqPct);
+    const effectivePerqPct = perqEnabled ? perqPct : 0;
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, effectivePerqPct);
 
-    paintCard("ride", result.rideBreakdown, subsidyPct, perqPct);
-    paintCard("pass", result.passBreakdown, subsidyPct, perqPct);
+    paintCard("ride", result.rideBreakdown, subsidyPct, effectivePerqPct);
+    paintCard("pass", result.passBreakdown, subsidyPct, effectivePerqPct);
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -1203,6 +1304,27 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+  }
+
+  // Embed button: re-fetches this page's own source and copies it to the
+  // clipboard. Only produces a complete, pasteable snippet when the page
+  // is actually the built dist/*.html chunk (inline <style>/<script>) —
+  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
+  // files, so there's nothing self-contained to copy from there.
+  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
+  if (embedBtn) {
+    const originalLabel = embedBtn.textContent;
+    embedBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch(window.location.href);
+        const html = await res.text();
+        await navigator.clipboard.writeText(html);
+        embedBtn.textContent = "Copied! Paste it into your site.";
+      } catch (err) {
+        embedBtn.textContent = "Couldn't copy \u2014 try again, or view page source.";
+      }
+      setTimeout(() => { embedBtn.textContent = originalLabel; }, 3000);
+    });
   }
 
   render();

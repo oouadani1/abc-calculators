@@ -19,7 +19,7 @@
 
   <!-- ABC-CALC-HTML-START -->
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <p class="abc-eyebrow">A Better City • MBTA Fare Calculator</p>
+    <p class="abc-eyebrow">A Better City &bull; MBTA Fare Calculator</p>
     <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
     <p class="abc-subtitle">Answer a few quick questions about your commute and we'll compare your real costs side by side.</p>
 
@@ -55,7 +55,7 @@
       </div>
     </div>
 
-    <p class="abc-question">How much does your employer cover the cost of your commute?</p>
+    <p class="abc-question">How much does your employer cover?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
         <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -67,15 +67,32 @@
       </div>
     </div>
 
-    <p class="abc-question">How much do you save by paying pre-tax?</p>
+    <p class="abc-question">Does your employer offer Perq?</p>
     <div class="abc-input-row">
       <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-farecalc-stepper" data-abc-perq-stepper>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-          <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>0</span>%</div>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+        <p class="abc-farecalc-perq-intro">
+          If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
+          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
+        </p>
+
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-perq-select="no">No</button>
         </div>
-        <span class="abc-field-hint">You can use your pre-tax payroll dollars to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don’t have to worry about sending in a payment. This is called Perq. If you're not sure if your organization offers a Perq pass, ask your HR team.</span>
+
+        <div data-abc-perq-stepper-field style="display: none; margin-top: 16px;">
+          <div class="abc-farecalc-stepper" data-abc-perq-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+            <div class="abc-farecalc-stepper-value"><span data-abc-stepper-value>30</span>%</div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+          </div>
+          <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
+        </div>
+
+        <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy>
+          Would a Perq pass be valuable to you? Let your employer know you'd like to participate &mdash;
+          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">see how Perq works</a>.
+        </p>
       </div>
     </div>
 
@@ -134,14 +151,19 @@
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
-        Fares are from mbta.com, checked 2026-07-10. Perq's pre-tax savings
-        percentage isn't an official published number &mdash; it's an
-        estimate you can adjust to match your own tax rate. Employer
+        Fares are from mbta.com, checked 2026-07-10. The 30% pre-tax
+        savings default is MBTA's own Perq page figure, not an exact
+        number &mdash; adjust it if you know your own tax rate. Employer
         subsidy and pre-tax savings are applied to both options the same
         way. Fares change over time, so treat this as a helpful estimate,
         not a guarantee.
       </div>
     </details>
+
+    <div class="abc-farecalc-embed">
+      <button type="button" class="abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code for your site</button>
+      <span class="abc-field-hint abc-farecalc-embed-hint">For other TMAs and ABC members: grab the full code for this calculator to add to your own site.</span>
+    </div>
   </div>
   <!-- ABC-CALC-HTML-END -->
 

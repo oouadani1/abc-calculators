@@ -44,7 +44,9 @@ const MBTA_CONFIG = {
   subsidyStepPct: 5,
   defaultSubsidyPct: 0,
   perqStepPct: 5,
-  defaultPerqPct: 0,
+  // MBTA's own Perq page cites ~30% as a typical pre-tax savings figure —
+  // used as the stepper's starting point once someone says "yes" to Perq.
+  defaultPerqPct: 30,
 
   // First entry is used directly for the "Subway & Bus" choice.
   // Everything else is Commuter Rail, shown only if that's selected.
@@ -130,6 +132,7 @@ function mbtaInitCalculator(rootEl) {
   let routeType = "subway"; // "subway" | "rail"
   let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqEnabled = false;
   let perqPct = MBTA_CONFIG.defaultPerqPct;
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
@@ -170,6 +173,22 @@ function mbtaInitCalculator(rootEl) {
   });
 
   railZoneSelect.addEventListener("change", render);
+
+  // Perq yes/no: only reveals the stepper (and only counts toward the
+  // math) when "yes" is picked. "No" shows a short advocacy line instead.
+  const perqButtons = rootEl.querySelectorAll("[data-abc-perq-select]");
+  const perqStepperField = rootEl.querySelector("[data-abc-perq-stepper-field]");
+  const perqAdvocacy = rootEl.querySelector("[data-abc-perq-advocacy]");
+
+  perqButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      perqEnabled = btn.dataset.abcPerqSelect === "yes";
+      perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      perqStepperField.style.display = perqEnabled ? "block" : "none";
+      perqAdvocacy.style.display = perqEnabled ? "none" : "block";
+      render();
+    });
+  });
 
   // Generic stepper wiring: works for both the subsidy and pre-tax controls.
   function initStepper(rootAttr, step, getValue, setValue) {
@@ -218,10 +237,11 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function render() {
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, perqPct);
+    const effectivePerqPct = perqEnabled ? perqPct : 0;
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, effectivePerqPct);
 
-    paintCard("ride", result.rideBreakdown, subsidyPct, perqPct);
-    paintCard("pass", result.passBreakdown, subsidyPct, perqPct);
+    paintCard("ride", result.rideBreakdown, subsidyPct, effectivePerqPct);
+    paintCard("pass", result.passBreakdown, subsidyPct, effectivePerqPct);
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -235,6 +255,27 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+  }
+
+  // Embed button: re-fetches this page's own source and copies it to the
+  // clipboard. Only produces a complete, pasteable snippet when the page
+  // is actually the built dist/*.html chunk (inline <style>/<script>) —
+  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
+  // files, so there's nothing self-contained to copy from there.
+  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
+  if (embedBtn) {
+    const originalLabel = embedBtn.textContent;
+    embedBtn.addEventListener("click", async () => {
+      try {
+        const res = await fetch(window.location.href);
+        const html = await res.text();
+        await navigator.clipboard.writeText(html);
+        embedBtn.textContent = "Copied! Paste it into your site.";
+      } catch (err) {
+        embedBtn.textContent = "Couldn't copy \u2014 try again, or view page source.";
+      }
+      setTimeout(() => { embedBtn.textContent = originalLabel; }, 3000);
+    });
   }
 
   render();
