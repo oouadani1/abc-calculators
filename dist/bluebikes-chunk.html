@@ -103,6 +103,12 @@
   box-sizing: border-box;
   background: var(--abc-page-bg);
   border: 1px solid var(--abc-border);
+  /* Responsive rules should react to the width of whatever container
+     this widget actually gets embedded in, not the browser viewport —
+     a ModX page can constrain us to a narrow column on a wide desktop
+     screen, where a viewport-based @media query would never fire. */
+  container-type: inline-size;
+  container-name: abc-calc;
 }
 
 .abc-calc * {
