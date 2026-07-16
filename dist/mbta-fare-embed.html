@@ -649,16 +649,17 @@
 /* Spacing between question groups now comes from the grid's row-gap,
    not from each question's own top margin — otherwise a revealed field
    (zone dropdown, Perq stepper) that stretches one grid row taller
-   would visually double up with the next row's top margin too. */
-.abc-farecalc-field-group .abc-question,
-.abc-farecalc-field-group .abc-farecalc-question-row {
+   would visually double up with the next row's top margin too. Both
+   field-groups start with a plain .abc-question with nothing else
+   above it, which is also what keeps their headers flush-aligned with
+   each other across the grid row. */
+.abc-farecalc-field-group .abc-question {
   margin-top: 0;
 }
 
 /* Full-width text: nothing in this tool should wrap early inside a
-   narrow measure — let the subtitle and Perq copy use the whole card. */
-.abc-farecalc .abc-subtitle,
-.abc-farecalc-perq-intro {
+   narrow measure — let the subtitle use the whole card. */
+.abc-farecalc .abc-subtitle {
   max-width: none;
 }
 
@@ -673,35 +674,24 @@
   margin-bottom: var(--abc-space-sm);
 }
 
-/* Question + inline "what is this?" toggle share a row instead of the
-   toggle sitting on its own line between the question and the answer. */
-.abc-farecalc-question-row {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--abc-space-md);
-  margin: var(--abc-space-md) 0 var(--abc-space-sm);
-}
-
-.abc-farecalc-question-row .abc-question {
-  margin: 0;
-}
-
-.abc-farecalc-info-toggle {
-  background: none;
-  border: none;
-  font-family: inherit;
-  font-size: 0.8rem;
-  font-weight: 600;
+/* "Perq" hyperlinked directly inside its question, instead of a separate
+   toggle button — the accent color is what marks it as a link/theme tie-in. */
+.abc-farecalc-inline-link {
   color: var(--abc-farecalc-accent);
-  cursor: pointer;
-  padding: 0;
-  white-space: nowrap;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
-.abc-farecalc-info-toggle:hover {
-  text-decoration: underline;
+.abc-farecalc-inline-link:hover {
+  color: var(--abc-navy-deep);
+}
+
+/* A one-line static explainer directly under a question header, before
+   its control — used for the subsidy and Perq questions instead of a
+   hint that trails the control (or, for Perq, a dynamic toggle). */
+.abc-farecalc-hint-top {
+  margin-top: 0;
+  margin-bottom: var(--abc-space-sm);
 }
 
 /* ---- Route buttons ---- */
@@ -921,12 +911,15 @@
    the dollar figure happens to be — a shared row was wrapping the
    label onto an orphaned second line inconsistently depending on the
    number's width. This layout is fixed regardless of value length. */
+/* Label and value side by side again, but the label's wrap point is now
+   fixed (via max-width, in em so it scales with font-size) instead of
+   however much room the value happens to leave it — a shared row where
+   both spans compete for space wrapped the label onto an orphaned
+   second line only sometimes, depending on how wide the dollar figure
+   was. Capping the label's width makes it wrap the same compact two
+   lines every time, independent of the value. */
 .abc-farecalc-line-final {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 2px;
+  align-items: center;
   border-bottom: none;
   border-top: 2px solid var(--abc-ink);
   margin-top: 6px;
@@ -936,7 +929,14 @@
   color: var(--abc-navy-deep);
 }
 
+.abc-farecalc-line-final span:first-child {
+  max-width: 9em;
+  line-height: 1.25;
+}
+
 .abc-farecalc-line-final span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
   font-family: var(--abc-font-mono);
   font-size: var(--abc-font-size-xl);
 }
@@ -961,15 +961,7 @@
   border-color: var(--mbta-red);
 }
 
-/* ---- Perq explainer (toggled by .abc-farecalc-info-toggle) + advocacy line ---- */
-.abc-farecalc-perq-intro {
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-ink);
-  line-height: 1.6;
-  margin-bottom: var(--abc-space-md);
-}
-
-.abc-farecalc-perq-intro a,
+/* ---- Perq advocacy line: only shown once "No" is explicitly picked ---- */
 .abc-farecalc-perq-advocacy a {
   color: var(--abc-farecalc-accent);
   font-weight: 600;
@@ -1062,7 +1054,6 @@
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <p class="abc-eyebrow">A Better City &bull; MBTA Fare Calculator</p>
     <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
     <p class="abc-subtitle">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
 
@@ -1105,6 +1096,7 @@
 
       <div class="abc-farecalc-field-group">
         <p class="abc-question">How much does your employer cover?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -1115,23 +1107,15 @@
               </div>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
             </div>
-            <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. You can type an exact number, or use the buttons. If you're not sure how much they cover, ask your HR team.</span>
           </div>
         </div>
       </div>
 
       <div class="abc-farecalc-field-group">
-        <div class="abc-farecalc-question-row">
-          <p class="abc-question">Does your employer offer Perq?</p>
-          <button type="button" class="abc-farecalc-info-toggle" data-abc-perq-info-toggle aria-expanded="false">What is Perq?</button>
-        </div>
+        <p class="abc-question">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-perq-intro" data-abc-perq-info-body style="display: none;">
-              If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
-              <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
-            </div>
-
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
               <button type="button" class="abc-choice-button" data-abc-perq-select="no">No</button>
@@ -1149,7 +1133,7 @@
               <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
             </div>
 
-            <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy>
+            <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
               Would a Perq pass be valuable to you? Let your employer know you'd like to participate &mdash;
               <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">see how Perq works</a>.
             </p>
@@ -1220,7 +1204,7 @@
         way. Fares change over time, so treat this as a helpful estimate,
         not a guarantee.
 
-        <p class="abc-farecalc-credit">Built by A Better City | July 2026</p>
+        <p class="abc-farecalc-credit"><strong>Built by A Better City</strong> | July 2026</p>
       </div>
     </details>
   </div>
@@ -1446,29 +1430,20 @@ function mbtaInitCalculator(rootEl) {
 
   railZoneSelect.addEventListener("change", render);
 
-  // "What is Perq?" toggle: sits beside the question instead of a
-  // block-level accordion between the question and the yes/no buttons.
-  const perqInfoToggle = rootEl.querySelector("[data-abc-perq-info-toggle]");
-  const perqInfoBody = rootEl.querySelector("[data-abc-perq-info-body]");
-  perqInfoToggle.addEventListener("click", () => {
-    const isOpen = perqInfoBody.style.display !== "none";
-    perqInfoBody.style.display = isOpen ? "none" : "block";
-    perqInfoToggle.setAttribute("aria-expanded", String(!isOpen));
-    perqInfoToggle.textContent = isOpen ? "What is Perq?" : "Hide";
-  });
-
   // Perq yes/no: only reveals the stepper (and only counts toward the
-  // math) when "yes" is picked. "No" shows a short advocacy line instead.
+  // math) when "yes" is picked. The advocacy line only appears once "no"
+  // is explicitly chosen — not on initial load, and not for "yes".
   const perqButtons = rootEl.querySelectorAll("[data-abc-perq-select]");
   const perqStepperField = rootEl.querySelector("[data-abc-perq-stepper-field]");
   const perqAdvocacy = rootEl.querySelector("[data-abc-perq-advocacy]");
 
   perqButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      perqEnabled = btn.dataset.abcPerqSelect === "yes";
+      const answer = btn.dataset.abcPerqSelect;
+      perqEnabled = answer === "yes";
       perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       perqStepperField.style.display = perqEnabled ? "block" : "none";
-      perqAdvocacy.style.display = perqEnabled ? "none" : "block";
+      perqAdvocacy.style.display = answer === "no" ? "block" : "none";
       render();
     });
   });
