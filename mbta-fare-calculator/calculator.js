@@ -174,29 +174,20 @@ function mbtaInitCalculator(rootEl) {
 
   railZoneSelect.addEventListener("change", render);
 
-  // "What is Perq?" toggle: sits beside the question instead of a
-  // block-level accordion between the question and the yes/no buttons.
-  const perqInfoToggle = rootEl.querySelector("[data-abc-perq-info-toggle]");
-  const perqInfoBody = rootEl.querySelector("[data-abc-perq-info-body]");
-  perqInfoToggle.addEventListener("click", () => {
-    const isOpen = perqInfoBody.style.display !== "none";
-    perqInfoBody.style.display = isOpen ? "none" : "block";
-    perqInfoToggle.setAttribute("aria-expanded", String(!isOpen));
-    perqInfoToggle.textContent = isOpen ? "What is Perq?" : "Hide";
-  });
-
   // Perq yes/no: only reveals the stepper (and only counts toward the
-  // math) when "yes" is picked. "No" shows a short advocacy line instead.
+  // math) when "yes" is picked. The advocacy line only appears once "no"
+  // is explicitly chosen — not on initial load, and not for "yes".
   const perqButtons = rootEl.querySelectorAll("[data-abc-perq-select]");
   const perqStepperField = rootEl.querySelector("[data-abc-perq-stepper-field]");
   const perqAdvocacy = rootEl.querySelector("[data-abc-perq-advocacy]");
 
   perqButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      perqEnabled = btn.dataset.abcPerqSelect === "yes";
+      const answer = btn.dataset.abcPerqSelect;
+      perqEnabled = answer === "yes";
       perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       perqStepperField.style.display = perqEnabled ? "block" : "none";
-      perqAdvocacy.style.display = perqEnabled ? "none" : "block";
+      perqAdvocacy.style.display = answer === "no" ? "block" : "none";
       render();
     });
   });
