@@ -281,27 +281,6 @@ function mbtaInitCalculator(rootEl) {
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
-  // Embed button: re-fetches this page's own source and copies it to the
-  // clipboard. Only produces a complete, pasteable snippet when the page
-  // is actually the built dist/*.html chunk (inline <style>/<script>) —
-  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
-  // files, so there's nothing self-contained to copy from there.
-  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
-  if (embedBtn) {
-    const originalLabel = embedBtn.textContent;
-    embedBtn.addEventListener("click", async () => {
-      try {
-        const res = await fetch(window.location.href);
-        const html = await res.text();
-        await navigator.clipboard.writeText(html);
-        embedBtn.textContent = "Copied! Paste it into your site.";
-      } catch (err) {
-        embedBtn.textContent = "Couldn't copy \u2014 try again, or view page source.";
-      }
-      setTimeout(() => { embedBtn.textContent = originalLabel; }, 3000);
-    });
-  }
-
   render();
 }
 
