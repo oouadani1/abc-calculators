@@ -41,10 +41,50 @@
   --abc-farecalc-accent-tint: var(--mbta-purple-tint);
 }
 
+/* ---- Wider container for this tool: the extra room is what makes the
+   question grid below able to go two columns instead of one long
+   stacked column, cutting overall height roughly in half on desktop. ---- */
+.abc-farecalc {
+  max-width: 880px;
+}
+
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
   letter-spacing: -0.02em;
+}
+
+/* ---- Question grid: the four questions pair up into a compact,
+   table-like 2-column layout instead of stacking one after another —
+   the goal is seeing the whole tool without scrolling. Falls back to a
+   single column automatically (via the container query) once the
+   widget is rendered narrow, same mechanism as the narrow-layout rules
+   further down this file. ---- */
+.abc-farecalc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--abc-space-xl);
+  row-gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
+}
+
+@container abc-calc (min-width: 520px) {
+  .abc-farecalc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.abc-farecalc-field-group {
+  min-width: 0;
+}
+
+/* Spacing between question groups now comes from the grid's row-gap,
+   not from each question's own top margin — otherwise a revealed field
+   (zone dropdown, Perq stepper) that stretches one grid row taller
+   would visually double up with the next row's top margin too. */
+.abc-farecalc-field-group .abc-question,
+.abc-farecalc-field-group .abc-farecalc-question-row {
+  margin-top: 0;
 }
 
 /* Full-width text: nothing in this tool should wrap early inside a
@@ -59,10 +99,6 @@
    gaps are pulled in to keep the whole thing closer to one scroll. */
 .abc-farecalc .abc-question {
   margin: var(--abc-space-md) 0 var(--abc-space-sm);
-}
-
-.abc-farecalc .abc-question:first-of-type {
-  margin-top: 0;
 }
 
 .abc-farecalc .abc-input-row {
@@ -281,11 +317,11 @@
   margin-top: var(--abc-space-md);
 }
 
-/* ---- Comparison cards: arithmetic layout. Stacked by default — the
-   real embed target (abettercity.org's content column) measures well
-   under 480px even on a wide desktop browser, so side-by-side is the
-   exception, enabled only once the container actually has room for it
-   (see the @container rule below), not the default assumption. ---- */
+/* ---- Comparison cards: arithmetic layout. Stacked by default, going
+   side-by-side once the container is wide enough (see the @container
+   rule below) — now the common case at this tool's widened 880px
+   max-width, but still falls back to stacked on a narrow embed or
+   phone screen. ---- */
 .abc-farecalc-cards {
   margin-top: var(--abc-space-lg);
   gap: var(--abc-space-md);
@@ -312,7 +348,17 @@
   }
 }
 
+/* Label stacked above value (not the same left/right row as the lines
+   above it) so the label's line-wrap is never at the mercy of how wide
+   the dollar figure happens to be — a shared row was wrapping the
+   label onto an orphaned second line inconsistently depending on the
+   number's width. This layout is fixed regardless of value length. */
 .abc-farecalc-line-final {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
   border-bottom: none;
   border-top: 2px solid var(--abc-ink);
   margin-top: 6px;
@@ -365,29 +411,15 @@
   margin-top: var(--abc-space-md);
 }
 
-/* ---- Embed footer: one simple rounded button ---- */
-.abc-farecalc-embed {
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
+/* ---- Credit line under the sourcing accordion: a blank line's worth
+   of separation (margin) plus a hairline rule, not run straight into
+   the sourcing paragraph above it. ---- */
+.abc-farecalc-credit {
+  margin: var(--abc-space-md) 0 0;
+  padding-top: var(--abc-space-sm);
   border-top: 1px solid var(--abc-border);
-  text-align: center;
-}
-
-.abc-farecalc-embed-btn {
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--abc-navy-deep);
-  background: #fff;
-  border: 1.5px solid var(--abc-border);
-  border-radius: var(--abc-radius-pill);
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-.abc-farecalc-embed-btn:hover {
-  border-color: var(--abc-farecalc-accent);
-  color: var(--abc-farecalc-accent);
+  font-size: 0.75rem;
+  color: var(--abc-ink-faint);
 }
 
 /* Recommended card: fixed green, regardless of route theme */

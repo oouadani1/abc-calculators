@@ -609,10 +609,50 @@
   --abc-farecalc-accent-tint: var(--mbta-purple-tint);
 }
 
+/* ---- Wider container for this tool: the extra room is what makes the
+   question grid below able to go two columns instead of one long
+   stacked column, cutting overall height roughly in half on desktop. ---- */
+.abc-farecalc {
+  max-width: 880px;
+}
+
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
   letter-spacing: -0.02em;
+}
+
+/* ---- Question grid: the four questions pair up into a compact,
+   table-like 2-column layout instead of stacking one after another —
+   the goal is seeing the whole tool without scrolling. Falls back to a
+   single column automatically (via the container query) once the
+   widget is rendered narrow, same mechanism as the narrow-layout rules
+   further down this file. ---- */
+.abc-farecalc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--abc-space-xl);
+  row-gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
+}
+
+@container abc-calc (min-width: 520px) {
+  .abc-farecalc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.abc-farecalc-field-group {
+  min-width: 0;
+}
+
+/* Spacing between question groups now comes from the grid's row-gap,
+   not from each question's own top margin — otherwise a revealed field
+   (zone dropdown, Perq stepper) that stretches one grid row taller
+   would visually double up with the next row's top margin too. */
+.abc-farecalc-field-group .abc-question,
+.abc-farecalc-field-group .abc-farecalc-question-row {
+  margin-top: 0;
 }
 
 /* Full-width text: nothing in this tool should wrap early inside a
@@ -627,10 +667,6 @@
    gaps are pulled in to keep the whole thing closer to one scroll. */
 .abc-farecalc .abc-question {
   margin: var(--abc-space-md) 0 var(--abc-space-sm);
-}
-
-.abc-farecalc .abc-question:first-of-type {
-  margin-top: 0;
 }
 
 .abc-farecalc .abc-input-row {
@@ -849,11 +885,11 @@
   margin-top: var(--abc-space-md);
 }
 
-/* ---- Comparison cards: arithmetic layout. Stacked by default — the
-   real embed target (abettercity.org's content column) measures well
-   under 480px even on a wide desktop browser, so side-by-side is the
-   exception, enabled only once the container actually has room for it
-   (see the @container rule below), not the default assumption. ---- */
+/* ---- Comparison cards: arithmetic layout. Stacked by default, going
+   side-by-side once the container is wide enough (see the @container
+   rule below) — now the common case at this tool's widened 880px
+   max-width, but still falls back to stacked on a narrow embed or
+   phone screen. ---- */
 .abc-farecalc-cards {
   margin-top: var(--abc-space-lg);
   gap: var(--abc-space-md);
@@ -880,7 +916,17 @@
   }
 }
 
+/* Label stacked above value (not the same left/right row as the lines
+   above it) so the label's line-wrap is never at the mercy of how wide
+   the dollar figure happens to be — a shared row was wrapping the
+   label onto an orphaned second line inconsistently depending on the
+   number's width. This layout is fixed regardless of value length. */
 .abc-farecalc-line-final {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 2px;
   border-bottom: none;
   border-top: 2px solid var(--abc-ink);
   margin-top: 6px;
@@ -933,29 +979,15 @@
   margin-top: var(--abc-space-md);
 }
 
-/* ---- Embed footer: one simple rounded button ---- */
-.abc-farecalc-embed {
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
+/* ---- Credit line under the sourcing accordion: a blank line's worth
+   of separation (margin) plus a hairline rule, not run straight into
+   the sourcing paragraph above it. ---- */
+.abc-farecalc-credit {
+  margin: var(--abc-space-md) 0 0;
+  padding-top: var(--abc-space-sm);
   border-top: 1px solid var(--abc-border);
-  text-align: center;
-}
-
-.abc-farecalc-embed-btn {
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--abc-navy-deep);
-  background: #fff;
-  border: 1.5px solid var(--abc-border);
-  border-radius: var(--abc-radius-pill);
-  padding: 10px 20px;
-  cursor: pointer;
-}
-
-.abc-farecalc-embed-btn:hover {
-  border-color: var(--abc-farecalc-accent);
-  color: var(--abc-farecalc-accent);
+  font-size: 0.75rem;
+  color: var(--abc-ink-faint);
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -1032,87 +1064,97 @@
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
     <p class="abc-eyebrow">A Better City &bull; MBTA Fare Calculator</p>
     <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
-    <p class="abc-subtitle">Answer a few quick questions about your commute and we'll compare your real costs side by side.</p>
+    <p class="abc-subtitle">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
 
-    <p class="abc-question">How do you get to work?</p>
-    <div class="abc-input-row">
-      <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-choice-grid">
-          <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
-          <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail</button>
-        </div>
-      </div>
-
-      <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
-        <label for="abc-farecalc-zone">Which zone do you commute from?</label>
-        <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
-        <span class="abc-field-hint">
-          Not sure which zone you're in?
-          <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
-        </span>
-      </div>
-    </div>
-
-    <p class="abc-question">How many days a week do you commute?</p>
-    <div class="abc-input-row">
-      <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-choice-grid abc-farecalc-day-grid">
-          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="1">1</button>
-          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="2">2</button>
-          <button type="button" class="abc-farecalc-day-btn abc-active" data-abc-day-select="3">3</button>
-          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="4">4</button>
-          <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="5">5</button>
-        </div>
-      </div>
-    </div>
-
-    <p class="abc-question">How much does your employer cover?</p>
-    <div class="abc-input-row">
-      <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-          <div class="abc-farecalc-stepper-value-wrap">
-            <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="0" inputmode="numeric" aria-label="Employer subsidy percentage" />
-            <span class="abc-farecalc-stepper-percent">%</span>
-          </div>
-          <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
-        </div>
-        <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. You can type an exact number, or use the buttons. If you're not sure how much they cover, ask your HR team.</span>
-      </div>
-    </div>
-
-    <div class="abc-farecalc-question-row">
-      <p class="abc-question">Does your employer offer Perq?</p>
-      <button type="button" class="abc-farecalc-info-toggle" data-abc-perq-info-toggle aria-expanded="false">What is Perq?</button>
-    </div>
-    <div class="abc-input-row">
-      <div class="abc-field" style="flex-basis: 100%;">
-        <div class="abc-farecalc-perq-intro" data-abc-perq-info-body style="display: none;">
-          If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
-          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
-        </div>
-
-        <div class="abc-choice-grid">
-          <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
-          <button type="button" class="abc-choice-button abc-active" data-abc-perq-select="no">No</button>
-        </div>
-
-        <div class="abc-farecalc-reveal" data-abc-perq-stepper-field style="display: none;">
-          <div class="abc-farecalc-stepper" data-abc-perq-stepper>
-            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-            <div class="abc-farecalc-stepper-value-wrap">
-              <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="30" inputmode="numeric" aria-label="Pre-tax savings percentage" />
-              <span class="abc-farecalc-stepper-percent">%</span>
+    <div class="abc-farecalc-grid">
+      <div class="abc-farecalc-field-group">
+        <p class="abc-question">How do you get to work?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail</button>
             </div>
-            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
           </div>
-          <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
-        </div>
 
-        <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy>
-          Would a Perq pass be valuable to you? Let your employer know you'd like to participate &mdash;
-          <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">see how Perq works</a>.
-        </p>
+          <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
+            <label for="abc-farecalc-zone">Which zone do you commute from?</label>
+            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
+            <span class="abc-field-hint">
+              Not sure which zone you're in?
+              <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group">
+        <p class="abc-question">How many days a week do you commute?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid abc-farecalc-day-grid">
+              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="1">1</button>
+              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="2">2</button>
+              <button type="button" class="abc-farecalc-day-btn abc-active" data-abc-day-select="3">3</button>
+              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="4">4</button>
+              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="5">5</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group">
+        <p class="abc-question">How much does your employer cover?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+              <div class="abc-farecalc-stepper-value-wrap">
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="0" inputmode="numeric" aria-label="Employer subsidy percentage" />
+                <span class="abc-farecalc-stepper-percent">%</span>
+              </div>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+            </div>
+            <span class="abc-field-hint">Your employer may subsidize some or all of the costs of an MBTA pass. You can type an exact number, or use the buttons. If you're not sure how much they cover, ask your HR team.</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group">
+        <div class="abc-farecalc-question-row">
+          <p class="abc-question">Does your employer offer Perq?</p>
+          <button type="button" class="abc-farecalc-info-toggle" data-abc-perq-info-toggle aria-expanded="false">What is Perq?</button>
+        </div>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-perq-intro" data-abc-perq-info-body style="display: none;">
+              If you're a frequent commuter on the MBTA, Perq is the simplest and most convenient way to get your monthly T pass. You can use your pre-tax earnings to save on the normal cost of your monthly pass. Typically, your employer will take the cost right out of your paycheck, so you don't have to worry about sending in a payment. If you're not sure if your organization offers a Perq pass, ask your HR team.
+              <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Learn more about Perq</a>.
+            </div>
+
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
+              <button type="button" class="abc-choice-button" data-abc-perq-select="no">No</button>
+            </div>
+
+            <div class="abc-farecalc-reveal" data-abc-perq-stepper-field style="display: none;">
+              <div class="abc-farecalc-stepper" data-abc-perq-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="30" inputmode="numeric" aria-label="Pre-tax savings percentage" />
+                  <span class="abc-farecalc-stepper-percent">%</span>
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+              </div>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings &mdash; adjust if you know your own rate.</span>
+            </div>
+
+            <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy>
+              Would a Perq pass be valuable to you? Let your employer know you'd like to participate &mdash;
+              <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">see how Perq works</a>.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1177,12 +1219,10 @@
         subsidy and pre-tax savings are applied to both options the same
         way. Fares change over time, so treat this as a helpful estimate,
         not a guarantee.
+
+        <p class="abc-farecalc-credit">Built by A Better City | July 2026</p>
       </div>
     </details>
-
-    <div class="abc-farecalc-embed">
-      <button type="button" class="abc-farecalc-embed-btn" data-abc-embed-btn>Copy the embed code for this tool</button>
-    </div>
   </div>
 
 <script>
@@ -1511,27 +1551,6 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
-  }
-
-  // Embed button: re-fetches this page's own source and copies it to the
-  // clipboard. Only produces a complete, pasteable snippet when the page
-  // is actually the built dist/*.html chunk (inline <style>/<script>) —
-  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
-  // files, so there's nothing self-contained to copy from there.
-  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
-  if (embedBtn) {
-    const originalLabel = embedBtn.textContent;
-    embedBtn.addEventListener("click", async () => {
-      try {
-        const res = await fetch(window.location.href);
-        const html = await res.text();
-        await navigator.clipboard.writeText(html);
-        embedBtn.textContent = "Copied! Paste it into your site.";
-      } catch (err) {
-        embedBtn.textContent = "Couldn't copy \u2014 try again, or view page source.";
-      }
-      setTimeout(() => { embedBtn.textContent = originalLabel; }, 3000);
-    });
   }
 
   render();
