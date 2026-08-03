@@ -76,7 +76,7 @@ in `shared/styles/base.css` use a plain `.abc-*` prefix.
   palette in one place. Where a tool has its own real-world color system
   (e.g. MBTA's official line colors), use it directly rather than forcing
   everything through the shared ABC palette — see the MBTA calculator's
-  Commuter Rail purple (`#80276C`, MBTA's actual line color) for an example.
+  Regional Rail purple (`#80276C`, MBTA's actual line color) for an example.
 - **Type:** IBM Plex Sans for everything, IBM Plex Mono for the big dollar
   figures in result cards (a small deliberate "calculator" accent). Both are
   self-hosted as base64-embedded `@font-face` rules in

@@ -11,9 +11,9 @@ A single, live-updating page — no multi-step wizard, no submit button (see
 the root [README's design system](../README.md#design-system) for the
 shared voice/look rules). Three inputs, same shape as the original tool:
 
-1. **How do you get to work?** — Subway & Bus, or Commuter Rail (reveals a
+1. **How do you get to work?** — Subway & Bus, or Regional Rail (reveals a
    zone dropdown + a link to MBTA's official zone map PDF only if rail is
-   picked). Commuter Rail's button uses MBTA's own official line color
+   picked). Regional Rail's button uses MBTA's own official line color
    (`#80276C`); hovering Subway & Bus cycles through the other MBTA line
    colors and settles on ABC teal — a nod to the real system without
    picking one line to represent a multi-line pass.
@@ -60,11 +60,11 @@ math the original tool used. See `mbtaCalcEffectivePassCost` in
 | What | Value | Source | Verified |
 |---|---|---|---|
 | LinkPass monthly | $90.00 | mbta.com/fares/subway-fares | 2026-07-10 |
-| CR Zone 1A–10, Interzone 1–10 | $90–$426 | mbta.com/fares/commuter-rail-fares/zones | 2026-07-10 |
+| Regional Rail Zone 1A–10, Interzone 1–10 | $90–$426 | mbta.com/fares/commuter-rail-fares/zones | 2026-07-10 |
 | Perq pre-tax %, default | 25% (adjustable) | matches ABC's original tool's default | 2026-07-10 |
-| Commuter Rail zone map | PDF | cdn.mbta.com (official MBTA asset) | 2026-07-10 |
+| Regional Rail zone map | PDF | cdn.mbta.com (official MBTA asset) | 2026-07-10 |
 
-**Not baked in:** a temporary summer 2026 promo (50% off Commuter Rail
+**Not baked in:** a temporary summer 2026 promo (50% off Regional Rail
 monthly passes, June–Aug, excluding Zone 1A) — that's a promotional rate,
 not a durable fare, so it's intentionally excluded from `MBTA_CONFIG`.
 

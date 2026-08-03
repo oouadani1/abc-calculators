@@ -16,7 +16,7 @@
    The only section that should need editing when fares change.
    Every price below was pulled from mbta.com on 2026-07-10.
    RE-VERIFY ANNUALLY — MBTA fares typically change each July/August
-   and commuter rail zone boundaries have shifted in past years.
+   and regional rail zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
   fareSource: {
@@ -29,7 +29,7 @@ const MBTA_CONFIG = {
       "since it's not a permanent rate.",
   },
 
-  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
+  // Official MBTA Regional Rail zone map, for the "which zone am I in" question.
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
@@ -49,7 +49,7 @@ const MBTA_CONFIG = {
   defaultPerqPct: 30,
 
   // First entry is used directly for the "Subway & Bus" choice.
-  // Everything else is Commuter Rail, shown only if that's selected.
+  // Everything else is Regional Rail, shown only if that's selected.
   // Zone 1A and LinkPass are both $90 as of this pricing period — that's a
   // real coincidence in current MBTA fares, not a bug.
   passOptions: [
@@ -355,8 +355,11 @@ function mbtaInitCalculator(rootEl) {
         const html = await getEmbedHtml();
         const copied = await copyToClipboard(html);
         if (!copied) throw new Error("copy failed");
+        // Success stays put until the page reloads — no auto-revert. An
+        // error still reverts below so the button is clickable to retry.
         embedBtn.textContent = "Embed code copied";
         embedBtn.classList.add("abc-farecalc-copied");
+        return;
       } catch (err) {
         embedBtn.textContent = "Couldn't copy, try again";
       }
