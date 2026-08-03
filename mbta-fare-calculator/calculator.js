@@ -272,6 +272,35 @@ function mbtaInitCalculator(rootEl) {
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
+  // Embed button: re-fetches this page's own source and copies it to the
+  // clipboard. Only produces a complete, pasteable snippet when the page
+  // is actually the built dist/*.html chunk (inline <style>/<script>) —
+  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
+  // files, so there's nothing self-contained to copy from there. The
+  // "copied" state is a click-triggered class (abc-farecalc-copied), not
+  // a :hover effect, so it behaves identically on touch and mouse.
+  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
+  if (embedBtn) {
+    const originalLabel = embedBtn.textContent;
+    let revertTimer = null;
+    embedBtn.addEventListener("click", async () => {
+      clearTimeout(revertTimer);
+      try {
+        const res = await fetch(window.location.href);
+        const html = await res.text();
+        await navigator.clipboard.writeText(html);
+        embedBtn.textContent = "Embed code copied";
+        embedBtn.classList.add("abc-farecalc-copied");
+      } catch (err) {
+        embedBtn.textContent = "Couldn't copy \u2014 try again";
+      }
+      revertTimer = setTimeout(() => {
+        embedBtn.classList.remove("abc-farecalc-copied");
+        embedBtn.textContent = originalLabel;
+      }, 2500);
+    });
+  }
+
   render();
 }
 

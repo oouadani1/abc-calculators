@@ -282,8 +282,14 @@
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.abc-choice-button:hover {
-  border-color: var(--abc-teal);
+/* Hover-only effects guarded behind (hover: hover) so touchscreens —
+   which fire :hover on tap and have no real "mouse leave" — never get
+   stuck showing a hover state until the next unrelated tap. Purely a
+   feature-detection wrapper; desktop/trackpad behavior is unchanged. */
+@media (hover: hover) and (pointer: fine) {
+  .abc-choice-button:hover {
+    border-color: var(--abc-teal);
+  }
 }
 
 .abc-choice-button.abc-active {
@@ -360,18 +366,20 @@
   color: #fff;
 }
 
-.abc-btn-primary:hover {
-  opacity: 0.9;
-}
-
 .abc-btn-ghost {
   background: transparent;
   color: var(--abc-ink-muted);
   padding: 12px 16px;
 }
 
-.abc-btn-ghost:hover {
-  color: var(--abc-navy);
+@media (hover: hover) and (pointer: fine) {
+  .abc-btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .abc-btn-ghost:hover {
+    color: var(--abc-navy);
+  }
 }
 
 /* ---- Result cards ---- */
@@ -548,8 +556,10 @@
   text-underline-offset: 3px;
 }
 
-.abc-text-link:hover {
-  color: var(--abc-navy);
+@media (hover: hover) and (pointer: fine) {
+  .abc-text-link:hover {
+    color: var(--abc-navy);
+  }
 }
 
 /* ---- Responsive ---- */
@@ -682,8 +692,10 @@
   text-underline-offset: 2px;
 }
 
-.abc-farecalc-inline-link:hover {
-  color: var(--abc-navy-deep);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-inline-link:hover {
+    color: var(--abc-navy-deep);
+  }
 }
 
 /* A one-line static explainer directly under a question header, before
@@ -695,7 +707,6 @@
 }
 
 /* ---- Route buttons ---- */
-.abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
   border-color: var(--mbta-purple);
@@ -711,16 +722,27 @@
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
-   blue above, not whatever frame the swipe happens to end on. */
+   blue above, not whatever frame the swipe happens to end on. Guarded
+   behind (hover: hover) — on touch devices, :hover fires on tap and
+   has no "mouse leave" to end it, so this animation (and the color
+   change) could otherwise fire and hang on a tap meant for scrolling. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
 }
 
-.abc-farecalc-btn-subway:hover {
-  border-color: transparent;
-  color: #fff;
-  animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-btn-rail:hover {
+    background: var(--mbta-purple);
+    border-color: var(--mbta-purple);
+    color: #fff;
+  }
+
+  .abc-farecalc-btn-subway:hover {
+    border-color: transparent;
+    color: #fff;
+    animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
 }
 
 @keyframes abc-farecalc-line-swipe {
@@ -746,7 +768,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
     background: var(--mbta-blue);
@@ -773,8 +795,10 @@
   transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.abc-farecalc-day-btn:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-day-btn:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .abc-farecalc-day-btn.abc-active {
@@ -807,8 +831,10 @@
   flex-shrink: 0;
 }
 
-.abc-farecalc-stepper-btn:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-stepper-btn:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .abc-farecalc-stepper-btn:active {
@@ -980,6 +1006,70 @@
   border-top: 1px solid var(--abc-border);
   font-size: 0.75rem;
   color: var(--abc-ink-faint);
+}
+
+/* ---- Assumptions list inside the sourcing accordion ---- */
+.abc-farecalc-assumptions {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.abc-farecalc-assumptions li {
+  margin-bottom: var(--abc-space-sm);
+  line-height: 1.5;
+}
+
+.abc-farecalc-assumptions li:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Embed button: same plain gray/white look as an unselected
+   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
+   button already provides that, this just adds the "copied" state. On
+   click, the same color-swipe pattern as the Subway & Bus hover plays
+   once, landing on green instead of blue (a distinct "success" cue vs.
+   that button's route-identity blue), then holds until it reverts. ---- */
+.abc-farecalc-embed {
+  margin-top: var(--abc-space-lg);
+  text-align: center;
+}
+
+.abc-farecalc-embed-btn.abc-farecalc-copied {
+  border-color: transparent;
+  color: #fff;
+  animation: abc-farecalc-embed-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes abc-farecalc-embed-swipe {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abc-farecalc-embed-btn.abc-farecalc-copied {
+    animation: none;
+    background: var(--mbta-green);
+    border-color: transparent;
+    color: #fff;
+  }
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -1195,18 +1285,24 @@
     </div>
 
     <details class="abc-details">
-      <summary>Where we got these numbers</summary>
+      <summary>Where we got these numbers, and what we're assuming</summary>
       <div class="abc-details-body">
-        Fares are from mbta.com, checked 2026-07-10. The 30% pre-tax
-        savings default is MBTA's own Perq page figure, not an exact
-        number &mdash; adjust it if you know your own tax rate. Employer
-        subsidy and pre-tax savings are applied to both options the same
-        way. Fares change over time, so treat this as a helpful estimate,
-        not a guarantee.
+        <ul class="abc-farecalc-assumptions">
+          <li>Fares are from mbta.com, checked 2026-07-10, and change over time &mdash; treat this as a helpful estimate, not a guarantee.</li>
+          <li>Picking a number of days assumes a round trip each day: one ride there, one ride back.</li>
+          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare (the LinkPass fare, or your Commuter Rail zone's fare) &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month.</li>
+          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass &mdash; LinkPass, or your Commuter Rail zone's monthly price.</li>
+          <li>Employer subsidy and pre-tax savings are applied the same way to both options.</li>
+          <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number &mdash; adjust it if you know your own tax rate.</li>
+        </ul>
 
         <p class="abc-farecalc-credit"><strong>Built by A Better City</strong> | July 2026</p>
       </div>
     </details>
+
+    <div class="abc-farecalc-embed">
+      <button type="button" class="abc-choice-button abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code</button>
+    </div>
   </div>
 
 <script>
@@ -1526,6 +1622,35 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+  }
+
+  // Embed button: re-fetches this page's own source and copies it to the
+  // clipboard. Only produces a complete, pasteable snippet when the page
+  // is actually the built dist/*.html chunk (inline <style>/<script>) —
+  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
+  // files, so there's nothing self-contained to copy from there. The
+  // "copied" state is a click-triggered class (abc-farecalc-copied), not
+  // a :hover effect, so it behaves identically on touch and mouse.
+  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
+  if (embedBtn) {
+    const originalLabel = embedBtn.textContent;
+    let revertTimer = null;
+    embedBtn.addEventListener("click", async () => {
+      clearTimeout(revertTimer);
+      try {
+        const res = await fetch(window.location.href);
+        const html = await res.text();
+        await navigator.clipboard.writeText(html);
+        embedBtn.textContent = "Embed code copied";
+        embedBtn.classList.add("abc-farecalc-copied");
+      } catch (err) {
+        embedBtn.textContent = "Couldn't copy \u2014 try again";
+      }
+      revertTimer = setTimeout(() => {
+        embedBtn.classList.remove("abc-farecalc-copied");
+        embedBtn.textContent = originalLabel;
+      }, 2500);
+    });
   }
 
   render();
