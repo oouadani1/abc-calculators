@@ -283,16 +283,47 @@ function mbtaInitCalculator(rootEl) {
   if (embedBtn) {
     const originalLabel = embedBtn.textContent;
     let revertTimer = null;
+
+    // Tries re-fetching the page's own URL first (works for any normal
+    // http/https hosting). Opening the file directly from disk (file://)
+    // makes that fetch fail with a CORS error every time, even though
+    // nothing is actually wrong \u2014 browsers block fetch() on file:// URLs
+    // on principle. Falls back to reading the already-loaded <style> and
+    // <script> tags straight from the DOM, which works regardless of how
+    // the page was opened.
+    async function getEmbedHtml() {
+      try {
+        const res = await fetch(window.location.href);
+        if (!res.ok) throw new Error("fetch failed");
+        return await res.text();
+      } catch (err) {
+        const styleTag = document.querySelector("style");
+        const scriptTag = document.querySelector("script:not([src])");
+        const parts = [];
+        // The closing tags below are deliberately split with a backslash.
+        // build.sh inlines this file's own source into a real script
+        // element, and the HTML parser ends that element at the literal
+        // closing-tag text wherever it appears in the source, including
+        // inside a JS string, template literal, or even this comment —
+        // it doesn't parse JS at all, just scans for the raw bytes. An
+        // unescaped closing tag here would truncate the whole script at
+        // build time.
+        if (styleTag) parts.push(`<style>${styleTag.textContent}<\/style>`);
+        parts.push(rootEl.outerHTML);
+        if (scriptTag) parts.push(`<script>${scriptTag.textContent}<\/script>`);
+        return parts.join("\n");
+      }
+    }
+
     embedBtn.addEventListener("click", async () => {
       clearTimeout(revertTimer);
       try {
-        const res = await fetch(window.location.href);
-        const html = await res.text();
+        const html = await getEmbedHtml();
         await navigator.clipboard.writeText(html);
         embedBtn.textContent = "Embed code copied";
         embedBtn.classList.add("abc-farecalc-copied");
       } catch (err) {
-        embedBtn.textContent = "Couldn't copy \u2014 try again";
+        embedBtn.textContent = "Couldn't copy, try again";
       }
       revertTimer = setTimeout(() => {
         embedBtn.classList.remove("abc-farecalc-copied");
