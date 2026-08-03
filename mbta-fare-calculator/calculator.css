@@ -114,8 +114,10 @@
   text-underline-offset: 2px;
 }
 
-.abc-farecalc-inline-link:hover {
-  color: var(--abc-navy-deep);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-inline-link:hover {
+    color: var(--abc-navy-deep);
+  }
 }
 
 /* A one-line static explainer directly under a question header, before
@@ -127,7 +129,6 @@
 }
 
 /* ---- Route buttons ---- */
-.abc-farecalc-btn-rail:hover,
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
   border-color: var(--mbta-purple);
@@ -143,16 +144,27 @@
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
-   blue above, not whatever frame the swipe happens to end on. */
+   blue above, not whatever frame the swipe happens to end on. Guarded
+   behind (hover: hover) — on touch devices, :hover fires on tap and
+   has no "mouse leave" to end it, so this animation (and the color
+   change) could otherwise fire and hang on a tap meant for scrolling. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
 }
 
-.abc-farecalc-btn-subway:hover {
-  border-color: transparent;
-  color: #fff;
-  animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-btn-rail:hover {
+    background: var(--mbta-purple);
+    border-color: var(--mbta-purple);
+    color: #fff;
+  }
+
+  .abc-farecalc-btn-subway:hover {
+    border-color: transparent;
+    color: #fff;
+    animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
 }
 
 @keyframes abc-farecalc-line-swipe {
@@ -178,7 +190,7 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
     background: var(--mbta-blue);
@@ -205,8 +217,10 @@
   transition: background 0.15s ease, transform 0.1s ease;
 }
 
-.abc-farecalc-day-btn:hover {
-  transform: translateY(-2px);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-day-btn:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .abc-farecalc-day-btn.abc-active {
@@ -239,8 +253,10 @@
   flex-shrink: 0;
 }
 
-.abc-farecalc-stepper-btn:hover {
-  filter: brightness(1.1);
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-stepper-btn:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .abc-farecalc-stepper-btn:active {
@@ -412,6 +428,70 @@
   border-top: 1px solid var(--abc-border);
   font-size: 0.75rem;
   color: var(--abc-ink-faint);
+}
+
+/* ---- Assumptions list inside the sourcing accordion ---- */
+.abc-farecalc-assumptions {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.abc-farecalc-assumptions li {
+  margin-bottom: var(--abc-space-sm);
+  line-height: 1.5;
+}
+
+.abc-farecalc-assumptions li:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Embed button: same plain gray/white look as an unselected
+   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
+   button already provides that, this just adds the "copied" state. On
+   click, the same color-swipe pattern as the Subway & Bus hover plays
+   once, landing on green instead of blue (a distinct "success" cue vs.
+   that button's route-identity blue), then holds until it reverts. ---- */
+.abc-farecalc-embed {
+  margin-top: var(--abc-space-lg);
+  text-align: center;
+}
+
+.abc-farecalc-embed-btn.abc-farecalc-copied {
+  border-color: transparent;
+  color: #fff;
+  animation: abc-farecalc-embed-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes abc-farecalc-embed-swipe {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-red) 0%, var(--mbta-red) 20%,
+      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
+      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
+      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
+      var(--mbta-green) 80%, var(--mbta-green) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abc-farecalc-embed-btn.abc-farecalc-copied {
+    animation: none;
+    background: var(--mbta-green);
+    border-color: transparent;
+    color: #fff;
+  }
 }
 
 /* Recommended card: fixed green, regardless of route theme */

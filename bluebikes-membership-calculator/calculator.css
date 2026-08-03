@@ -10,8 +10,13 @@
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.abc-bikecalc-card:hover {
-  transform: translateY(-2px);
+/* Guarded behind (hover: hover): touchscreens fire :hover on tap with
+   no "mouse leave" to end it, so this could otherwise hang the card in
+   its lifted state after a tap meant for scrolling past it. */
+@media (hover: hover) and (pointer: fine) {
+  .abc-bikecalc-card:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .abc-bikecalc-card:focus-visible {

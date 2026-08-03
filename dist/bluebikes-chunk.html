@@ -273,8 +273,14 @@
   transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.abc-choice-button:hover {
-  border-color: var(--abc-teal);
+/* Hover-only effects guarded behind (hover: hover) so touchscreens —
+   which fire :hover on tap and have no real "mouse leave" — never get
+   stuck showing a hover state until the next unrelated tap. Purely a
+   feature-detection wrapper; desktop/trackpad behavior is unchanged. */
+@media (hover: hover) and (pointer: fine) {
+  .abc-choice-button:hover {
+    border-color: var(--abc-teal);
+  }
 }
 
 .abc-choice-button.abc-active {
@@ -351,18 +357,20 @@
   color: #fff;
 }
 
-.abc-btn-primary:hover {
-  opacity: 0.9;
-}
-
 .abc-btn-ghost {
   background: transparent;
   color: var(--abc-ink-muted);
   padding: 12px 16px;
 }
 
-.abc-btn-ghost:hover {
-  color: var(--abc-navy);
+@media (hover: hover) and (pointer: fine) {
+  .abc-btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .abc-btn-ghost:hover {
+    color: var(--abc-navy);
+  }
 }
 
 /* ---- Result cards ---- */
@@ -539,8 +547,10 @@
   text-underline-offset: 3px;
 }
 
-.abc-text-link:hover {
-  color: var(--abc-navy);
+@media (hover: hover) and (pointer: fine) {
+  .abc-text-link:hover {
+    color: var(--abc-navy);
+  }
 }
 
 /* ---- Responsive ---- */
@@ -569,8 +579,13 @@
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
 
-.abc-bikecalc-card:hover {
-  transform: translateY(-2px);
+/* Guarded behind (hover: hover): touchscreens fire :hover on tap with
+   no "mouse leave" to end it, so this could otherwise hang the card in
+   its lifted state after a tap meant for scrolling past it. */
+@media (hover: hover) and (pointer: fine) {
+  .abc-bikecalc-card:hover {
+    transform: translateY(-2px);
+  }
 }
 
 .abc-bikecalc-card:focus-visible {

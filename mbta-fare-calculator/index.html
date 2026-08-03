@@ -160,18 +160,24 @@
     </div>
 
     <details class="abc-details">
-      <summary>Where we got these numbers</summary>
+      <summary>Where we got these numbers, and what we're assuming</summary>
       <div class="abc-details-body">
-        Fares are from mbta.com, checked 2026-07-10. The 30% pre-tax
-        savings default is MBTA's own Perq page figure, not an exact
-        number &mdash; adjust it if you know your own tax rate. Employer
-        subsidy and pre-tax savings are applied to both options the same
-        way. Fares change over time, so treat this as a helpful estimate,
-        not a guarantee.
+        <ul class="abc-farecalc-assumptions">
+          <li>Fares are from mbta.com, checked 2026-07-10, and change over time &mdash; treat this as a helpful estimate, not a guarantee.</li>
+          <li>Picking a number of days assumes a round trip each day: one ride there, one ride back.</li>
+          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare (the LinkPass fare, or your Commuter Rail zone's fare) &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month.</li>
+          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass &mdash; LinkPass, or your Commuter Rail zone's monthly price.</li>
+          <li>Employer subsidy and pre-tax savings are applied the same way to both options.</li>
+          <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number &mdash; adjust it if you know your own tax rate.</li>
+        </ul>
 
         <p class="abc-farecalc-credit"><strong>Built by A Better City</strong> | July 2026</p>
       </div>
     </details>
+
+    <div class="abc-farecalc-embed">
+      <button type="button" class="abc-choice-button abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code</button>
+    </div>
   </div>
   <!-- ABC-CALC-HTML-END -->
 
