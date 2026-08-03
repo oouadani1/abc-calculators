@@ -581,7 +581,7 @@
    shared/styles/base.css. Prefix: .abc-farecalc-*
 
    Route buttons get MBTA's own line colors instead of the shared
-   ABC palette: Commuter Rail is a real, single MBTA line with an
+   ABC palette: Regional Rail is a real, single MBTA line with an
    official color; Subway & Bus uses MBTA Blue. Whichever route is
    selected becomes the accent color (--abc-farecalc-accent) for the
    rest of the form's interactive controls — a deliberate "theme"
@@ -605,7 +605,7 @@
   --mbta-blue: #003DA5;
   --mbta-blue-tint: #E6ECF8;
   --mbta-silver: #7C878E;
-  --mbta-purple: #80276C; /* Commuter Rail's own official color */
+  --mbta-purple: #80276C; /* Regional Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
 }
 
@@ -1024,7 +1024,7 @@
 }
 
 /* ---- Embed button: same plain gray/white look as an unselected
-   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
+   choice button (Yes/No, Regional Rail when not picked) — .abc-choice-
    button already provides that, this just adds the "copied" state. On
    click, the same color-swipe pattern as the Subway & Bus hover plays
    once, landing on green instead of blue (a distinct "success" cue vs.
@@ -1154,7 +1154,7 @@
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Regional Rail</button>
             </div>
           </div>
 
@@ -1290,8 +1290,8 @@
         <ul class="abc-farecalc-assumptions">
           <li>Fares are from mbta.com, checked 2026-07-10, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li>Picking a number of days assumes a round trip each day: one ride there, one ride back.</li>
-          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month. LinkPass is $2.40 a ride. Commuter Rail ranges from $2.40 to $13.25 a ride depending on your zone.</li>
-          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass: $90 for LinkPass, or $90 to $426 for Commuter Rail depending on your zone.</li>
+          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month. LinkPass is $2.40 a ride. Regional Rail ranges from $2.40 to $13.25 a ride depending on your zone.</li>
+          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass: $90 for LinkPass, or $90 to $426 for Regional Rail depending on your zone.</li>
           <li>Employer subsidy and pre-tax savings are applied the same way to both options.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
         </ul>
@@ -1368,7 +1368,7 @@ function abcFormatPercent(value) {
    The only section that should need editing when fares change.
    Every price below was pulled from mbta.com on 2026-07-10.
    RE-VERIFY ANNUALLY — MBTA fares typically change each July/August
-   and commuter rail zone boundaries have shifted in past years.
+   and regional rail zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
   fareSource: {
@@ -1381,7 +1381,7 @@ const MBTA_CONFIG = {
       "since it's not a permanent rate.",
   },
 
-  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
+  // Official MBTA Regional Rail zone map, for the "which zone am I in" question.
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
@@ -1401,7 +1401,7 @@ const MBTA_CONFIG = {
   defaultPerqPct: 30,
 
   // First entry is used directly for the "Subway & Bus" choice.
-  // Everything else is Commuter Rail, shown only if that's selected.
+  // Everything else is Regional Rail, shown only if that's selected.
   // Zone 1A and LinkPass are both $90 as of this pricing period — that's a
   // real coincidence in current MBTA fares, not a bug.
   passOptions: [
@@ -1707,8 +1707,11 @@ function mbtaInitCalculator(rootEl) {
         const html = await getEmbedHtml();
         const copied = await copyToClipboard(html);
         if (!copied) throw new Error("copy failed");
+        // Success stays put until the page reloads — no auto-revert. An
+        // error still reverts below so the button is clickable to retry.
         embedBtn.textContent = "Embed code copied";
         embedBtn.classList.add("abc-farecalc-copied");
+        return;
       } catch (err) {
         embedBtn.textContent = "Couldn't copy, try again";
       }
