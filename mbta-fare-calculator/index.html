@@ -18,13 +18,21 @@
 <body>
 
   <!-- ABC-CALC-HTML-START -->
-  <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
-    <p class="abc-subtitle">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
+  <div class="abc-calc abc-farecalc" data-abc-farecalc-root data-abc-mode="employee">
+    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an employee or an employer">
+      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an employee</button>
+      <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
+    </div>
+
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass benefit cost your organization?</h2>
+    <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
+    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team and we'll estimate what subsidizing MBTA passes would cost &mdash; and what your employees would save.</p>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">How do you get to work?</p>
+        <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
+        <p class="abc-question" data-mode-only="employer">Which pass are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -34,7 +42,8 @@
           </div>
 
           <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
-            <label for="abc-farecalc-zone">Which zone do you commute from?</label>
+            <label for="abc-farecalc-zone" data-mode-only="employee">Which zone do you commute from?</label>
+            <label for="abc-farecalc-zone" data-mode-only="employer">Which Regional Rail zone?</label>
             <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
             <span class="abc-field-hint">
               Not sure which zone you're in?
@@ -44,7 +53,7 @@
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group">
+      <div class="abc-farecalc-field-group" data-mode-only="employee">
         <p class="abc-question">How many days a week do you commute?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
@@ -59,9 +68,26 @@
         </div>
       </div>
 
+      <div class="abc-farecalc-field-group" data-mode-only="employer">
+        <p class="abc-question">How many employees are you covering?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-count-stepper>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5">&minus;</button>
+              <div class="abc-farecalc-stepper-value-wrap">
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="1" max="100000" value="25" inputmode="numeric" aria-label="Number of employees covered" />
+              </div>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">How much does your employer cover?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
+        <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
+        <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -77,8 +103,10 @@
       </div>
 
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
+        <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually straight from payroll.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -107,7 +135,7 @@
       </div>
     </div>
 
-    <div class="abc-cards abc-farecalc-cards">
+    <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
       <div class="abc-card" data-abc-card-ride>
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
@@ -155,6 +183,30 @@
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
+        </p>
+      </div>
+    </div>
+
+    <div class="abc-farecalc-employer-results" data-mode-only="employer">
+      <div class="abc-card abc-farecalc-employer-card">
+        <span class="abc-badge abc-farecalc-employer-badge">Your estimate</span>
+        <h3>What this pass program would cost your organization</h3>
+        <div class="abc-farecalc-stat-grid">
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-permonth>$0</span>
+            <span class="abc-farecalc-stat-label">per month</span>
+          </div>
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-peryear>$0</span>
+            <span class="abc-farecalc-stat-label">per year</span>
+          </div>
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-peremployee>$0.00</span>
+            <span class="abc-farecalc-stat-label">per employee, per month</span>
+          </div>
+        </div>
+        <p class="abc-farecalc-employer-note">
+          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
     </div>

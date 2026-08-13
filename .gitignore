@@ -1,0 +1,2 @@
+# Raw CSV exports — the combined name list lives in shared/data/ instead.
+*.csv

@@ -626,6 +626,122 @@
   max-width: 880px;
 }
 
+/* ---- Employee / employer mode toggle: a segmented pill switch at the
+   top. The active view is stored on the root as data-abc-mode, which
+   drives all the [data-mode-only] show/hide rules below. ---- */
+.abc-farecalc-modebar {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-farecalc-mode-btn {
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--abc-ink-muted);
+  padding: 8px 18px;
+  border-radius: var(--abc-radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-farecalc-mode-btn.abc-active {
+  background: #fff;
+  color: var(--abc-navy-deep);
+  box-shadow: var(--abc-shadow-card);
+}
+
+/* Show only the elements that belong to the current mode. Two attribute
+   selectors + the class keep specificity above the base display rules
+   (e.g. .abc-cards's flex) without needing !important. */
+.abc-farecalc[data-abc-mode="employer"] [data-mode-only="employee"] {
+  display: none;
+}
+
+.abc-farecalc[data-abc-mode="employee"] [data-mode-only="employer"] {
+  display: none;
+}
+
+/* Employee-count stepper: same control as the % steppers, but headcounts
+   can be several digits, so the value field and its wrapper are wider and
+   there's no trailing "%" glyph. */
+.abc-farecalc-count-stepper .abc-farecalc-stepper-value-wrap {
+  min-width: 96px;
+}
+
+.abc-farecalc-count-stepper .abc-farecalc-stepper-input {
+  width: 6ch;
+  text-align: center;
+}
+
+/* ---- Employer view results: a single summary card with a small grid of
+   headline figures, in place of the employee view's two comparison cards. ---- */
+.abc-farecalc-employer-results {
+  margin-top: var(--abc-space-lg);
+}
+
+.abc-farecalc-employer-badge {
+  background: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-employer-card h3 {
+  margin: 0 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--abc-space-md);
+  padding: var(--abc-space-md) 0;
+  border-top: 1px solid var(--abc-border);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.abc-farecalc-stat-value {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  letter-spacing: -0.01em;
+}
+
+.abc-farecalc-stat-label {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-employer-note {
+  margin: var(--abc-space-md) 0 0;
+  font-size: var(--abc-font-size-base);
+  line-height: 1.5;
+  color: var(--abc-ink);
+}
+
+.abc-farecalc-employer-note strong {
+  color: var(--mbta-green);
+}
+
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--abc-space-sm);
+  }
+}
+
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
@@ -1143,13 +1259,21 @@
 }
 </style>
 
-  <div class="abc-calc abc-farecalc" data-abc-farecalc-root>
-    <h2 class="abc-title abc-farecalc-title">Is an MBTA monthly pass worth it for you?</h2>
-    <p class="abc-subtitle">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
+  <div class="abc-calc abc-farecalc" data-abc-farecalc-root data-abc-mode="employee">
+    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an employee or an employer">
+      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an employee</button>
+      <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
+    </div>
+
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass benefit cost your organization?</h2>
+    <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
+    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team and we'll estimate what subsidizing MBTA passes would cost &mdash; and what your employees would save.</p>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">How do you get to work?</p>
+        <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
+        <p class="abc-question" data-mode-only="employer">Which pass are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -1159,7 +1283,8 @@
           </div>
 
           <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
-            <label for="abc-farecalc-zone">Which zone do you commute from?</label>
+            <label for="abc-farecalc-zone" data-mode-only="employee">Which zone do you commute from?</label>
+            <label for="abc-farecalc-zone" data-mode-only="employer">Which Regional Rail zone?</label>
             <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
             <span class="abc-field-hint">
               Not sure which zone you're in?
@@ -1169,7 +1294,7 @@
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group">
+      <div class="abc-farecalc-field-group" data-mode-only="employee">
         <p class="abc-question">How many days a week do you commute?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
@@ -1184,9 +1309,26 @@
         </div>
       </div>
 
+      <div class="abc-farecalc-field-group" data-mode-only="employer">
+        <p class="abc-question">How many employees are you covering?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-count-stepper>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5">&minus;</button>
+              <div class="abc-farecalc-stepper-value-wrap">
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="1" max="100000" value="25" inputmode="numeric" aria-label="Number of employees covered" />
+              </div>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">How much does your employer cover?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
+        <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
+        <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -1202,8 +1344,10 @@
       </div>
 
       <div class="abc-farecalc-field-group">
-        <p class="abc-question">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
+        <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually straight from payroll.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -1232,7 +1376,7 @@
       </div>
     </div>
 
-    <div class="abc-cards abc-farecalc-cards">
+    <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
       <div class="abc-card" data-abc-card-ride>
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
@@ -1280,6 +1424,30 @@
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
+        </p>
+      </div>
+    </div>
+
+    <div class="abc-farecalc-employer-results" data-mode-only="employer">
+      <div class="abc-card abc-farecalc-employer-card">
+        <span class="abc-badge abc-farecalc-employer-badge">Your estimate</span>
+        <h3>What this pass program would cost your organization</h3>
+        <div class="abc-farecalc-stat-grid">
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-permonth>$0</span>
+            <span class="abc-farecalc-stat-label">per month</span>
+          </div>
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-peryear>$0</span>
+            <span class="abc-farecalc-stat-label">per year</span>
+          </div>
+          <div class="abc-farecalc-stat">
+            <span class="abc-farecalc-stat-value" data-abc-emp-peremployee>$0.00</span>
+            <span class="abc-farecalc-stat-label">per employee, per month</span>
+          </div>
+        </div>
+        <p class="abc-farecalc-employer-note">
+          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
     </div>
@@ -1389,6 +1557,11 @@ const MBTA_CONFIG = {
   daysPerWeekOptions: [1, 2, 3, 4, 5],
   defaultDaysPerWeek: 3,
 
+  // Employer-mode inputs: how many employees a pass benefit would cover.
+  employeeCountStep: 5,
+  employeeCountMax: 100000,
+  defaultEmployeeCount: 25,
+
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
   // BOTH the pass and pay-per-ride totals — matching how Jawnt's own tool
   // treats these benefits (they're transit-benefit-account features, not
@@ -1453,6 +1626,29 @@ function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
   return { total, subsidyAmt, afterSubsidy, pretaxAmt, finalCost };
 }
 
+/** Employer view: cost of subsidizing a monthly pass across a workforce.
+ * Reuses the same subsidy-then-pre-tax breakdown as the employee view, but
+ * reads the pieces from the employer's angle: the subsidy amount is what the
+ * employer pays, and subsidy + pre-tax together is what each employee saves.
+ * Pay-per-ride / days-per-week don't apply here — a pass program is a flat
+ * monthly benefit, so those are employee-view-only inputs. */
+function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
+  const pass = mbtaGetPassOption(config, passId);
+  const b = mbtaCalcBreakdown(pass.monthlyPrice, contributionPct, perqPct);
+  const perEmployeeMonth = b.subsidyAmt;
+  const totalMonth = perEmployeeMonth * employeeCount;
+  return {
+    pass,
+    passPrice: pass.monthlyPrice,
+    perEmployeeMonth,
+    totalMonth,
+    totalYear: totalMonth * 12,
+    employeeSavesMonth: b.subsidyAmt + b.pretaxAmt,
+    perqIncluded: perqPct > 0,
+    contributes: contributionPct > 0,
+  };
+}
+
 /** Bundles every derived number the UI needs for both options + inputs. */
 function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
@@ -1481,11 +1677,28 @@ function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
+  let mode = "employee"; // "employee" | "employer"
   let routeType = "subway"; // "subway" | "rail"
   let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqAnswer = null; // null | "yes" | "no" — null means unanswered
   let perqEnabled = false;
   let perqPct = MBTA_CONFIG.defaultPerqPct;
+  let employeeCount = MBTA_CONFIG.defaultEmployeeCount;
+
+  // Mode toggle: swaps copy/fields/results between the employee and employer
+  // views. Copy and field visibility are driven off the root's data-abc-mode
+  // attribute in CSS; this just flips the attribute and re-renders.
+  const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mode = btn.dataset.abcModeSelect;
+      modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      rootEl.setAttribute("data-abc-mode", mode);
+      updateAdvocacy();
+      render();
+    });
+  });
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
@@ -1535,17 +1748,24 @@ function mbtaInitCalculator(rootEl) {
 
   perqButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const answer = btn.dataset.abcPerqSelect;
-      perqEnabled = answer === "yes";
+      perqAnswer = btn.dataset.abcPerqSelect;
+      perqEnabled = perqAnswer === "yes";
       perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       perqStepperField.style.display = perqEnabled ? "block" : "none";
-      perqAdvocacy.style.display = answer === "no" ? "block" : "none";
+      updateAdvocacy();
       render();
     });
   });
 
-  // Generic stepper wiring: works for both the subsidy and pre-tax controls.
-  function initStepper(rootAttr, step, getValue, setValue) {
+  // Advocacy nudge is employee-view-only, and only after "No" is picked.
+  function updateAdvocacy() {
+    perqAdvocacy.style.display = (perqAnswer === "no" && mode === "employee") ? "block" : "none";
+  }
+
+  // Generic stepper wiring: works for the subsidy, pre-tax, and employee-count
+  // controls. min/max default to a 0-100 percentage; the count stepper passes
+  // its own wider range.
+  function initStepper(rootAttr, step, getValue, setValue, min = 0, max = 100) {
     const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
     const input = stepperEl.querySelector("[data-abc-stepper-value]");
     const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
@@ -1555,12 +1775,12 @@ function mbtaInitCalculator(rootEl) {
       input.value = getValue();
     }
     minusBtn.addEventListener("click", () => {
-      setValue(Math.max(0, getValue() - step));
+      setValue(Math.max(min, getValue() - step));
       paint();
       render();
     });
     plusBtn.addEventListener("click", () => {
-      setValue(Math.min(100, getValue() + step));
+      setValue(Math.min(max, getValue() + step));
       paint();
       render();
     });
@@ -1570,7 +1790,7 @@ function mbtaInitCalculator(rootEl) {
     input.addEventListener("input", () => {
       const raw = Number(input.value);
       if (!Number.isNaN(raw)) {
-        setValue(Math.min(100, Math.max(0, raw)));
+        setValue(Math.min(max, Math.max(min, raw)));
         render();
       }
     });
@@ -1590,6 +1810,14 @@ function mbtaInitCalculator(rootEl) {
     () => perqPct,
     (v) => { perqPct = v; }
   );
+  initStepper(
+    "data-abc-count-stepper",
+    MBTA_CONFIG.employeeCountStep,
+    () => employeeCount,
+    (v) => { employeeCount = v; },
+    1,
+    MBTA_CONFIG.employeeCountMax
+  );
 
   function paintCard(prefix, breakdown, subsidyPctVal, perqPctVal) {
     rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
@@ -1602,6 +1830,11 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function render() {
+    if (mode === "employer") renderEmployer();
+    else renderEmployee();
+  }
+
+  function renderEmployee() {
     const effectivePerqPct = perqEnabled ? perqPct : 0;
     const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, effectivePerqPct);
 
@@ -1622,6 +1855,22 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+  }
+
+  function renderEmployer() {
+    const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
+    rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
+    rootEl.querySelector("[data-abc-emp-peryear]").textContent = abcFormatCurrencyWhole(r.totalYear);
+    rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
+    rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
+
+    // Spell out where the employee's savings come from, so the number isn't
+    // floating without context — contribution, Perq, or both.
+    let detail = "";
+    if (r.perqIncluded && r.contributes) detail = " — your contribution plus their Perq pre-tax savings";
+    else if (r.perqIncluded) detail = " — from Perq pre-tax savings";
+    else if (r.contributes) detail = " — from your contribution";
+    rootEl.querySelector("[data-abc-emp-saves-detail]").textContent = detail;
   }
 
   // Embed button: re-fetches this page's own source and copies it to the

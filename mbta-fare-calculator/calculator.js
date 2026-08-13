@@ -37,6 +37,11 @@ const MBTA_CONFIG = {
   daysPerWeekOptions: [1, 2, 3, 4, 5],
   defaultDaysPerWeek: 3,
 
+  // Employer-mode inputs: how many employees a pass benefit would cover.
+  employeeCountStep: 5,
+  employeeCountMax: 100000,
+  defaultEmployeeCount: 25,
+
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
   // BOTH the pass and pay-per-ride totals — matching how Jawnt's own tool
   // treats these benefits (they're transit-benefit-account features, not
@@ -101,6 +106,29 @@ function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
   return { total, subsidyAmt, afterSubsidy, pretaxAmt, finalCost };
 }
 
+/** Employer view: cost of subsidizing a monthly pass across a workforce.
+ * Reuses the same subsidy-then-pre-tax breakdown as the employee view, but
+ * reads the pieces from the employer's angle: the subsidy amount is what the
+ * employer pays, and subsidy + pre-tax together is what each employee saves.
+ * Pay-per-ride / days-per-week don't apply here — a pass program is a flat
+ * monthly benefit, so those are employee-view-only inputs. */
+function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
+  const pass = mbtaGetPassOption(config, passId);
+  const b = mbtaCalcBreakdown(pass.monthlyPrice, contributionPct, perqPct);
+  const perEmployeeMonth = b.subsidyAmt;
+  const totalMonth = perEmployeeMonth * employeeCount;
+  return {
+    pass,
+    passPrice: pass.monthlyPrice,
+    perEmployeeMonth,
+    totalMonth,
+    totalYear: totalMonth * 12,
+    employeeSavesMonth: b.subsidyAmt + b.pretaxAmt,
+    perqIncluded: perqPct > 0,
+    contributes: contributionPct > 0,
+  };
+}
+
 /** Bundles every derived number the UI needs for both options + inputs. */
 function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
@@ -129,11 +157,28 @@ function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
    ------------------------------------------------------------ */
 
 function mbtaInitCalculator(rootEl) {
+  let mode = "employee"; // "employee" | "employer"
   let routeType = "subway"; // "subway" | "rail"
   let daysPerWeek = MBTA_CONFIG.defaultDaysPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
+  let perqAnswer = null; // null | "yes" | "no" — null means unanswered
   let perqEnabled = false;
   let perqPct = MBTA_CONFIG.defaultPerqPct;
+  let employeeCount = MBTA_CONFIG.defaultEmployeeCount;
+
+  // Mode toggle: swaps copy/fields/results between the employee and employer
+  // views. Copy and field visibility are driven off the root's data-abc-mode
+  // attribute in CSS; this just flips the attribute and re-renders.
+  const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mode = btn.dataset.abcModeSelect;
+      modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      rootEl.setAttribute("data-abc-mode", mode);
+      updateAdvocacy();
+      render();
+    });
+  });
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
@@ -183,17 +228,24 @@ function mbtaInitCalculator(rootEl) {
 
   perqButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      const answer = btn.dataset.abcPerqSelect;
-      perqEnabled = answer === "yes";
+      perqAnswer = btn.dataset.abcPerqSelect;
+      perqEnabled = perqAnswer === "yes";
       perqButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       perqStepperField.style.display = perqEnabled ? "block" : "none";
-      perqAdvocacy.style.display = answer === "no" ? "block" : "none";
+      updateAdvocacy();
       render();
     });
   });
 
-  // Generic stepper wiring: works for both the subsidy and pre-tax controls.
-  function initStepper(rootAttr, step, getValue, setValue) {
+  // Advocacy nudge is employee-view-only, and only after "No" is picked.
+  function updateAdvocacy() {
+    perqAdvocacy.style.display = (perqAnswer === "no" && mode === "employee") ? "block" : "none";
+  }
+
+  // Generic stepper wiring: works for the subsidy, pre-tax, and employee-count
+  // controls. min/max default to a 0-100 percentage; the count stepper passes
+  // its own wider range.
+  function initStepper(rootAttr, step, getValue, setValue, min = 0, max = 100) {
     const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
     const input = stepperEl.querySelector("[data-abc-stepper-value]");
     const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
@@ -203,12 +255,12 @@ function mbtaInitCalculator(rootEl) {
       input.value = getValue();
     }
     minusBtn.addEventListener("click", () => {
-      setValue(Math.max(0, getValue() - step));
+      setValue(Math.max(min, getValue() - step));
       paint();
       render();
     });
     plusBtn.addEventListener("click", () => {
-      setValue(Math.min(100, getValue() + step));
+      setValue(Math.min(max, getValue() + step));
       paint();
       render();
     });
@@ -218,7 +270,7 @@ function mbtaInitCalculator(rootEl) {
     input.addEventListener("input", () => {
       const raw = Number(input.value);
       if (!Number.isNaN(raw)) {
-        setValue(Math.min(100, Math.max(0, raw)));
+        setValue(Math.min(max, Math.max(min, raw)));
         render();
       }
     });
@@ -238,6 +290,14 @@ function mbtaInitCalculator(rootEl) {
     () => perqPct,
     (v) => { perqPct = v; }
   );
+  initStepper(
+    "data-abc-count-stepper",
+    MBTA_CONFIG.employeeCountStep,
+    () => employeeCount,
+    (v) => { employeeCount = v; },
+    1,
+    MBTA_CONFIG.employeeCountMax
+  );
 
   function paintCard(prefix, breakdown, subsidyPctVal, perqPctVal) {
     rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
@@ -250,6 +310,11 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function render() {
+    if (mode === "employer") renderEmployer();
+    else renderEmployee();
+  }
+
+  function renderEmployee() {
     const effectivePerqPct = perqEnabled ? perqPct : 0;
     const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), daysPerWeek, subsidyPct, effectivePerqPct);
 
@@ -270,6 +335,22 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+  }
+
+  function renderEmployer() {
+    const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
+    rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
+    rootEl.querySelector("[data-abc-emp-peryear]").textContent = abcFormatCurrencyWhole(r.totalYear);
+    rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
+    rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
+
+    // Spell out where the employee's savings come from, so the number isn't
+    // floating without context — contribution, Perq, or both.
+    let detail = "";
+    if (r.perqIncluded && r.contributes) detail = " — your contribution plus their Perq pre-tax savings";
+    else if (r.perqIncluded) detail = " — from Perq pre-tax savings";
+    else if (r.contributes) detail = " — from your contribution";
+    rootEl.querySelector("[data-abc-emp-saves-detail]").textContent = detail;
   }
 
   // Embed button: re-fetches this page's own source and copies it to the

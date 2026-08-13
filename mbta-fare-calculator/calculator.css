@@ -48,6 +48,122 @@
   max-width: 880px;
 }
 
+/* ---- Employee / employer mode toggle: a segmented pill switch at the
+   top. The active view is stored on the root as data-abc-mode, which
+   drives all the [data-mode-only] show/hide rules below. ---- */
+.abc-farecalc-modebar {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-farecalc-mode-btn {
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--abc-ink-muted);
+  padding: 8px 18px;
+  border-radius: var(--abc-radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-farecalc-mode-btn.abc-active {
+  background: #fff;
+  color: var(--abc-navy-deep);
+  box-shadow: var(--abc-shadow-card);
+}
+
+/* Show only the elements that belong to the current mode. Two attribute
+   selectors + the class keep specificity above the base display rules
+   (e.g. .abc-cards's flex) without needing !important. */
+.abc-farecalc[data-abc-mode="employer"] [data-mode-only="employee"] {
+  display: none;
+}
+
+.abc-farecalc[data-abc-mode="employee"] [data-mode-only="employer"] {
+  display: none;
+}
+
+/* Employee-count stepper: same control as the % steppers, but headcounts
+   can be several digits, so the value field and its wrapper are wider and
+   there's no trailing "%" glyph. */
+.abc-farecalc-count-stepper .abc-farecalc-stepper-value-wrap {
+  min-width: 96px;
+}
+
+.abc-farecalc-count-stepper .abc-farecalc-stepper-input {
+  width: 6ch;
+  text-align: center;
+}
+
+/* ---- Employer view results: a single summary card with a small grid of
+   headline figures, in place of the employee view's two comparison cards. ---- */
+.abc-farecalc-employer-results {
+  margin-top: var(--abc-space-lg);
+}
+
+.abc-farecalc-employer-badge {
+  background: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-employer-card h3 {
+  margin: 0 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--abc-space-md);
+  padding: var(--abc-space-md) 0;
+  border-top: 1px solid var(--abc-border);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.abc-farecalc-stat-value {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  letter-spacing: -0.01em;
+}
+
+.abc-farecalc-stat-label {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-employer-note {
+  margin: var(--abc-space-md) 0 0;
+  font-size: var(--abc-font-size-base);
+  line-height: 1.5;
+  color: var(--abc-ink);
+}
+
+.abc-farecalc-employer-note strong {
+  color: var(--mbta-green);
+}
+
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--abc-space-sm);
+  }
+}
+
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
