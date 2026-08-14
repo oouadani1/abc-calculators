@@ -33,6 +33,10 @@ build_tool() {
     echo "<script>"
     cat "$ROOT/shared/utils/format.js"
     echo ""
+    # Combined member/parent org list (window.ABC_MEMBER_ORGS) — seeds the
+    # optional analytics org picker. Must load before calculator.js.
+    cat "$ROOT/shared/data/member-orgs.js"
+    echo ""
     cat "$ROOT/$tool_dir/calculator.js"
     echo "</script>"
   } > "$DIST/$out_file"

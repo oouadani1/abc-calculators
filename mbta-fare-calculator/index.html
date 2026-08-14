@@ -211,6 +211,13 @@
       </div>
     </div>
 
+    <div class="abc-farecalc-org" data-abc-org-field style="display: none;">
+      <label class="abc-farecalc-org-label" for="abc-farecalc-org-input">Which organization are you with? <span class="abc-farecalc-org-optional">(optional)</span></label>
+      <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" />
+      <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
+      <span class="abc-field-hint">Sharing this helps A Better City understand and improve the commuter benefits our members offer.</span>
+    </div>
+
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
@@ -234,6 +241,7 @@
   <!-- ABC-CALC-HTML-END -->
 
   <script src="../shared/utils/format.js"></script>
+  <script src="../shared/data/member-orgs.js"></script>
   <script src="calculator.js"></script>
 </body>
 </html>

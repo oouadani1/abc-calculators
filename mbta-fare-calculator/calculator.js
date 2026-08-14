@@ -42,6 +42,15 @@ const MBTA_CONFIG = {
   employeeCountMax: 100000,
   defaultEmployeeCount: 25,
 
+  // Optional analytics: when someone picks their organization, the tool
+  // sends one record (org + their inputs) to this endpoint. Point it at
+  // the Cloudflare Worker that proxies to Airtable (see
+  // analytics/cloudflare-worker.js). Leave blank to disable logging
+  // entirely — the org field simply won't appear.
+  analytics: {
+    endpoint: "",
+  },
+
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
   // BOTH the pass and pay-per-ride totals — matching how Jawnt's own tool
   // treats these benefits (they're transit-benefit-account features, not
@@ -448,6 +457,61 @@ function mbtaInitCalculator(rootEl) {
         embedBtn.classList.remove("abc-farecalc-copied");
         embedBtn.textContent = originalLabel;
       }, 2500);
+    });
+  }
+
+  // Optional analytics: when someone picks their organization, send one
+  // record (org + current inputs) to the configured endpoint. Fire-and-
+  // forget — logging must never block or break the tool. The org field
+  // only appears when an endpoint is set and the org list actually loaded,
+  // so leaving MBTA_CONFIG.analytics.endpoint blank hides it entirely.
+  const orgField = rootEl.querySelector("[data-abc-org-field]");
+  const orgInput = rootEl.querySelector("[data-abc-org-input]");
+  const orgList = rootEl.querySelector("[data-abc-org-list]");
+  const analyticsEndpoint = (MBTA_CONFIG.analytics && MBTA_CONFIG.analytics.endpoint) || "";
+  const orgNames = (typeof window !== "undefined" && window.ABC_MEMBER_ORGS) || [];
+
+  if (orgField && orgInput && orgList && analyticsEndpoint && orgNames.length) {
+    orgNames.forEach((name) => {
+      const opt = document.createElement("option");
+      opt.value = name;
+      orgList.appendChild(opt);
+    });
+    orgField.style.display = "";
+
+    function currentTransitLabel() {
+      if (routeType === "subway") return "Subway & Bus (LinkPass)";
+      const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
+      return "Regional Rail — " + (opt ? opt.label : "");
+    }
+
+    // One record per distinct org entered — dedupe so re-focusing the field
+    // (or re-picking the same name) doesn't file duplicates.
+    let lastLoggedOrg = "";
+    orgInput.addEventListener("change", () => {
+      const org = orgInput.value.trim();
+      if (!org || org === lastLoggedOrg) return;
+      lastLoggedOrg = org;
+      const payload = {
+        org,
+        mode,
+        transit: currentTransitLabel(),
+        contributionPct: subsidyPct,
+        offersPerq: perqEnabled,
+        perqPct: perqEnabled ? perqPct : 0,
+        employeeCount: mode === "employer" ? employeeCount : null,
+        source: (typeof window !== "undefined") ? window.location.href : "",
+      };
+      try {
+        fetch(analyticsEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (err) {
+        /* never let logging break the tool */
+      }
     });
   }
 
