@@ -27,7 +27,7 @@
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass benefit cost your organization?</h2>
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
-    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team and we'll estimate what subsidizing MBTA passes would cost &mdash; and what your employees would save.</p>
+    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group">
@@ -37,7 +37,7 @@
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Regional Rail</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Regional Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
             </div>
           </div>
 
@@ -135,6 +135,14 @@
       </div>
     </div>
 
+    <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
+      <h4>Limited-time savings</h4>
+      <p>
+        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026, with <strong data-abc-promo-days>0</strong> left. Perq users get this discount automatically.
+        <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
+      </p>
+    </div>
+
     <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
       <div class="abc-card" data-abc-card-ride>
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
@@ -167,7 +175,10 @@
 
         <div class="abc-farecalc-line">
           <span>Total monthly cost</span>
-          <span data-abc-pass-total>$0.00</span>
+          <span>
+            <span class="abc-farecalc-promo-original" data-abc-pass-promo-original style="display: none;">$0.00</span>
+            <span data-abc-pass-total>$0.00</span>
+          </span>
         </div>
         <div class="abc-farecalc-line">
           <span data-abc-pass-subsidy-label>Employer subsidy (0%)</span>

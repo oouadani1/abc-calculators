@@ -42,6 +42,19 @@ const MBTA_CONFIG = {
   employeeCountMax: 100000,
   defaultEmployeeCount: 25,
 
+  // Temporary Regional Rail promo: 50% off monthly passes, extended
+  // through Fall 2026 (originally June-Aug, now through Nov 30). Zone 1A
+  // is excluded, matching MBTA's own terms. Auto-expires on its own past
+  // endDate (see mbtaPromoIsActive) so nothing has to be remembered by
+  // hand once it's over.
+  // Source: https://www.mbta.com/fares/commuter-rail-summer-promotions
+  promo: {
+    discountPct: 50,
+    endDate: "2026-11-30",
+    excludeZoneIds: ["cr-zone-1a"],
+    infoUrl: "https://www.mbta.com/fares/commuter-rail-summer-promotions",
+  },
+
   // Optional analytics: when someone picks their organization, the tool
   // sends one record (org + their inputs) to this endpoint. Point it at
   // the Cloudflare Worker that proxies to Airtable (see
@@ -115,6 +128,29 @@ function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
   return { total, subsidyAmt, afterSubsidy, pretaxAmt, finalCost };
 }
 
+/** True while today is on or before the promo's end date (inclusive, local time). */
+function mbtaPromoIsActive(config, today) {
+  const end = new Date(config.promo.endDate + "T23:59:59");
+  return (today || new Date()).getTime() <= end.getTime();
+}
+
+/** Whole days remaining until the promo ends. Never negative; 0 on the last day. */
+function mbtaPromoDaysLeft(config, today) {
+  const end = new Date(config.promo.endDate + "T23:59:59");
+  const ms = end.getTime() - (today || new Date()).getTime();
+  return Math.max(0, Math.ceil(ms / 86400000));
+}
+
+/** True when a specific pass qualifies for the promo right now: the promo
+ * hasn't expired, it's a rail pass, and it isn't on the exclusion list
+ * (Zone 1A). Pay-per-ride fares are never discounted, only monthly passes. */
+function mbtaPromoApplies(config, passId, today) {
+  const pass = mbtaGetPassOption(config, passId);
+  if (!pass || pass.group !== "rail") return false;
+  if (config.promo.excludeZoneIds.includes(passId)) return false;
+  return mbtaPromoIsActive(config, today);
+}
+
 /** Employer view: cost of subsidizing a monthly pass across a workforce.
  * Reuses the same subsidy-then-pre-tax breakdown as the employee view, but
  * reads the pieces from the employer's angle: the subsidy amount is what the
@@ -123,12 +159,17 @@ function mbtaCalcBreakdown(total, subsidyPct, perqPct) {
  * monthly benefit, so those are employee-view-only inputs. */
 function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
   const pass = mbtaGetPassOption(config, passId);
-  const b = mbtaCalcBreakdown(pass.monthlyPrice, contributionPct, perqPct);
+  const promoApplies = mbtaPromoApplies(config, passId);
+  const passPrice = promoApplies
+    ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
+    : pass.monthlyPrice;
+  const b = mbtaCalcBreakdown(passPrice, contributionPct, perqPct);
   const perEmployeeMonth = b.subsidyAmt;
   const totalMonth = perEmployeeMonth * employeeCount;
   return {
     pass,
-    passPrice: pass.monthlyPrice,
+    passPrice,
+    promoApplies,
     perEmployeeMonth,
     totalMonth,
     totalYear: totalMonth * 12,
@@ -143,7 +184,15 @@ function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
   const rideTotal = mbtaCalcPayPerRideTotal(pass.oneWayFare, daysPerWeek, config.weeksPerMonth);
 
-  const passBreakdown = mbtaCalcBreakdown(pass.monthlyPrice, subsidyPct, perqPct);
+  // The promo discounts the monthly pass itself, not pay-per-ride fares, so
+  // it's applied before the subsidy/pre-tax breakdown runs on the pass side
+  // only — subsidy and Perq then apply on top of the already-discounted price.
+  const promoApplies = mbtaPromoApplies(config, passId);
+  const passPrice = promoApplies
+    ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
+    : pass.monthlyPrice;
+
+  const passBreakdown = mbtaCalcBreakdown(passPrice, subsidyPct, perqPct);
   const rideBreakdown = mbtaCalcBreakdown(rideTotal, subsidyPct, perqPct);
 
   const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
@@ -155,6 +204,8 @@ function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
     rideBreakdown,
     winner,
     annualSavings: monthlyDiff * 12,
+    promoApplies,
+    promoOriginalPrice: pass.monthlyPrice,
   };
 }
 
@@ -193,6 +244,27 @@ function mbtaInitCalculator(rootEl) {
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
   const dayButtons = rootEl.querySelectorAll("[data-abc-day-select]");
+
+  // Regional Rail promo: the button badge only depends on whether the promo
+  // as a whole is still running, so it's set once here rather than on every
+  // render. The callout and price strikethrough depend on which specific
+  // pass is selected (Zone 1A is excluded), so those are recomputed in
+  // updatePromoUI() below on every render instead.
+  const promoActive = mbtaPromoIsActive(MBTA_CONFIG);
+  const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
+  if (promoBadge) promoBadge.style.display = promoActive ? "" : "none";
+
+  function updatePromoUI() {
+    const callout = rootEl.querySelector("[data-abc-promo-callout]");
+    if (!callout) return;
+    const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
+    callout.style.display = applies ? "block" : "none";
+    if (applies) {
+      const days = mbtaPromoDaysLeft(MBTA_CONFIG);
+      rootEl.querySelector("[data-abc-promo-days]").textContent =
+        `${days} day${days === 1 ? "" : "s"}`;
+    }
+  }
 
   // Populate the rail zone dropdown from config (everything except linkpass).
   MBTA_CONFIG.passOptions
@@ -319,6 +391,7 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function render() {
+    updatePromoUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
   }
@@ -329,6 +402,17 @@ function mbtaInitCalculator(rootEl) {
 
     paintCard("ride", result.rideBreakdown, subsidyPct, effectivePerqPct);
     paintCard("pass", result.passBreakdown, subsidyPct, effectivePerqPct);
+
+    // Promo original price: struck through next to the (already-discounted)
+    // total that paintCard just wrote, so the MBTA discount reads as its own
+    // line separate from employer subsidy / Perq savings below it.
+    const promoOriginalEl = rootEl.querySelector("[data-abc-pass-promo-original]");
+    if (result.promoApplies) {
+      promoOriginalEl.textContent = abcFormatCurrency(result.promoOriginalPrice);
+      promoOriginalEl.style.display = "";
+    } else {
+      promoOriginalEl.style.display = "none";
+    }
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -354,11 +438,11 @@ function mbtaInitCalculator(rootEl) {
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
     // Spell out where the employee's savings come from, so the number isn't
-    // floating without context — contribution, Perq, or both.
+    // floating without context: contribution, Perq, or both.
     let detail = "";
-    if (r.perqIncluded && r.contributes) detail = " — your contribution plus their Perq pre-tax savings";
-    else if (r.perqIncluded) detail = " — from Perq pre-tax savings";
-    else if (r.contributes) detail = " — from your contribution";
+    if (r.perqIncluded && r.contributes) detail = ", thanks to your contribution and their Perq pre-tax savings";
+    else if (r.perqIncluded) detail = ", thanks to Perq pre-tax savings";
+    else if (r.contributes) detail = ", thanks to your contribution";
     rootEl.querySelector("[data-abc-emp-saves-detail]").textContent = detail;
   }
 

@@ -274,6 +274,45 @@
   margin-bottom: var(--abc-space-sm);
 }
 
+/* ---- Regional Rail promo badge: a small corner tag on the route button
+   itself, visible before anyone even picks a zone. Hidden entirely by JS
+   once the promo (see MBTA_CONFIG.promo) has expired. ---- */
+.abc-farecalc-btn-rail {
+  position: relative;
+}
+
+.abc-farecalc-promo-badge {
+  position: absolute;
+  top: -10px;
+  right: -8px;
+  background: var(--abc-orange);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 7px;
+  border-radius: var(--abc-radius-pill);
+  box-shadow: 0 1px 3px rgba(19, 64, 114, 0.3);
+  pointer-events: none;
+}
+
+/* ---- Promo callout: reuses the shared .abc-callout component so it reads
+   as a native part of the design system, not a bolted-on banner. Only
+   shown when the currently-selected pass actually qualifies (Regional
+   Rail, not Zone 1A, promo not expired) — see updatePromoUI(). ---- */
+.abc-farecalc-promo-callout {
+  margin-top: var(--abc-space-md);
+}
+
+/* Struck-through original price shown next to the promo-discounted total
+   on the Monthly Pass card. */
+.abc-farecalc-promo-original {
+  text-decoration: line-through;
+  color: var(--abc-ink-faint);
+  font-size: 0.9em;
+  margin-right: 6px;
+}
+
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
