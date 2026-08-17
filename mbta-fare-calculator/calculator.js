@@ -61,7 +61,7 @@ const MBTA_CONFIG = {
   // analytics/cloudflare-worker.js). Leave blank to disable logging
   // entirely — the org field simply won't appear.
   analytics: {
-    endpoint: "",
+    endpoint: "https://airtable-calc-automation.oouadani.workers.dev/",
   },
 
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to

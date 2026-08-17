@@ -71,7 +71,7 @@ export default {
       "Organization": org,
       "Mode": data.mode || "",
       "Transit": data.transit || "",
-      "Employer contribution %": Number(data.contributionPct) || 0,
+      "Employer Contribution": Number(data.contributionPct) || 0,
       "Offers Perq": !!data.offersPerq,
       "Perq %": Number(data.perqPct) || 0,
     };
