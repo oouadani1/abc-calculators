@@ -1,0 +1,38 @@
+name: Deploy Pages
+
+# Publishes the repo directly to GitHub Pages via the official Pages
+# actions, bypassing GitHub's "legacy" Jekyll-based build pipeline. That
+# legacy pipeline (auto-triggered "pages build and deployment" runs) has
+# repeatedly failed here on transient errors downloading its own
+# actions/jekyll-build-pages dependency — unrelated to this repo's content,
+# but it left the live site stuck on stale builds each time. This site is
+# plain static files with no Jekyll processing needed, so skipping that
+# pipeline removes the failure point entirely rather than working around it.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: "."
+      - id: deployment
+        uses: actions/deploy-pages@v4
