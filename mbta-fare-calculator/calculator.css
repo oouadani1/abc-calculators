@@ -164,34 +164,15 @@
   }
 }
 
-/* ---- Optional organization picker (seeds the analytics log). A quiet
-   footer field, not a required step — hidden unless analytics is wired up. ---- */
+/* ---- Organization picker (seeds the analytics log). Sits right under
+   the subtitle, styled as a normal question — not a footer afterthought —
+   hidden entirely unless analytics is wired up. ---- */
 .abc-farecalc-org {
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
-  border-top: 1px solid var(--abc-border);
-  display: flex;
-  flex-direction: column;
-  gap: var(--abc-space-sm);
-}
-
-.abc-farecalc-org-label {
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-}
-
-.abc-farecalc-org-optional {
-  font-weight: 400;
-  color: var(--abc-ink-faint);
+  margin-bottom: var(--abc-space-sm);
 }
 
 .abc-farecalc-org-input {
   max-width: 360px;
-}
-
-.abc-farecalc-org .abc-field-hint {
-  margin-top: 0;
 }
 
 /* ---- Bolder title, per the "make it memorable" direction ---- */

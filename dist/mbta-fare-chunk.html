@@ -733,34 +733,15 @@
   }
 }
 
-/* ---- Optional organization picker (seeds the analytics log). A quiet
-   footer field, not a required step — hidden unless analytics is wired up. ---- */
+/* ---- Organization picker (seeds the analytics log). Sits right under
+   the subtitle, styled as a normal question — not a footer afterthought —
+   hidden entirely unless analytics is wired up. ---- */
 .abc-farecalc-org {
-  margin-top: var(--abc-space-lg);
-  padding-top: var(--abc-space-lg);
-  border-top: 1px solid var(--abc-border);
-  display: flex;
-  flex-direction: column;
-  gap: var(--abc-space-sm);
-}
-
-.abc-farecalc-org-label {
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-}
-
-.abc-farecalc-org-optional {
-  font-weight: 400;
-  color: var(--abc-ink-faint);
+  margin-bottom: var(--abc-space-sm);
 }
 
 .abc-farecalc-org-input {
   max-width: 360px;
-}
-
-.abc-farecalc-org .abc-field-hint {
-  margin-top: 0;
 }
 
 /* ---- Bolder title, per the "make it memorable" direction ---- */
@@ -1340,6 +1321,16 @@
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
+    <div class="abc-farecalc-org" data-abc-org-field style="display: none;">
+      <p class="abc-question">What organization are you affiliated with?</p>
+      <div class="abc-input-row">
+        <div class="abc-field" style="flex-basis: 100%;">
+          <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
+          <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
+        </div>
+      </div>
+    </div>
+
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
@@ -1532,13 +1523,6 @@
           Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
-    </div>
-
-    <div class="abc-farecalc-org" data-abc-org-field style="display: none;">
-      <label class="abc-farecalc-org-label" for="abc-farecalc-org-input">Which organization are you with? <span class="abc-farecalc-org-optional">(optional)</span></label>
-      <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" />
-      <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
-      <span class="abc-field-hint">Sharing this helps A Better City understand and improve the commuter benefits our members offer.</span>
     </div>
 
     <details class="abc-details">
