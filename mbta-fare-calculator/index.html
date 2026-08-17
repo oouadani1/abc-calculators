@@ -25,7 +25,7 @@
     </div>
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass benefit cost your organization?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your organization?</h2>
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
@@ -33,7 +33,10 @@
       <p class="abc-question">What organization are you affiliated with?</p>
       <div class="abc-input-row">
         <div class="abc-field" style="flex-basis: 100%;">
-          <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
+          <div class="abc-farecalc-org-input-wrap">
+            <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
+            <button type="button" class="abc-farecalc-org-clear" data-abc-org-clear aria-label="Clear organization" style="display: none;">&times;</button>
+          </div>
           <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
         </div>
       </div>
@@ -148,7 +151,7 @@
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
       <h4>Limited-time savings</h4>
       <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026, with <strong data-abc-promo-days>0</strong> left. Perq users get this discount automatically.
+        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
       </p>
     </div>

@@ -749,8 +749,38 @@
   margin-bottom: var(--abc-space-sm);
 }
 
-.abc-farecalc-org-input {
+.abc-farecalc-org-input-wrap {
+  position: relative;
   max-width: 360px;
+}
+
+.abc-farecalc-org-input {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.abc-farecalc-org-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--abc-border);
+  color: var(--abc-ink-muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.abc-farecalc-org-clear:hover {
+  background: var(--abc-ink-faint);
+  color: #fff;
 }
 
 /* ---- Bolder title, per the "make it memorable" direction ---- */
@@ -1326,7 +1356,7 @@
     </div>
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass benefit cost your organization?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your organization?</h2>
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
@@ -1334,7 +1364,10 @@
       <p class="abc-question">What organization are you affiliated with?</p>
       <div class="abc-input-row">
         <div class="abc-field" style="flex-basis: 100%;">
-          <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
+          <div class="abc-farecalc-org-input-wrap">
+            <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
+            <button type="button" class="abc-farecalc-org-clear" data-abc-org-clear aria-label="Clear organization" style="display: none;">&times;</button>
+          </div>
           <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
         </div>
       </div>
@@ -1449,7 +1482,7 @@
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
       <h4>Limited-time savings</h4>
       <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026, with <strong data-abc-promo-days>0</strong> left. Perq users get this discount automatically.
+        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
       </p>
     </div>
@@ -1901,13 +1934,6 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
-/** Whole days remaining until the promo ends. Never negative; 0 on the last day. */
-function mbtaPromoDaysLeft(config, today) {
-  const end = new Date(config.promo.endDate + "T23:59:59");
-  const ms = end.getTime() - (today || new Date()).getTime();
-  return Math.max(0, Math.ceil(ms / 86400000));
-}
-
 /** True when a specific pass qualifies for the promo right now: the promo
  * hasn't expired, it's a rail pass, and it isn't on the exclusion list
  * (Zone 1A). Pay-per-ride fares are never discounted, only monthly passes. */
@@ -2026,11 +2052,6 @@ function mbtaInitCalculator(rootEl) {
     if (!callout) return;
     const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
     callout.style.display = applies ? "block" : "none";
-    if (applies) {
-      const days = mbtaPromoDaysLeft(MBTA_CONFIG);
-      rootEl.querySelector("[data-abc-promo-days]").textContent =
-        `${days} day${days === 1 ? "" : "s"}`;
-    }
   }
 
   // Populate the rail zone dropdown from config (everything except linkpass).
@@ -2161,6 +2182,7 @@ function mbtaInitCalculator(rootEl) {
     updatePromoUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
+    scheduleAnalyticsFlush();
   }
 
   function renderEmployee() {
@@ -2318,16 +2340,96 @@ function mbtaInitCalculator(rootEl) {
     });
   }
 
-  // Optional analytics: when someone picks their organization, send one
-  // record (org + current inputs) to the configured endpoint. Fire-and-
-  // forget — logging must never block or break the tool. The org field
-  // only appears when an endpoint is set and the org list actually loaded,
-  // so leaving MBTA_CONFIG.analytics.endpoint blank hides it entirely.
+  // Optional analytics: entering an organization starts a session. Every
+  // later input change (route, days, subsidy, Perq, employee count, mode)
+  // updates that SAME Airtable record — via the record id Airtable hands
+  // back on first create — instead of filing a new one, debounced so
+  // dragging a stepper doesn't spam writes. Picking a different org starts
+  // a new session (a fresh record); refreshing the page does too, since
+  // the session's record id only lives in memory here. A page-hide flush
+  // catches the final settled state if the tab closes mid-debounce.
+  // Fire-and-forget throughout — logging must never block or break the
+  // tool. The org field only appears when an endpoint is set and the org
+  // list actually loaded, so leaving MBTA_CONFIG.analytics.endpoint blank
+  // hides it entirely.
   const orgField = rootEl.querySelector("[data-abc-org-field]");
   const orgInput = rootEl.querySelector("[data-abc-org-input]");
+  const orgClear = rootEl.querySelector("[data-abc-org-clear]");
   const orgList = rootEl.querySelector("[data-abc-org-list]");
   const analyticsEndpoint = (MBTA_CONFIG.analytics && MBTA_CONFIG.analytics.endpoint) || "";
   const orgNames = (typeof window !== "undefined" && window.ABC_MEMBER_ORGS) || [];
+
+  let sessionOrg = "";
+  let sessionRecordId = null;
+  let analyticsTimer = null;
+
+  function currentTransitLabel() {
+    if (routeType === "subway") return "Subway & Bus (LinkPass)";
+    const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
+    return "Regional Rail — " + (opt ? opt.label : "");
+  }
+
+  function analyticsPayload() {
+    return {
+      org: sessionOrg,
+      recordId: sessionRecordId,
+      mode,
+      transit: currentTransitLabel(),
+      contributionPct: subsidyPct,
+      offersPerq: perqEnabled,
+      perqPct: perqEnabled ? perqPct : 0,
+      employeeCount: mode === "employer" ? employeeCount : null,
+      source: (typeof window !== "undefined") ? window.location.href : "",
+    };
+  }
+
+  function sendAnalyticsSnapshot() {
+    if (!analyticsEndpoint || !sessionOrg) return;
+    try {
+      fetch(analyticsEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analyticsPayload()),
+        keepalive: true,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.recordId) sessionRecordId = data.recordId;
+        })
+        .catch(() => {});
+    } catch (err) {
+      /* never let logging break the tool */
+    }
+  }
+
+  function scheduleAnalyticsFlush() {
+    if (!analyticsEndpoint || !orgInput) return;
+    const org = orgInput.value.trim();
+    if (!org) return;
+    if (org !== sessionOrg) {
+      // A different (or first) org means a different session: start a
+      // fresh record instead of overwriting a previous org's data.
+      sessionOrg = org;
+      sessionRecordId = null;
+    }
+    clearTimeout(analyticsTimer);
+    analyticsTimer = setTimeout(sendAnalyticsSnapshot, 1500);
+  }
+
+  // Best-effort final flush if the tab is hidden/closed mid-debounce, so
+  // the last thing someone adjusted isn't lost. sendBeacon fires reliably
+  // during unload in a way a regular fetch can't guarantee.
+  function flushAnalyticsOnHide() {
+    if (!analyticsEndpoint || !sessionOrg || !analyticsTimer) return;
+    clearTimeout(analyticsTimer);
+    analyticsTimer = null;
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(analyticsPayload())], { type: "application/json" });
+      navigator.sendBeacon(analyticsEndpoint, blob);
+    } else {
+      sendAnalyticsSnapshot();
+    }
+  }
 
   if (orgField && orgInput && orgList && analyticsEndpoint && orgNames.length) {
     orgNames.forEach((name) => {
@@ -2337,40 +2439,30 @@ function mbtaInitCalculator(rootEl) {
     });
     orgField.style.display = "";
 
-    function currentTransitLabel() {
-      if (routeType === "subway") return "Subway & Bus (LinkPass)";
-      const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
-      return "Regional Rail — " + (opt ? opt.label : "");
+    // Datalist inputs don't reliably reopen their suggestion list once a
+    // value is already set — selecting the existing text on focus means
+    // typing immediately replaces it instead of requiring a manual clear.
+    orgInput.addEventListener("focus", () => orgInput.select());
+
+    if (orgClear) {
+      const updateClearVisibility = () => {
+        orgClear.style.display = orgInput.value ? "" : "none";
+      };
+      orgInput.addEventListener("input", updateClearVisibility);
+      orgInput.addEventListener("change", updateClearVisibility);
+      orgClear.addEventListener("click", () => {
+        orgInput.value = "";
+        orgClear.style.display = "none";
+        orgInput.focus();
+      });
     }
 
-    // One record per distinct org entered — dedupe so re-focusing the field
-    // (or re-picking the same name) doesn't file duplicates.
-    let lastLoggedOrg = "";
-    orgInput.addEventListener("change", () => {
-      const org = orgInput.value.trim();
-      if (!org || org === lastLoggedOrg) return;
-      lastLoggedOrg = org;
-      const payload = {
-        org,
-        mode,
-        transit: currentTransitLabel(),
-        contributionPct: subsidyPct,
-        offersPerq: perqEnabled,
-        perqPct: perqEnabled ? perqPct : 0,
-        employeeCount: mode === "employer" ? employeeCount : null,
-        source: (typeof window !== "undefined") ? window.location.href : "",
-      };
-      try {
-        fetch(analyticsEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true,
-        }).catch(() => {});
-      } catch (err) {
-        /* never let logging break the tool */
-      }
+    orgInput.addEventListener("change", scheduleAnalyticsFlush);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushAnalyticsOnHide();
     });
+    window.addEventListener("pagehide", flushAnalyticsOnHide);
   }
 
   render();

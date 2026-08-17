@@ -134,13 +134,6 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
-/** Whole days remaining until the promo ends. Never negative; 0 on the last day. */
-function mbtaPromoDaysLeft(config, today) {
-  const end = new Date(config.promo.endDate + "T23:59:59");
-  const ms = end.getTime() - (today || new Date()).getTime();
-  return Math.max(0, Math.ceil(ms / 86400000));
-}
-
 /** True when a specific pass qualifies for the promo right now: the promo
  * hasn't expired, it's a rail pass, and it isn't on the exclusion list
  * (Zone 1A). Pay-per-ride fares are never discounted, only monthly passes. */
@@ -259,11 +252,6 @@ function mbtaInitCalculator(rootEl) {
     if (!callout) return;
     const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
     callout.style.display = applies ? "block" : "none";
-    if (applies) {
-      const days = mbtaPromoDaysLeft(MBTA_CONFIG);
-      rootEl.querySelector("[data-abc-promo-days]").textContent =
-        `${days} day${days === 1 ? "" : "s"}`;
-    }
   }
 
   // Populate the rail zone dropdown from config (everything except linkpass).
@@ -394,6 +382,7 @@ function mbtaInitCalculator(rootEl) {
     updatePromoUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
+    scheduleAnalyticsFlush();
   }
 
   function renderEmployee() {
@@ -551,16 +540,96 @@ function mbtaInitCalculator(rootEl) {
     });
   }
 
-  // Optional analytics: when someone picks their organization, send one
-  // record (org + current inputs) to the configured endpoint. Fire-and-
-  // forget — logging must never block or break the tool. The org field
-  // only appears when an endpoint is set and the org list actually loaded,
-  // so leaving MBTA_CONFIG.analytics.endpoint blank hides it entirely.
+  // Optional analytics: entering an organization starts a session. Every
+  // later input change (route, days, subsidy, Perq, employee count, mode)
+  // updates that SAME Airtable record — via the record id Airtable hands
+  // back on first create — instead of filing a new one, debounced so
+  // dragging a stepper doesn't spam writes. Picking a different org starts
+  // a new session (a fresh record); refreshing the page does too, since
+  // the session's record id only lives in memory here. A page-hide flush
+  // catches the final settled state if the tab closes mid-debounce.
+  // Fire-and-forget throughout — logging must never block or break the
+  // tool. The org field only appears when an endpoint is set and the org
+  // list actually loaded, so leaving MBTA_CONFIG.analytics.endpoint blank
+  // hides it entirely.
   const orgField = rootEl.querySelector("[data-abc-org-field]");
   const orgInput = rootEl.querySelector("[data-abc-org-input]");
+  const orgClear = rootEl.querySelector("[data-abc-org-clear]");
   const orgList = rootEl.querySelector("[data-abc-org-list]");
   const analyticsEndpoint = (MBTA_CONFIG.analytics && MBTA_CONFIG.analytics.endpoint) || "";
   const orgNames = (typeof window !== "undefined" && window.ABC_MEMBER_ORGS) || [];
+
+  let sessionOrg = "";
+  let sessionRecordId = null;
+  let analyticsTimer = null;
+
+  function currentTransitLabel() {
+    if (routeType === "subway") return "Subway & Bus (LinkPass)";
+    const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
+    return "Regional Rail — " + (opt ? opt.label : "");
+  }
+
+  function analyticsPayload() {
+    return {
+      org: sessionOrg,
+      recordId: sessionRecordId,
+      mode,
+      transit: currentTransitLabel(),
+      contributionPct: subsidyPct,
+      offersPerq: perqEnabled,
+      perqPct: perqEnabled ? perqPct : 0,
+      employeeCount: mode === "employer" ? employeeCount : null,
+      source: (typeof window !== "undefined") ? window.location.href : "",
+    };
+  }
+
+  function sendAnalyticsSnapshot() {
+    if (!analyticsEndpoint || !sessionOrg) return;
+    try {
+      fetch(analyticsEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(analyticsPayload()),
+        keepalive: true,
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.recordId) sessionRecordId = data.recordId;
+        })
+        .catch(() => {});
+    } catch (err) {
+      /* never let logging break the tool */
+    }
+  }
+
+  function scheduleAnalyticsFlush() {
+    if (!analyticsEndpoint || !orgInput) return;
+    const org = orgInput.value.trim();
+    if (!org) return;
+    if (org !== sessionOrg) {
+      // A different (or first) org means a different session: start a
+      // fresh record instead of overwriting a previous org's data.
+      sessionOrg = org;
+      sessionRecordId = null;
+    }
+    clearTimeout(analyticsTimer);
+    analyticsTimer = setTimeout(sendAnalyticsSnapshot, 1500);
+  }
+
+  // Best-effort final flush if the tab is hidden/closed mid-debounce, so
+  // the last thing someone adjusted isn't lost. sendBeacon fires reliably
+  // during unload in a way a regular fetch can't guarantee.
+  function flushAnalyticsOnHide() {
+    if (!analyticsEndpoint || !sessionOrg || !analyticsTimer) return;
+    clearTimeout(analyticsTimer);
+    analyticsTimer = null;
+    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
+      const blob = new Blob([JSON.stringify(analyticsPayload())], { type: "application/json" });
+      navigator.sendBeacon(analyticsEndpoint, blob);
+    } else {
+      sendAnalyticsSnapshot();
+    }
+  }
 
   if (orgField && orgInput && orgList && analyticsEndpoint && orgNames.length) {
     orgNames.forEach((name) => {
@@ -570,40 +639,30 @@ function mbtaInitCalculator(rootEl) {
     });
     orgField.style.display = "";
 
-    function currentTransitLabel() {
-      if (routeType === "subway") return "Subway & Bus (LinkPass)";
-      const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
-      return "Regional Rail — " + (opt ? opt.label : "");
+    // Datalist inputs don't reliably reopen their suggestion list once a
+    // value is already set — selecting the existing text on focus means
+    // typing immediately replaces it instead of requiring a manual clear.
+    orgInput.addEventListener("focus", () => orgInput.select());
+
+    if (orgClear) {
+      const updateClearVisibility = () => {
+        orgClear.style.display = orgInput.value ? "" : "none";
+      };
+      orgInput.addEventListener("input", updateClearVisibility);
+      orgInput.addEventListener("change", updateClearVisibility);
+      orgClear.addEventListener("click", () => {
+        orgInput.value = "";
+        orgClear.style.display = "none";
+        orgInput.focus();
+      });
     }
 
-    // One record per distinct org entered — dedupe so re-focusing the field
-    // (or re-picking the same name) doesn't file duplicates.
-    let lastLoggedOrg = "";
-    orgInput.addEventListener("change", () => {
-      const org = orgInput.value.trim();
-      if (!org || org === lastLoggedOrg) return;
-      lastLoggedOrg = org;
-      const payload = {
-        org,
-        mode,
-        transit: currentTransitLabel(),
-        contributionPct: subsidyPct,
-        offersPerq: perqEnabled,
-        perqPct: perqEnabled ? perqPct : 0,
-        employeeCount: mode === "employer" ? employeeCount : null,
-        source: (typeof window !== "undefined") ? window.location.href : "",
-      };
-      try {
-        fetch(analyticsEndpoint, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true,
-        }).catch(() => {});
-      } catch (err) {
-        /* never let logging break the tool */
-      }
+    orgInput.addEventListener("change", scheduleAnalyticsFlush);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "hidden") flushAnalyticsOnHide();
     });
+    window.addEventListener("pagehide", flushAnalyticsOnHide);
   }
 
   render();

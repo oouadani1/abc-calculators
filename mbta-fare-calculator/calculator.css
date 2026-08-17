@@ -171,8 +171,38 @@
   margin-bottom: var(--abc-space-sm);
 }
 
-.abc-farecalc-org-input {
+.abc-farecalc-org-input-wrap {
+  position: relative;
   max-width: 360px;
+}
+
+.abc-farecalc-org-input {
+  width: 100%;
+  padding-right: 34px;
+}
+
+.abc-farecalc-org-clear {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--abc-border);
+  color: var(--abc-ink-muted);
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.abc-farecalc-org-clear:hover {
+  background: var(--abc-ink-faint);
+  color: #fff;
 }
 
 /* ---- Bolder title, per the "make it memorable" direction ---- */

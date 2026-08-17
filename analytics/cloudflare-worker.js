@@ -79,26 +79,40 @@ export default {
       fields["Employees covered"] = Number(data.employeeCount) || 0;
     }
 
-    const airtableUrl =
-      `https://api.airtable.com/v0/${env.AIRTABLE_BASE}/${encodeURIComponent(env.AIRTABLE_TABLE)}`;
+    const base = `https://api.airtable.com/v0/${env.AIRTABLE_BASE}/${encodeURIComponent(env.AIRTABLE_TABLE)}`;
+    const recordId = (data.recordId || "").toString().trim();
+    const authHeaders = {
+      Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
+      "Content-Type": "application/json",
+    };
 
-    const res = await fetch(airtableUrl, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${env.AIRTABLE_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      // typecast lets Airtable coerce values into single-selects, numbers,
-      // etc. without an exact type match on our side.
-      body: JSON.stringify({ records: [{ fields }], typecast: true }),
-    });
+    // A session (one org, kept live-updated as inputs change) is a single
+    // record: no recordId yet means this is the session's first write, so
+    // create one; otherwise update that same record in place rather than
+    // filing a new row per keystroke.
+    const res = recordId
+      ? await fetch(`${base}/${encodeURIComponent(recordId)}`, {
+          method: "PATCH",
+          headers: authHeaders,
+          body: JSON.stringify({ fields, typecast: true }),
+        })
+      : await fetch(base, {
+          method: "POST",
+          headers: authHeaders,
+          // typecast lets Airtable coerce values into single-selects,
+          // numbers, etc. without an exact type match on our side.
+          body: JSON.stringify({ records: [{ fields }], typecast: true }),
+        });
 
     if (!res.ok) {
       const detail = await res.text();
       return new Response(`Airtable error: ${detail}`, { status: 502, headers: cors });
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    const result = await res.json();
+    const savedId = recordId || (result.records && result.records[0] && result.records[0].id);
+
+    return new Response(JSON.stringify({ ok: true, recordId: savedId }), {
       status: 200,
       headers: { ...cors, "Content-Type": "application/json" },
     });
