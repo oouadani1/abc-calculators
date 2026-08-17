@@ -285,7 +285,7 @@
   position: absolute;
   top: -10px;
   right: -8px;
-  background: var(--abc-orange);
+  background: var(--mbta-green);
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
@@ -296,21 +296,31 @@
   pointer-events: none;
 }
 
-/* ---- Promo callout: reuses the shared .abc-callout component so it reads
-   as a native part of the design system, not a bolted-on banner. Only
-   shown when the currently-selected pass actually qualifies (Regional
-   Rail, not Zone 1A, promo not expired) — see updatePromoUI(). ---- */
+/* ---- Promo callout: reuses the shared .abc-callout component's shape so
+   it reads as a native part of the design system, not a bolted-on banner,
+   but recolored to blue instead of the shared component's default orange
+   (orange stays reserved for the "Next steps" / caution meaning elsewhere;
+   this scoped override doesn't touch .abc-callout itself). Only shown when
+   the currently-selected pass actually qualifies (Regional Rail, not Zone
+   1A, promo not expired) — see updatePromoUI(). ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
+  background: var(--mbta-blue-tint);
+  border-color: var(--mbta-blue);
 }
 
-/* Struck-through original price shown next to the promo-discounted total
-   on the Monthly Pass card. */
-.abc-farecalc-promo-original {
-  text-decoration: line-through;
-  color: var(--abc-ink-faint);
-  font-size: 0.9em;
-  margin-right: 6px;
+.abc-farecalc-promo-callout h4 {
+  color: var(--mbta-blue);
+}
+
+/* Promo discount as its own emphasized line item on the Monthly Pass
+   card, matching the blue used elsewhere for this promo rather than a
+   discreet strikethrough — sits between the full "Total monthly cost"
+   and the employer subsidy / Perq deduction rows below it. */
+.abc-farecalc-line-promo,
+.abc-farecalc-line-promo span {
+  color: var(--mbta-blue);
+  font-weight: 700;
 }
 
 /* ---- Route buttons ---- */

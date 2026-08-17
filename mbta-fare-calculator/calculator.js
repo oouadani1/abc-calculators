@@ -403,15 +403,22 @@ function mbtaInitCalculator(rootEl) {
     paintCard("ride", result.rideBreakdown, subsidyPct, effectivePerqPct);
     paintCard("pass", result.passBreakdown, subsidyPct, effectivePerqPct);
 
-    // Promo original price: struck through next to the (already-discounted)
-    // total that paintCard just wrote, so the MBTA discount reads as its own
-    // line separate from employer subsidy / Perq savings below it.
-    const promoOriginalEl = rootEl.querySelector("[data-abc-pass-promo-original]");
+    // Promo discount as its own emphasized line item, not a discreet
+    // strikethrough: when it applies, "Total monthly cost" reverts to the
+    // full sticker price (matching how the Pay-Per-Ride card always shows
+    // its full total), and the promo's own dollar amount is broken out as
+    // a deduction row above employer subsidy / Perq — the same pattern
+    // those two already use, just emphasized in the promo's blue.
+    const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
-      promoOriginalEl.textContent = abcFormatCurrency(result.promoOriginalPrice);
-      promoOriginalEl.style.display = "";
+      const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
+      rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.promoOriginalPrice);
+      rootEl.querySelector("[data-abc-pass-promo-label]").textContent =
+        `Regional Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
+      rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
+      promoRow.style.display = "flex";
     } else {
-      promoOriginalEl.style.display = "none";
+      promoRow.style.display = "none";
     }
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");

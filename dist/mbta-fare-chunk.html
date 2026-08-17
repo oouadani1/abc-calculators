@@ -854,7 +854,7 @@
   position: absolute;
   top: -10px;
   right: -8px;
-  background: var(--abc-orange);
+  background: var(--mbta-green);
   color: #fff;
   font-size: 0.62rem;
   font-weight: 700;
@@ -865,21 +865,31 @@
   pointer-events: none;
 }
 
-/* ---- Promo callout: reuses the shared .abc-callout component so it reads
-   as a native part of the design system, not a bolted-on banner. Only
-   shown when the currently-selected pass actually qualifies (Regional
-   Rail, not Zone 1A, promo not expired) — see updatePromoUI(). ---- */
+/* ---- Promo callout: reuses the shared .abc-callout component's shape so
+   it reads as a native part of the design system, not a bolted-on banner,
+   but recolored to blue instead of the shared component's default orange
+   (orange stays reserved for the "Next steps" / caution meaning elsewhere;
+   this scoped override doesn't touch .abc-callout itself). Only shown when
+   the currently-selected pass actually qualifies (Regional Rail, not Zone
+   1A, promo not expired) — see updatePromoUI(). ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
+  background: var(--mbta-blue-tint);
+  border-color: var(--mbta-blue);
 }
 
-/* Struck-through original price shown next to the promo-discounted total
-   on the Monthly Pass card. */
-.abc-farecalc-promo-original {
-  text-decoration: line-through;
-  color: var(--abc-ink-faint);
-  font-size: 0.9em;
-  margin-right: 6px;
+.abc-farecalc-promo-callout h4 {
+  color: var(--mbta-blue);
+}
+
+/* Promo discount as its own emphasized line item on the Monthly Pass
+   card, matching the blue used elsewhere for this promo rather than a
+   discreet strikethrough — sits between the full "Total monthly cost"
+   and the employer subsidy / Perq deduction rows below it. */
+.abc-farecalc-line-promo,
+.abc-farecalc-line-promo span {
+  color: var(--mbta-blue);
+  font-weight: 700;
 }
 
 /* ---- Route buttons ---- */
@@ -1476,10 +1486,11 @@
 
         <div class="abc-farecalc-line">
           <span>Total monthly cost</span>
-          <span>
-            <span class="abc-farecalc-promo-original" data-abc-pass-promo-original style="display: none;">$0.00</span>
-            <span data-abc-pass-total>$0.00</span>
-          </span>
+          <span data-abc-pass-total>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
+          <span data-abc-pass-promo-label>Regional Rail promo</span>
+          <span data-abc-pass-promo-amt>-$0.00</span>
         </div>
         <div class="abc-farecalc-line">
           <span data-abc-pass-subsidy-label>Employer subsidy (0%)</span>
@@ -2166,15 +2177,22 @@ function mbtaInitCalculator(rootEl) {
     paintCard("ride", result.rideBreakdown, subsidyPct, effectivePerqPct);
     paintCard("pass", result.passBreakdown, subsidyPct, effectivePerqPct);
 
-    // Promo original price: struck through next to the (already-discounted)
-    // total that paintCard just wrote, so the MBTA discount reads as its own
-    // line separate from employer subsidy / Perq savings below it.
-    const promoOriginalEl = rootEl.querySelector("[data-abc-pass-promo-original]");
+    // Promo discount as its own emphasized line item, not a discreet
+    // strikethrough: when it applies, "Total monthly cost" reverts to the
+    // full sticker price (matching how the Pay-Per-Ride card always shows
+    // its full total), and the promo's own dollar amount is broken out as
+    // a deduction row above employer subsidy / Perq — the same pattern
+    // those two already use, just emphasized in the promo's blue.
+    const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
-      promoOriginalEl.textContent = abcFormatCurrency(result.promoOriginalPrice);
-      promoOriginalEl.style.display = "";
+      const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
+      rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.promoOriginalPrice);
+      rootEl.querySelector("[data-abc-pass-promo-label]").textContent =
+        `Regional Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
+      rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
+      promoRow.style.display = "flex";
     } else {
-      promoOriginalEl.style.display = "none";
+      promoRow.style.display = "none";
     }
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
