@@ -25,9 +25,7 @@
     </div>
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Regional Rail work for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your organization?</h2>
-    <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and see if Regional Rail makes sense for you.</p>
-    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team and see if Regional Rail makes sense for your organization.</p>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Regional Rail cost your organization?</h2>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
       <div class="abc-farecalc-promo-callout-head">
@@ -38,15 +36,18 @@
         Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
       </p>
-      <p>
+      <p data-mode-only="employee">
         Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through November.
+      </p>
+      <p data-mode-only="employer">
+        Ordering through Perq? You need to place the order by <strong>October 10</strong> to qualify. Buying passes directly (not through Perq) still works all the way through November.
       </p>
     </div>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group abc-farecalc-zone-group">
         <p class="abc-question" data-mode-only="employee">Which zone do you commute from?</p>
-        <p class="abc-question" data-mode-only="employer">Which Regional Rail zone are you subsidizing?</p>
+        <p class="abc-question" data-mode-only="employer">What zone are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Regional Rail zone"></select>
@@ -113,7 +114,7 @@
                 </div>
                 <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
               </div>
-              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Adjust it if you know your own rate.</span>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Adjust it if a different rate applies.</span>
             </div>
 
             <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
@@ -181,9 +182,9 @@
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares are from mbta.com, checked 2026-07-10, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
-          <li><strong>Total monthly cost</strong> is the current MBTA price for a Regional Rail monthly pass: $90 to $426 depending on your zone.</li>
+          <li><strong>Total monthly cost</strong> is the current MBTA price for a Regional Rail monthly pass: $90 to $426 depending on the zone.</li>
           <li>The Regional Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
-          <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
+          <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if a different rate applies.</li>
         </ul>
 
         <p class="abc-farecalc-credit"><strong>Built by A Better City</strong> | July 2026</p>

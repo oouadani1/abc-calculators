@@ -359,47 +359,20 @@ function mbtaInitCalculator(rootEl) {
     rootEl.querySelector("[data-abc-emp-saves-detail]").textContent = detail;
   }
 
-  // Embed button: re-fetches this page's own source and copies it to the
-  // clipboard. Only produces a complete, pasteable snippet when the page
-  // is actually the built dist/*.html chunk (inline <style>/<script>) —
-  // on the dev-preview index.html, CSS/JS are separate <link>/<script src>
-  // files, so there's nothing self-contained to copy from there. The
-  // "copied" state is a click-triggered class (abc-farecalc-copied), not
-  // a :hover effect, so it behaves identically on touch and mouse.
+  // Embed button: copies a ready-to-paste <iframe> tag pointing at this
+  // page's own URL, so it only produces a working snippet once the page
+  // is actually live at its real hosted address — not on the dev-preview
+  // index.html or a local file:// open. The "copied" state is a
+  // click-triggered class (abc-farecalc-copied), not a :hover effect, so
+  // it behaves identically on touch and mouse.
   const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
   if (embedBtn) {
     const originalLabel = embedBtn.textContent;
     let revertTimer = null;
 
-    // Tries re-fetching the page's own URL first (works for any normal
-    // http/https hosting). Opening the file directly from disk (file://)
-    // makes that fetch fail with a CORS error every time, even though
-    // nothing is actually wrong — browsers block fetch() on file:// URLs
-    // on principle. Falls back to reading the already-loaded <style> and
-    // <script> tags straight from the DOM, which works regardless of how
-    // the page was opened.
-    async function getEmbedHtml() {
-      try {
-        const res = await fetch(window.location.href);
-        if (!res.ok) throw new Error("fetch failed");
-        return await res.text();
-      } catch (err) {
-        const styleTag = document.querySelector("style");
-        const scriptTag = document.querySelector("script:not([src])");
-        const parts = [];
-        // The closing tags below are deliberately split with a backslash.
-        // build.sh inlines this file's own source into a real script
-        // element, and the HTML parser ends that element at the literal
-        // closing-tag text wherever it appears in the source, including
-        // inside a JS string, template literal, or even this comment —
-        // it doesn't parse JS at all, just scans for the raw bytes. An
-        // unescaped closing tag here would truncate the whole script at
-        // build time.
-        if (styleTag) parts.push(`<style>${styleTag.textContent}<\/style>`);
-        parts.push(rootEl.outerHTML);
-        if (scriptTag) parts.push(`<script>${scriptTag.textContent}<\/script>`);
-        return parts.join("\n");
-      }
+    function buildEmbedHtml() {
+      const src = window.location.href;
+      return `<iframe src="${src}" title="Regional Rail Pass Calculator" style="width: 100%; border: 0;" height="1300" scrolling="auto" allow="clipboard-write"></iframe>`;
     }
 
     // A page embedded via a cross-origin <iframe> only gets clipboard-write
@@ -438,18 +411,15 @@ function mbtaInitCalculator(rootEl) {
 
     embedBtn.addEventListener("click", async () => {
       clearTimeout(revertTimer);
-      try {
-        const html = await getEmbedHtml();
-        const copied = await copyToClipboard(html);
-        if (!copied) throw new Error("copy failed");
+      const copied = await copyToClipboard(buildEmbedHtml());
+      if (copied) {
         // Success stays put until the page reloads — no auto-revert. An
         // error still reverts below so the button is clickable to retry.
         embedBtn.textContent = "Embed code copied";
         embedBtn.classList.add("abc-farecalc-copied");
         return;
-      } catch (err) {
-        embedBtn.textContent = "Couldn't copy, try again";
       }
+      embedBtn.textContent = "Couldn't copy, try again";
       revertTimer = setTimeout(() => {
         embedBtn.classList.remove("abc-farecalc-copied");
         embedBtn.textContent = originalLabel;

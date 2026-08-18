@@ -42,13 +42,18 @@
 }
 
 .abc-farecalc-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 44px;
   font-family: inherit;
   font-size: var(--abc-font-size-sm);
   font-weight: 600;
   border: none;
   background: transparent;
   color: var(--abc-ink-muted);
-  padding: 8px 18px;
+  padding: 0 18px;
   border-radius: var(--abc-radius-pill);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
@@ -145,10 +150,13 @@
   }
 }
 
-/* ---- Bolder title, per the "make it memorable" direction ---- */
+/* ---- Bolder title, per the "make it memorable" direction. Margin-bottom
+   is widened past the shared default since this tool has no subtitle —
+   the title sits directly above the promo callout / question grid. ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
   letter-spacing: -0.02em;
+  margin-bottom: var(--abc-space-lg);
 }
 
 /* ---- Question grid: questions pair up into a compact, table-like
@@ -284,6 +292,28 @@
 .abc-farecalc-line-promo span {
   color: var(--mbta-green);
   font-weight: 700;
+}
+
+/* ---- Uniform control height: the zone select and Perq yes/no buttons
+   are scoped up to the same 44px height and 0.875rem label size as the
+   mode toggle and the steppers below, so nothing jumps in height when a
+   question is answered or a reveal opens. box-sizing: border-box makes
+   the border differences between these control types (none / 1.5px /
+   2px) a non-issue — the outer height stays exactly 44px either way. ---- */
+.abc-farecalc .abc-select {
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-sm);
+}
+
+.abc-farecalc .abc-choice-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--abc-space-md);
 }
 
 /* ---- Stepper (subsidy / pre-tax / employee count): +/- buttons flank a
@@ -511,6 +541,11 @@
     width: 48px;
     height: 48px;
   }
+  .abc-farecalc-mode-btn,
+  .abc-farecalc .abc-select,
+  .abc-farecalc .abc-choice-button {
+    height: 48px;
+  }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
   }
@@ -526,6 +561,11 @@
   }
   .abc-farecalc-stepper-btn {
     width: 48px;
+    height: 48px;
+  }
+  .abc-farecalc-mode-btn,
+  .abc-farecalc .abc-select,
+  .abc-farecalc .abc-choice-button {
     height: 48px;
   }
   .abc-farecalc-line-final span:last-child {
