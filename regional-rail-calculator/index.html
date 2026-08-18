@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MBTA Fare Calculator — Dev Preview</title>
+  <title>Regional Rail Calculator — Dev Preview</title>
   <link rel="stylesheet" href="../shared/styles/fonts.css" />
   <link rel="stylesheet" href="../shared/styles/base.css" />
   <link rel="stylesheet" href="calculator.css" />
@@ -24,59 +24,36 @@
       <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
     </div>
 
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA monthly pass worth it for you?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Regional Rail work for you?</h2>
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your organization?</h2>
-    <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
-    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
+    <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and see if Regional Rail makes sense for you.</p>
+    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team and see if Regional Rail makes sense for your organization.</p>
 
-    <div class="abc-farecalc-org" data-abc-org-field style="display: none;">
-      <p class="abc-question">What organization are you affiliated with?</p>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-farecalc-org-input-wrap">
-            <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" list="abc-farecalc-org-list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
-            <button type="button" class="abc-farecalc-org-clear" data-abc-org-clear aria-label="Clear organization" style="display: none;">&times;</button>
-          </div>
-          <datalist id="abc-farecalc-org-list" data-abc-org-list></datalist>
-        </div>
+    <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
+      <div class="abc-farecalc-promo-callout-head">
+        <h4>Limited-time savings</h4>
+        <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
       </div>
+      <p>
+        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
+        <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
+      </p>
+      <p>
+        Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through November.
+      </p>
     </div>
 
     <div class="abc-farecalc-grid">
-      <div class="abc-farecalc-field-group">
-        <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
-        <p class="abc-question" data-mode-only="employer">Which pass are you subsidizing?</p>
+      <div class="abc-farecalc-field-group abc-farecalc-zone-group">
+        <p class="abc-question" data-mode-only="employee">Which zone do you commute from?</p>
+        <p class="abc-question" data-mode-only="employer">Which Regional Rail zone are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Regional Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-            </div>
-          </div>
-
-          <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
-            <label for="abc-farecalc-zone" data-mode-only="employee">Which zone do you commute from?</label>
-            <label for="abc-farecalc-zone" data-mode-only="employer">Which Regional Rail zone?</label>
-            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
+            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Regional Rail zone"></select>
             <span class="abc-field-hint">
               Not sure which zone you're in?
               <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
             </span>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-mode-only="employee">
-        <p class="abc-question">How many days a week do you commute?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid abc-farecalc-day-grid">
-              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="1">1</button>
-              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="2">2</button>
-              <button type="button" class="abc-farecalc-day-btn abc-active" data-abc-day-select="3">3</button>
-              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="4">4</button>
-              <button type="button" class="abc-farecalc-day-btn" data-abc-day-select="5">5</button>
-            </div>
           </div>
         </div>
       </div>
@@ -148,45 +125,8 @@
       </div>
     </div>
 
-    <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
-      <h4>Limited-time savings</h4>
-      <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
-        <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
-      </p>
-      <p>
-        Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through November.
-      </p>
-    </div>
-
     <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
-      <div class="abc-card" data-abc-card-ride>
-        <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3>Pay-Per-Ride</h3>
-
-        <div class="abc-farecalc-line">
-          <span>Total monthly cost</span>
-          <span data-abc-ride-total>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line">
-          <span data-abc-ride-subsidy-label>Employer subsidy (0%)</span>
-          <span data-abc-ride-subsidy-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-ride-pretax-row style="display: none;">
-          <span data-abc-ride-pretax-label>Pre-tax savings (0%)</span>
-          <span data-abc-ride-pretax-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-final">
-          <span>Your estimated monthly cost</span>
-          <span data-abc-ride-final>$0.00</span>
-        </div>
-        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
-          You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>purchasing a monthly pass</span>.
-        </p>
-      </div>
-
       <div class="abc-card" data-abc-card-pass>
-        <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Monthly Pass</h3>
 
         <div class="abc-farecalc-line">
@@ -209,9 +149,6 @@
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
         </div>
-        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
-          You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
-        </p>
       </div>
     </div>
 
@@ -244,10 +181,8 @@
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares are from mbta.com, checked 2026-07-10, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
-          <li>Picking a number of days assumes a round trip each day: one ride there, one ride back.</li>
-          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month. LinkPass is $2.40 a ride. Regional Rail ranges from $2.40 to $13.25 a ride depending on your zone.</li>
-          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass: $90 for LinkPass, or $90 to $426 for Regional Rail depending on your zone.</li>
-          <li>Employer subsidy and pre-tax savings are applied the same way to both options.</li>
+          <li><strong>Total monthly cost</strong> is the current MBTA price for a Regional Rail monthly pass: $90 to $426 depending on your zone.</li>
+          <li>The Regional Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
         </ul>
 
@@ -262,7 +197,6 @@
   <!-- ABC-CALC-HTML-END -->
 
   <script src="../shared/utils/format.js"></script>
-  <script src="../shared/data/member-orgs.js"></script>
   <script src="calculator.js"></script>
 </body>
 </html>

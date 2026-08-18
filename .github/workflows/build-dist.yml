@@ -13,6 +13,7 @@ on:
       - "shared/**"
       - "mbta-fare-calculator/**"
       - "bluebikes-membership-calculator/**"
+      - "regional-rail-calculator/**"
       - "build.sh"
 
 permissions:

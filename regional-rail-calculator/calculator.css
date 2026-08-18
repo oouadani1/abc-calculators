@@ -1,0 +1,534 @@
+/* ============================================================
+   Regional Rail Pass Calculator — tool-specific overrides on top of
+   shared/styles/base.css. Prefix: .abc-farecalc-* (kept from the full
+   build this was forked from, for a smaller diff against that codebase).
+
+   This tool is Regional Rail only, so unlike the full build there's no
+   route-theme switching — the accent is permanently MBTA's own Regional
+   Rail purple. "Recommended for you" / positive signals and the promo
+   both use a fixed green; Perq "No" stays a fixed red — distinct
+   signals, not route identity, same as the full build.
+
+   Spacing: every field-hint, every conditional-reveal block, and
+   every question-to-question gap uses the same --abc-space-* value
+   consistently — see the "Spacing rhythm" section below before
+   adding a new one-off margin.
+   ============================================================ */
+
+:root {
+  --mbta-red: #DA291C;
+  --mbta-green: #00843D;
+  --mbta-green-tint: #E5F3EB;
+  --mbta-purple: #80276C; /* Regional Rail's own official color */
+  --mbta-purple-tint: #F3E7F0;
+}
+
+.abc-farecalc {
+  --abc-farecalc-accent: var(--mbta-purple);
+  --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+  max-width: 880px;
+}
+
+/* ---- Employee / employer mode toggle: a segmented pill switch at the
+   top. The active view is stored on the root as data-abc-mode, which
+   drives all the [data-mode-only] show/hide rules below. ---- */
+.abc-farecalc-modebar {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-farecalc-mode-btn {
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--abc-ink-muted);
+  padding: 8px 18px;
+  border-radius: var(--abc-radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-farecalc-mode-btn.abc-active {
+  background: #fff;
+  color: var(--abc-navy-deep);
+  box-shadow: var(--abc-shadow-card);
+}
+
+/* Show only the elements that belong to the current mode. Two attribute
+   selectors + the class keep specificity above the base display rules
+   (e.g. .abc-cards's flex) without needing !important. */
+.abc-farecalc[data-abc-mode="employer"] [data-mode-only="employee"] {
+  display: none;
+}
+
+.abc-farecalc[data-abc-mode="employee"] [data-mode-only="employer"] {
+  display: none;
+}
+
+/* Employee-count stepper: same control as the % steppers, but headcounts
+   can be several digits, so the value field and its wrapper are wider and
+   there's no trailing "%" glyph. */
+.abc-farecalc-count-stepper .abc-farecalc-stepper-value-wrap {
+  min-width: 96px;
+}
+
+.abc-farecalc-count-stepper .abc-farecalc-stepper-input {
+  width: 6ch;
+  text-align: center;
+}
+
+/* ---- Employer view results: a single summary card with a small grid of
+   headline figures. ---- */
+.abc-farecalc-employer-results {
+  margin-top: var(--abc-space-lg);
+}
+
+.abc-farecalc-employer-badge {
+  background: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-employer-card h3 {
+  margin: 0 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--abc-space-md);
+  padding: var(--abc-space-md) 0;
+  border-top: 1px solid var(--abc-border);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-farecalc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.abc-farecalc-stat-value {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  letter-spacing: -0.01em;
+}
+
+.abc-farecalc-stat-label {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-employer-note {
+  margin: var(--abc-space-md) 0 0;
+  font-size: var(--abc-font-size-base);
+  line-height: 1.5;
+  color: var(--abc-ink);
+}
+
+.abc-farecalc-employer-note strong {
+  color: var(--mbta-green);
+}
+
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--abc-space-sm);
+  }
+}
+
+/* ---- Bolder title, per the "make it memorable" direction ---- */
+.abc-farecalc-title {
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Question grid: questions pair up into a compact, table-like
+   2-column layout instead of stacking one after another. Falls back to
+   a single column automatically (via the container query) once the
+   widget is rendered narrow. ---- */
+.abc-farecalc-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  column-gap: var(--abc-space-xl);
+  row-gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
+}
+
+@container abc-calc (min-width: 520px) {
+  .abc-farecalc-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.abc-farecalc-field-group {
+  min-width: 0;
+}
+
+/* Employee mode only has 3 questions (zone, subsidy, Perq), which won't
+   split evenly into a 2-column grid — the zone question spans the full
+   row instead of leaving an empty cell, then subsidy/Perq pair up below
+   it. Employer mode has a clean 4, so its zone question stays a normal
+   paired grid item (with employee count) and needs no override. */
+.abc-farecalc[data-abc-mode="employee"] .abc-farecalc-zone-group {
+  grid-column: 1 / -1;
+}
+
+/* Spacing between question groups now comes from the grid's row-gap,
+   not from each question's own top margin — otherwise a revealed field
+   (Perq stepper) that stretches one grid row taller would visually
+   double up with the next row's top margin too. Every field-group
+   starts with a plain .abc-question with nothing else above it, which
+   is also what keeps their headers flush-aligned with each other
+   across the grid row. */
+.abc-farecalc-field-group .abc-question {
+  margin-top: 0;
+}
+
+/* Full-width text: nothing in this tool should wrap early inside a
+   narrow measure — let the subtitle use the whole card. */
+.abc-farecalc .abc-subtitle {
+  max-width: none;
+}
+
+/* Tighter vertical rhythm than the shared default — keeps the whole
+   thing closer to one scroll. */
+.abc-farecalc .abc-question {
+  margin: var(--abc-space-md) 0 var(--abc-space-sm);
+}
+
+.abc-farecalc .abc-input-row {
+  margin-bottom: var(--abc-space-sm);
+}
+
+/* "Perq" hyperlinked directly inside its question — the accent color is
+   what marks it as a link/theme tie-in. */
+.abc-farecalc-inline-link {
+  color: var(--abc-farecalc-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-inline-link:hover {
+    color: var(--abc-navy-deep);
+  }
+}
+
+/* A one-line static explainer directly under a question header, before
+   its control — used for the subsidy and Perq questions instead of a
+   hint that trails the control. */
+.abc-farecalc-hint-top {
+  margin-top: 0;
+  margin-bottom: var(--abc-space-sm);
+}
+
+/* ---- Promo callout: reuses the shared .abc-callout component's shape so
+   it reads as a native part of the design system, not a bolted-on
+   banner, recolored to the same green used elsewhere for "good news"
+   (orange stays reserved for the shared component's own default "Next
+   steps" / caution meaning; this scoped override doesn't touch
+   .abc-callout itself). A small pill in the header carries the live
+   day countdown. Only shown when the currently-selected zone actually
+   qualifies (not Zone 1A, promo not expired) — see updatePromoUI(). ---- */
+.abc-farecalc-promo-callout {
+  margin-bottom: var(--abc-space-md);
+  background: var(--mbta-green-tint);
+  border-color: var(--mbta-green);
+}
+
+.abc-farecalc-promo-callout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-sm);
+  margin-bottom: 6px;
+}
+
+.abc-farecalc-promo-callout h4 {
+  margin: 0;
+  color: var(--mbta-green);
+}
+
+.abc-farecalc-promo-days {
+  flex-shrink: 0;
+  background: var(--mbta-green);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--abc-radius-pill);
+  white-space: nowrap;
+}
+
+/* Second paragraph (the Perq-vs-retail deadline note) needs its own gap —
+   the shared .abc-callout p rule is margin:0, meant for a single paragraph. */
+.abc-farecalc-promo-callout p + p {
+  margin-top: var(--abc-space-sm);
+}
+
+/* Promo discount as its own emphasized line item on the Monthly Pass
+   card, in the same green as the callout above, rather than a discreet
+   strikethrough — sits between the full "Total monthly cost" and the
+   employer subsidy / Perq deduction rows below it. */
+.abc-farecalc-line-promo,
+.abc-farecalc-line-promo span {
+  color: var(--mbta-green);
+  font-weight: 700;
+}
+
+/* ---- Stepper (subsidy / pre-tax / employee count): +/- buttons flank a
+   real <input type=number> so an exact value can be typed directly. ---- */
+.abc-farecalc-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--abc-farecalc-accent);
+  border-radius: var(--abc-radius-pill);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.abc-farecalc-stepper-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--abc-farecalc-accent);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-stepper-btn:hover {
+    filter: brightness(1.1);
+  }
+}
+
+.abc-farecalc-stepper-btn:active {
+  filter: brightness(0.95);
+}
+
+.abc-farecalc-stepper-value-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 76px;
+  height: 44px;
+  gap: 2px;
+}
+
+.abc-farecalc-stepper-input {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  text-align: right;
+  width: 3ch;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.abc-farecalc-stepper-input::-webkit-inner-spin-button,
+.abc-farecalc-stepper-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.abc-farecalc-stepper-input:focus {
+  color: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-stepper-percent {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+}
+
+/* ---- Zone select picks up the accent too ---- */
+.abc-farecalc .abc-select:focus {
+  border-color: var(--abc-farecalc-accent);
+  box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
+}
+
+/* ---- Spacing rhythm: one value for "hint below a control," one
+   value for "conditionally-revealed block below a control." Applied
+   the same way everywhere it occurs in this tool. ---- */
+.abc-farecalc .abc-field-hint {
+  display: block;
+  max-width: none;
+  font-size: 0.85rem;
+  margin-top: var(--abc-space-md);
+}
+
+.abc-farecalc-reveal {
+  margin-top: var(--abc-space-md);
+}
+
+/* ---- Result card ---- */
+.abc-farecalc-cards {
+  margin-top: var(--abc-space-lg);
+}
+
+.abc-farecalc-cards .abc-card {
+  padding: var(--abc-space-lg) var(--abc-space-md);
+}
+
+.abc-farecalc-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 8px 0;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+/* Label and value side by side, with the label's wrap point fixed (via
+   max-width, in em so it scales with font-size) instead of however much
+   room the value happens to leave it — otherwise the label can wrap onto
+   an orphaned second line depending on how wide the dollar figure is.
+   Capping the label's width makes it wrap the same compact way every
+   time, independent of the value. */
+.abc-farecalc-line-final {
+  align-items: center;
+  border-bottom: none;
+  border-top: 2px solid var(--abc-ink);
+  margin-top: 6px;
+  padding-top: var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-line-final span:first-child {
+  max-width: 9em;
+  line-height: 1.25;
+}
+
+.abc-farecalc-line-final span:last-child {
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+}
+
+/* ---- Perq yes/no: "Yes" follows the accent, "No" is a fixed red — a
+   consistent "you opted out" signal. ---- */
+.abc-farecalc [data-abc-perq-select].abc-active {
+  background: var(--abc-farecalc-accent);
+  border-color: var(--abc-farecalc-accent);
+  color: #fff;
+}
+
+.abc-farecalc [data-abc-perq-select="no"].abc-active {
+  background: var(--mbta-red);
+  border-color: var(--mbta-red);
+}
+
+/* ---- Perq advocacy line: only shown once "No" is explicitly picked ---- */
+.abc-farecalc-perq-advocacy a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+}
+
+.abc-farecalc-perq-advocacy {
+  margin-top: var(--abc-space-md);
+}
+
+/* ---- Credit line under the sourcing accordion: a blank line's worth
+   of separation (margin) plus a hairline rule, not run straight into
+   the sourcing paragraph above it. ---- */
+.abc-farecalc-credit {
+  margin: var(--abc-space-md) 0 0;
+  padding-top: var(--abc-space-sm);
+  border-top: 1px solid var(--abc-border);
+  font-size: 0.75rem;
+  color: var(--abc-ink-faint);
+}
+
+/* ---- Assumptions list inside the sourcing accordion ---- */
+.abc-farecalc-assumptions {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.abc-farecalc-assumptions li {
+  margin-bottom: var(--abc-space-sm);
+  line-height: 1.5;
+}
+
+.abc-farecalc-assumptions li:last-child {
+  margin-bottom: 0;
+}
+
+/* ---- Embed button: same plain gray/white look as an unselected choice
+   button — .abc-choice-button already provides that; this just adds a
+   simple "copied" success state in the same green used throughout. ---- */
+.abc-farecalc-embed {
+  margin-top: var(--abc-space-lg);
+  text-align: center;
+}
+
+.abc-farecalc-embed-btn.abc-farecalc-copied {
+  border-color: var(--mbta-green);
+  background: var(--mbta-green);
+  color: #fff;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ---- Narrow layout: keyed off the actual container width (see
+   container-type on .abc-calc in base.css), so this applies whenever
+   this widget is rendered narrow — a phone screen, or a narrow desktop
+   column — not just small browser viewports. A plain @media fallback
+   covers browsers old enough to not support container queries at all. ---- */
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-farecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-farecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .abc-farecalc-line-final span:last-child {
+    font-size: 1.35rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .abc-farecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-farecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-farecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .abc-farecalc-line-final span:last-child {
+    font-size: 1.35rem;
+  }
+}

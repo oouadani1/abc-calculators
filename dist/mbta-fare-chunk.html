@@ -893,6 +893,12 @@
   color: var(--mbta-blue);
 }
 
+/* Second paragraph (the Perq-vs-retail deadline note) needs its own gap —
+   the shared .abc-callout p rule is margin:0, meant for a single paragraph. */
+.abc-farecalc-promo-callout p + p {
+  margin-top: var(--abc-space-sm);
+}
+
 /* Promo discount as its own emphasized line item on the Monthly Pass
    card, matching the blue used elsewhere for this promo rather than a
    discreet strikethrough — sits between the full "Total monthly cost"
@@ -1475,6 +1481,9 @@
       <p>
         Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
+      </p>
+      <p>
+        Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through November.
       </p>
     </div>
 
