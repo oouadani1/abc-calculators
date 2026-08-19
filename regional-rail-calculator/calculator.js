@@ -224,7 +224,12 @@ function mbtaInitCalculator(rootEl) {
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
+    // Shown for every zone, including before one's picked (the empty
+    // placeholder value) — only Zone 1A itself turns it off. This is
+    // deliberately not the same check mbtaCalcPass/mbtaCalcEmployer use
+    // (which also require a real, priced zone) since the callout is just
+    // announcing the promo, not computing a discount off a specific price.
+    const applies = promoActive && !MBTA_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = mbtaPromoDaysLeft(MBTA_CONFIG);

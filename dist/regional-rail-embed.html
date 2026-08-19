@@ -1167,9 +1167,9 @@
     </div>
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Regional Rail work for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Regional Rail cost your organization?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Regional Rail save your employees?</h2>
     <p class="abc-subtitle" data-mode-only="employee">Regional Rail is half price through November. See how much you'd save.</p>
-    <p class="abc-subtitle" data-mode-only="employer">Regional Rail is half price through November. See what it would cost your team.</p>
+    <p class="abc-subtitle" data-mode-only="employer">See what it would save your employees and cost your team.</p>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
       <div class="abc-farecalc-promo-callout-head">
@@ -1610,7 +1610,12 @@ function mbtaInitCalculator(rootEl) {
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
+    // Shown for every zone, including before one's picked (the empty
+    // placeholder value) — only Zone 1A itself turns it off. This is
+    // deliberately not the same check mbtaCalcPass/mbtaCalcEmployer use
+    // (which also require a real, priced zone) since the callout is just
+    // announcing the promo, not computing a discount off a specific price.
+    const applies = promoActive && !MBTA_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = mbtaPromoDaysLeft(MBTA_CONFIG);
