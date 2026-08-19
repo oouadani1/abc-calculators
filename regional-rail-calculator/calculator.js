@@ -129,6 +129,14 @@ function mbtaPromoApplies(config, passId, today) {
  * in that order, each on top of what's left after the step before it. */
 function mbtaCalcPass(config, passId, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
+  if (!pass) {
+    return {
+      pass: null,
+      breakdown: mbtaCalcBreakdown(0, subsidyPct, perqPct),
+      promoApplies: false,
+      promoOriginalPrice: 0,
+    };
+  }
   const promoApplies = mbtaPromoApplies(config, passId);
   const passPrice = promoApplies
     ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
@@ -148,6 +156,19 @@ function mbtaCalcPass(config, passId, subsidyPct, perqPct) {
  * employer pays, and subsidy + pre-tax together is what each employee saves. */
 function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
   const pass = mbtaGetPassOption(config, passId);
+  if (!pass) {
+    return {
+      pass: null,
+      passPrice: 0,
+      promoApplies: false,
+      perEmployeeMonth: 0,
+      totalMonth: 0,
+      totalYear: 0,
+      employeeSavesMonth: 0,
+      perqIncluded: perqPct > 0,
+      contributes: contributionPct > 0,
+    };
+  }
   const promoApplies = mbtaPromoApplies(config, passId);
   const passPrice = promoApplies
     ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
@@ -211,17 +232,23 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
-  // Populate the zone dropdown from config. Defaults to Zone 1 rather than
-  // the first option in the list (Zone 1A) so the promo callout — which
-  // excludes Zone 1A — reads as active on first load instead of looking
-  // broken before anyone has touched the form.
+  // Populate the zone dropdown from config, starting on an unselected
+  // "Select zone" placeholder rather than defaulting to a real zone —
+  // mbtaCalcPass/mbtaCalcEmployer below both treat an empty passId as
+  // "nothing chosen yet" and return zeroed-out results instead of erroring.
+  const placeholderOpt = document.createElement("option");
+  placeholderOpt.value = "";
+  placeholderOpt.textContent = "Select zone";
+  placeholderOpt.disabled = true;
+  placeholderOpt.selected = true;
+  railZoneSelect.appendChild(placeholderOpt);
+
   MBTA_CONFIG.passOptions.forEach((pass) => {
     const opt = document.createElement("option");
     opt.value = pass.id;
     opt.textContent = pass.label;
     railZoneSelect.appendChild(opt);
   });
-  railZoneSelect.value = "cr-zone-1";
 
   function currentPassId() {
     return railZoneSelect.value;
@@ -377,7 +404,7 @@ function mbtaInitCalculator(rootEl) {
 
     function buildEmbedHtml() {
       const src = window.location.href;
-      return `<iframe src="${src}" title="Regional Rail Pass Calculator" style="width: 100%; border: 0;" height="1300" scrolling="auto" allow="clipboard-write"></iframe>`;
+      return `<iframe src="${src}" title="Regional Rail Pass Calculator" style="width: 100%; border: 0;" height="1360" scrolling="auto" allow="clipboard-write"></iframe>`;
     }
 
     // A page embedded via a cross-origin <iframe> only gets clipboard-write
