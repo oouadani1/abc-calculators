@@ -14,14 +14,14 @@
 /* ------------------------------------------------------------
    1. CONFIG
    The only section that should need editing when fares change.
-   Every price below was pulled from mbta.com on 2026-07-10.
+   Every price below was pulled from mbta.com on 2026-08-19.
    RE-VERIFY ANNUALLY — MBTA fares typically change each July/August
    and zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
   fareSource: {
     url: "https://www.mbta.com/fares/commuter-rail-fares/zones",
-    lastVerified: "2026-07-10",
+    lastVerified: "2026-08-19",
     note:
       "Zone/interzone table pulled from mbta.com/fares/commuter-rail-fares/zones. " +
       "The current promo (50% off Regional Rail monthly passes, extended through " +
@@ -211,13 +211,17 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
-  // Populate the zone dropdown from config.
+  // Populate the zone dropdown from config. Defaults to Zone 1 rather than
+  // the first option in the list (Zone 1A) so the promo callout — which
+  // excludes Zone 1A — reads as active on first load instead of looking
+  // broken before anyone has touched the form.
   MBTA_CONFIG.passOptions.forEach((pass) => {
     const opt = document.createElement("option");
     opt.value = pass.id;
     opt.textContent = pass.label;
     railZoneSelect.appendChild(opt);
   });
+  railZoneSelect.value = "cr-zone-1";
 
   function currentPassId() {
     return railZoneSelect.value;
@@ -346,7 +350,8 @@ function mbtaInitCalculator(rootEl) {
   function renderEmployer() {
     const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
     rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
-    rootEl.querySelector("[data-abc-emp-peryear]").textContent = abcFormatCurrencyWhole(r.totalYear);
+    // totalYear is still computed above but not rendered while the temporary
+    // 50% promo is active — see the HTML comment by the removed stat.
     rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 

@@ -106,7 +106,7 @@
 
 .abc-farecalc-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--abc-space-md);
   padding: var(--abc-space-md) 0;
   border-top: 1px solid var(--abc-border);
@@ -151,12 +151,11 @@
 }
 
 /* ---- Bolder title, per the "make it memorable" direction. Margin-bottom
-   is widened past the shared default since this tool has no subtitle —
-   the title sits directly above the promo callout / question grid. ---- */
+   uses the shared default (tight, just above the subtitle) since the
+   subtitle's own bottom margin provides the gap before the promo callout. ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
   letter-spacing: -0.02em;
-  margin-bottom: var(--abc-space-lg);
 }
 
 /* ---- Question grid: questions pair up into a compact, table-like
@@ -492,6 +491,15 @@
   border-top: 1px solid var(--abc-border);
   font-size: 0.75rem;
   color: var(--abc-ink-faint);
+}
+
+/* ---- Sourcing accordion: no vertical rule alongside the bullets — the
+   shared .abc-details-body component has one by default (base.css), but
+   it reads as visual clutter next to a bulleted list, so it's scoped off
+   here rather than touching the shared component other tools still use. ---- */
+.abc-farecalc .abc-details-body {
+  padding-left: 0;
+  border-left: none;
 }
 
 /* ---- Assumptions list inside the sourcing accordion ---- */

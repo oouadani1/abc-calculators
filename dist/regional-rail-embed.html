@@ -684,7 +684,7 @@
 
 .abc-farecalc-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: var(--abc-space-md);
   padding: var(--abc-space-md) 0;
   border-top: 1px solid var(--abc-border);
@@ -729,12 +729,11 @@
 }
 
 /* ---- Bolder title, per the "make it memorable" direction. Margin-bottom
-   is widened past the shared default since this tool has no subtitle —
-   the title sits directly above the promo callout / question grid. ---- */
+   uses the shared default (tight, just above the subtitle) since the
+   subtitle's own bottom margin provides the gap before the promo callout. ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
   letter-spacing: -0.02em;
-  margin-bottom: var(--abc-space-lg);
 }
 
 /* ---- Question grid: questions pair up into a compact, table-like
@@ -1072,6 +1071,15 @@
   color: var(--abc-ink-faint);
 }
 
+/* ---- Sourcing accordion: no vertical rule alongside the bullets — the
+   shared .abc-details-body component has one by default (base.css), but
+   it reads as visual clutter next to a bulleted list, so it's scoped off
+   here rather than touching the shared component other tools still use. ---- */
+.abc-farecalc .abc-details-body {
+  padding-left: 0;
+  border-left: none;
+}
+
 /* ---- Assumptions list inside the sourcing accordion ---- */
 .abc-farecalc-assumptions {
   margin: 0;
@@ -1153,13 +1161,15 @@
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root data-abc-mode="employee">
-    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an employee or an employer">
-      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an employee</button>
+    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an individual or an employer">
+      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an individual</button>
       <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
     </div>
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Regional Rail work for you?</h2>
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Regional Rail cost your organization?</h2>
+    <p class="abc-subtitle" data-mode-only="employee">See how much you'd save with Regional Rail — half price through November.</p>
+    <p class="abc-subtitle" data-mode-only="employer">See what a Regional Rail benefit would cost your team — half price through November.</p>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
       <div class="abc-farecalc-promo-callout-head">
@@ -1167,7 +1177,9 @@
         <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
       </div>
       <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
+        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026.<br>
+        Zone 1A is excluded from this discount.<br>
+        Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
       </p>
       <p data-mode-only="employee">
@@ -1296,10 +1308,9 @@
             <span class="abc-farecalc-stat-value" data-abc-emp-permonth>$0</span>
             <span class="abc-farecalc-stat-label">per month</span>
           </div>
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-peryear>$0</span>
-            <span class="abc-farecalc-stat-label">per year</span>
-          </div>
+          <!-- Per-year stat intentionally removed while the temporary 50% promo is
+               active — an annualized figure would understate the post-promo cost.
+               Add back once the promo ends (see MBTA_CONFIG.promo.endDate). -->
           <div class="abc-farecalc-stat">
             <span class="abc-farecalc-stat-value" data-abc-emp-peremployee>$0.00</span>
             <span class="abc-farecalc-stat-label">per employee, per month</span>
@@ -1315,7 +1326,7 @@
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
-          <li>Fares are from mbta.com, checked 2026-07-10, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
+          <li>Fares are from mbta.com, checked 2026-08-19, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li><strong>Total monthly cost</strong> is the current MBTA price for a Regional Rail monthly pass: $90 to $426 depending on the zone.</li>
           <li>The Regional Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if a different rate applies.</li>
@@ -1391,14 +1402,14 @@ function abcFormatPercent(value) {
 /* ------------------------------------------------------------
    1. CONFIG
    The only section that should need editing when fares change.
-   Every price below was pulled from mbta.com on 2026-07-10.
+   Every price below was pulled from mbta.com on 2026-08-19.
    RE-VERIFY ANNUALLY — MBTA fares typically change each July/August
    and zone boundaries have shifted in past years.
    ------------------------------------------------------------ */
 const MBTA_CONFIG = {
   fareSource: {
     url: "https://www.mbta.com/fares/commuter-rail-fares/zones",
-    lastVerified: "2026-07-10",
+    lastVerified: "2026-08-19",
     note:
       "Zone/interzone table pulled from mbta.com/fares/commuter-rail-fares/zones. " +
       "The current promo (50% off Regional Rail monthly passes, extended through " +
@@ -1588,13 +1599,17 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
-  // Populate the zone dropdown from config.
+  // Populate the zone dropdown from config. Defaults to Zone 1 rather than
+  // the first option in the list (Zone 1A) so the promo callout — which
+  // excludes Zone 1A — reads as active on first load instead of looking
+  // broken before anyone has touched the form.
   MBTA_CONFIG.passOptions.forEach((pass) => {
     const opt = document.createElement("option");
     opt.value = pass.id;
     opt.textContent = pass.label;
     railZoneSelect.appendChild(opt);
   });
+  railZoneSelect.value = "cr-zone-1";
 
   function currentPassId() {
     return railZoneSelect.value;
@@ -1723,7 +1738,8 @@ function mbtaInitCalculator(rootEl) {
   function renderEmployer() {
     const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
     rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
-    rootEl.querySelector("[data-abc-emp-peryear]").textContent = abcFormatCurrencyWhole(r.totalYear);
+    // totalYear is still computed above but not rendered while the temporary
+    // 50% promo is active — see the HTML comment by the removed stat.
     rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
