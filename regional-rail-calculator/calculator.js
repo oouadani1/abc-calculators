@@ -1,7 +1,7 @@
 /* ============================================================
-   A Better City — Regional Rail Pass Calculator
+   A Better City — Commuter Rail Pass Calculator
 
-   A lightweight, promo-focused fork of the MBTA fare calculator: Regional
+   A lightweight, promo-focused fork of the MBTA fare calculator: Commuter
    Rail only (no mode choice), no pay-per-ride comparison, no organization
    capture. The full multi-mode tool this was forked from is preserved as
    mbta-fare-calculator/ on the `full-build` branch — pull fixes/features
@@ -24,12 +24,12 @@ const MBTA_CONFIG = {
     lastVerified: "2026-08-19",
     note:
       "Zone/interzone table pulled from mbta.com/fares/commuter-rail-fares/zones. " +
-      "The current promo (50% off Regional Rail monthly passes, extended through " +
+      "The current promo (50% off Commuter Rail monthly passes, extended through " +
       "Nov 30 2026, Zone 1A excluded) is modeled separately via MBTA_CONFIG.promo " +
       "below rather than baked into these base prices, since it's not a durable fare.",
   },
 
-  // Official MBTA Regional Rail zone map, for the "which zone am I in" question.
+  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
@@ -38,7 +38,7 @@ const MBTA_CONFIG = {
   employeeCountMax: 100000,
   defaultEmployeeCount: 25,
 
-  // Temporary Regional Rail promo: 50% off monthly passes, extended
+  // Temporary Commuter Rail promo: 50% off monthly passes, extended
   // through Fall 2026 (originally June-Aug, now through Nov 30). Zone 1A
   // is excluded, matching MBTA's own terms. Auto-expires on its own past
   // endDate (see mbtaPromoIsActive) so nothing has to be remembered by
@@ -58,7 +58,7 @@ const MBTA_CONFIG = {
   // used as the stepper's starting point once someone says "yes" to Perq.
   defaultPerqPct: 30,
 
-  // Regional Rail zones only — no Subway & Bus option in this build.
+  // Commuter Rail zones only — no Subway & Bus option in this build.
   // Zone 1A is excluded from the current promo (see MBTA_CONFIG.promo).
   passOptions: [
     { id: "cr-zone-1a", label: "Zone 1A", monthlyPrice: 90.00 },
@@ -371,7 +371,7 @@ function mbtaInitCalculator(rootEl) {
       const promoAmt = result.promoOriginalPrice - result.breakdown.total;
       rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.promoOriginalPrice);
       rootEl.querySelector("[data-abc-pass-promo-label]").textContent =
-        `Regional Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
+        `Commuter Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
       rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
       promoRow.style.display = "flex";
     } else {
@@ -409,7 +409,7 @@ function mbtaInitCalculator(rootEl) {
 
     function buildEmbedHtml() {
       const src = window.location.href;
-      return `<iframe src="${src}" title="Regional Rail Pass Calculator" style="width: 100%; border: 0;" height="1360" scrolling="auto" allow="clipboard-write"></iframe>`;
+      return `<iframe src="${src}" title="Commuter Rail Pass Calculator" style="width: 100%; border: 0;" height="1360" scrolling="auto" allow="clipboard-write"></iframe>`;
     }
 
     // A page embedded via a cross-origin <iframe> only gets clipboard-write

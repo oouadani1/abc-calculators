@@ -1,6 +1,6 @@
-# Regional Rail Pass Calculator
+# Commuter Rail Pass Calculator
 
-Estimates monthly Regional Rail pass cost after employer subsidy and pre-tax savings.
+Estimates monthly Commuter Rail pass cost after employer subsidy and pre-tax savings.
 
 ## Local preview
 

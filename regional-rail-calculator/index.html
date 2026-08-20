@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Regional Rail Calculator — Dev Preview</title>
+  <title>Commuter Rail Calculator (Dev Preview)</title>
   <link rel="stylesheet" href="../shared/styles/fonts.css" />
   <link rel="stylesheet" href="../shared/styles/base.css" />
   <link rel="stylesheet" href="calculator.css" />
@@ -24,9 +24,9 @@
       <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
     </div>
 
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Regional Rail work for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Regional Rail save your employees?</h2>
-    <p class="abc-subtitle" data-mode-only="employee">Regional Rail is half price through November. See how much you'd save.</p>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Does Commuter Rail work for you?</h2>
+    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">How much would Commuter Rail save your employees?</h2>
+    <p class="abc-subtitle" data-mode-only="employee">Commuter Rail is half price through November. See how much you'd save.</p>
     <p class="abc-subtitle" data-mode-only="employer">See what it would save your employees and cost your team.</p>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
@@ -35,14 +35,14 @@
         <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
       </div>
       <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded). Perq users get this discount automatically.
+        Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded). Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's site</a>.
       </p>
       <p data-mode-only="employee">
-        Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through November.
+        Ordering through Perq? Your employer needs to order by <strong>September 10</strong> for October passes, and <strong>October 10</strong> for November passes. Purchase a discounted monthly pass at any time through the MBTA's <a href="https://www.mbta.com/fares/commuter-rail-fares" target="_blank" rel="noopener">many sales options</a>.
       </p>
       <p data-mode-only="employer">
-        Ordering through Perq? You need to place the order by <strong>October 10</strong> to qualify. Buying passes directly (not through Perq) still works all the way through November.
+        Ordering through Perq? You need to order by <strong>September 10</strong> for October passes, and <strong>October 10</strong> for November passes. Purchase discounted monthly passes at any time through the MBTA's <a href="https://www.mbta.com/fares/commuter-rail-fares" target="_blank" rel="noopener">many sales options</a>.
       </p>
     </div>
 
@@ -52,7 +52,7 @@
         <p class="abc-question" data-mode-only="employer">What zone are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Regional Rail zone"></select>
+            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Commuter Rail zone"></select>
             <span class="abc-field-hint">
               Not sure which zone you're in?
               <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
@@ -137,7 +137,7 @@
           <span data-abc-pass-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
-          <span data-abc-pass-promo-label>Regional Rail promo</span>
+          <span data-abc-pass-promo-label>Commuter Rail promo</span>
           <span data-abc-pass-promo-amt>-$0.00</span>
         </div>
         <div class="abc-farecalc-line">
@@ -183,8 +183,8 @@
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares are from mbta.com, checked 2026-08-19, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
-          <li><strong>Total monthly cost</strong> is the current MBTA price for a Regional Rail monthly pass: $90 to $426 depending on the zone.</li>
-          <li>The Regional Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
+          <li><strong>Total monthly cost</strong> is the current MBTA price for a Commuter Rail monthly pass: $90 to $426 depending on the zone.</li>
+          <li>The Commuter Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if a different rate applies.</li>
         </ul>
 

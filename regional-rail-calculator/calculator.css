@@ -1,10 +1,10 @@
 /* ============================================================
-   Regional Rail Pass Calculator — tool-specific overrides on top of
+   Commuter Rail Pass Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-farecalc-* (kept from the full
    build this was forked from, for a smaller diff against that codebase).
 
-   This tool is Regional Rail only, so unlike the full build there's no
-   route-theme switching — the accent is permanently MBTA's own Regional
+   This tool is Commuter Rail only, so unlike the full build there's no
+   route-theme switching — the accent is permanently MBTA's own Commuter
    Rail purple. "Recommended for you" / positive signals and the promo
    both use a fixed green; Perq "No" stays a fixed red — distinct
    signals, not route identity, same as the full build.
@@ -19,7 +19,7 @@
   --mbta-red: #DA291C;
   --mbta-green: #00843D;
   --mbta-green-tint: #E5F3EB;
-  --mbta-purple: #80276C; /* Regional Rail's own official color */
+  --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
 }
 
