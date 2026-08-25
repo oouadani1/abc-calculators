@@ -592,6 +592,13 @@
   --abc-bikecalc-accent: var(--bluebikes-blue);
   --abc-bikecalc-accent-tint: var(--bluebikes-blue-tint);
   max-width: 880px;
+  /* The shared .abc-calc rule (base.css) gives every tool its own light
+     gray-blue panel: background + 1px border + rounded corners. That
+     reads as a visible box sitting on top of the host page. Stripped
+     here so the tool has no panel of its own at all, just its content
+     directly on whatever background the page already has. */
+  background: none;
+  border: none;
 }
 
 .abc-bikecalc-title {
