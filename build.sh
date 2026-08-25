@@ -50,7 +50,7 @@ build_tool() {
 }
 
 build_tool "mbta-fare-calculator" "mbta-fare-chunk.html"
-build_tool "bluebikes-membership-calculator" "bluebikes-chunk.html"
+build_tool "bluebikes-membership-calculator" "bluebikes-chunk.html" "no"
 build_tool "regional-rail-calculator" "regional-rail-chunk.html" "no"
 
 # Standalone iframe-embed pages: wraps the same chunk in a full <html> doc

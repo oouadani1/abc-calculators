@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bluebikes Corporate Membership Calculator — Dev Preview</title>
+  <title>Bluebikes Membership Calculator (Dev Preview)</title>
   <link rel="stylesheet" href="../shared/styles/fonts.css" />
   <link rel="stylesheet" href="../shared/styles/base.css" />
   <link rel="stylesheet" href="calculator.css" />
@@ -19,91 +19,65 @@
 
   <!-- ABC-CALC-HTML-START -->
   <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root>
-    <p class="abc-eyebrow">A Better City</p>
-    <h2 class="abc-title">What would Bluebikes cost your team?</h2>
-    <p class="abc-subtitle">Tell us how many people, then compare how much your organization could cover.</p>
+    <h2 class="abc-title abc-bikecalc-title">Should you subsidize Bluebikes for your team?</h2>
+    <p class="abc-subtitle">See what each tier would cost you, and save your employees.</p>
 
-    <div class="abc-progress">
-      <div class="abc-progress-dots">
-        <span class="abc-progress-dot" data-abc-progress-dot></span>
-        <span class="abc-progress-dot" data-abc-progress-dot></span>
-      </div>
-      <span class="abc-progress-label" data-abc-progress-label></span>
+    <div class="abc-bikecalc-tierbar" role="group" aria-label="Choose a subsidy tier">
+      <button type="button" class="abc-bikecalc-tier-btn abc-active" data-abc-tier-select="gold">Gold</button>
+      <button type="button" class="abc-bikecalc-tier-btn" data-abc-tier-select="silver">Silver</button>
     </div>
 
-    <!-- Step 1 -->
-    <div class="abc-step" data-abc-step="1">
-      <p class="abc-question">How many people are you enrolling?</p>
+    <div class="abc-bikecalc-field-group">
+      <p class="abc-question">How many employees do you want to cover?</p>
       <div class="abc-input-row">
         <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-slider-row">
-            <input
-              id="abc-bikecalc-employees"
-              class="abc-slider"
-              type="range"
-              min="0"
-              max="500"
-              step="5"
-              value="50"
-              data-abc-employee-input
-            />
-            <span class="abc-slider-value" data-abc-employee-value>50</span>
+          <div class="abc-bikecalc-stepper" data-abc-count-stepper>
+            <button type="button" class="abc-bikecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5">&minus;</button>
+            <div class="abc-bikecalc-stepper-value-wrap">
+              <input type="number" class="abc-bikecalc-stepper-input" data-abc-stepper-value min="1" max="100000" value="25" inputmode="numeric" aria-label="Number of employees covered" />
+            </div>
+            <button type="button" class="abc-bikecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5">+</button>
           </div>
         </div>
-      </div>
-
-      <details class="abc-details">
-        <summary>Some riders go over their ride time</summary>
-        <div class="abc-details-body">
-          <div class="abc-field">
-            <label for="abc-bikecalc-overage">Extra minutes per rider, per month</label>
-            <input
-              id="abc-bikecalc-overage"
-              class="abc-number-input"
-              type="number"
-              min="0"
-              step="1"
-              value="0"
-              data-abc-overage-input
-              style="max-width: 140px;"
-            />
-            <span class="abc-field-hint" data-abc-overage-hint></span>
-          </div>
-        </div>
-      </details>
-
-      <div class="abc-stepnav">
-        <span></span>
-        <button type="button" class="abc-btn abc-btn-primary" data-abc-next>Compare options</button>
       </div>
     </div>
 
-    <!-- Step 2 -->
-    <div class="abc-step" data-abc-step="2">
-      <p class="abc-question">Tap the option you're considering</p>
-
-      <div class="abc-cards" data-abc-cards-container></div>
-
-      <div class="abc-callout">
-        <h4>Next steps</h4>
-        <p data-abc-takeaway></p>
-      </div>
-
-      <details class="abc-details">
-        <summary>Where these numbers come from</summary>
-        <div class="abc-details-body">
-          Gold and Silver pricing is from bluebikes.com, checked 2026-07-10
-          ($101.50 per person, per year, at the corporate rate &mdash; different
-          from the $133.50 individual membership price). The Bronze option
-          hasn't been confirmed by Bluebikes yet. Extra ride-time charges are
-          assumed to be paid by the rider, not your organization.
+    <div class="abc-bikecalc-results">
+      <div class="abc-card abc-bikecalc-result-card">
+        <span class="abc-badge abc-bikecalc-badge">Your estimate</span>
+        <h3 data-abc-tier-heading>Gold: you cover the full membership</h3>
+        <div class="abc-bikecalc-stat-grid">
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-annual-cost>$0</span>
+            <span class="abc-bikecalc-stat-label">per year</span>
+          </div>
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-monthly-cost>$0</span>
+            <span class="abc-bikecalc-stat-label">per month</span>
+          </div>
         </div>
-      </details>
-
-      <div class="abc-stepnav">
-        <button type="button" class="abc-text-link" data-abc-edit-answers>Edit your answers</button>
-        <span></span>
+        <p class="abc-bikecalc-note">
+          Each employee saves <strong data-abc-savings>$0.00</strong> a year on membership<span data-abc-savings-detail></span>.
+        </p>
       </div>
+    </div>
+
+    <details class="abc-details">
+      <summary>Where we got these numbers</summary>
+      <div class="abc-details-body">
+        <ul class="abc-bikecalc-assumptions">
+          <li>Gold and Silver pricing is from bluebikes.com, checked 2026-08-25, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
+          <li><strong>Gold</strong> is the corporate group rate of $101.50 per person, per year, fully covered by your organization.</li>
+          <li><strong>Silver</strong> splits that same $101.50 group rate evenly: $50.75 from your organization, $50.75 from each employee.</li>
+          <li>Employee savings compare against Bluebikes' standard individual Annual Membership ($133.50/year), what someone would pay without a group rate at all.</li>
+        </ul>
+
+        <p class="abc-bikecalc-credit"><strong>Built by A Better City</strong> | August 2026</p>
+      </div>
+    </details>
+
+    <div class="abc-bikecalc-embed">
+      <button type="button" class="abc-choice-button abc-bikecalc-embed-btn" data-abc-embed-btn>Copy embed code</button>
     </div>
   </div>
   <!-- ABC-CALC-HTML-END -->

@@ -1,5 +1,11 @@
 /* ============================================================
-   ABC Bluebikes Corporate Membership Calculator
+   A Better City — Bluebikes Membership Calculator
+
+   Employer-only tool: pick a subsidy tier, enter a headcount, see what
+   it costs your organization and what each employee saves. No mode
+   toggle needed (unlike the MBTA/Commuter Rail tools) since there's no
+   individual-facing angle here, just the employer decision.
+
    Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
    ============================================================ */
@@ -8,67 +14,49 @@
    1. CONFIG
    The only section that should need editing when Bluebikes pricing
    or tier structure changes. Every price below was pulled from
-   bluebikes.com on 2026-07-10 UNLESS marked tentative.
-   RE-VERIFY ANNUALLY, and before launch confirm the Bronze tier
-   with corporateaccounts@bluebikes.com or your existing contract.
+   bluebikes.com on 2026-08-25.
+   RE-VERIFY ANNUALLY — Bluebikes has changed both the corporate rate
+   and the retail Annual Membership price before.
    ------------------------------------------------------------ */
 const BIKE_CONFIG = {
   pricingSource: {
     url: "https://bluebikes.com/pricing/corporate-membership",
-    lastVerified: "2026-07-10",
+    lastVerified: "2026-08-25",
     note:
-      "Gold and Silver figures confirmed live on bluebikes.com. The corporate " +
-      "per-signup rate is $101.50/employee/year (individual retail annual " +
-      "membership is a separate, higher $133.50/year, not used here).",
+      "Gold and Silver figures confirmed live on bluebikes.com/pricing/corporate-membership. " +
+      "There is no Bronze tier; it was previously under discussion with Bluebikes but never " +
+      "shipped, and is not offered. The $133.50 retail Annual Membership price (bluebikes.com/pricing) " +
+      "is used only as the 'what an employee would otherwise pay' baseline for the savings figure.",
   },
 
-  // First 45 minutes of each classic-bike ride are included in membership;
-  // additional minutes billed at $0.10/min. Modeled here as always borne by
-  // the rider/employee, not the employer — corporate membership covers
-  // annual access only, not per-ride overage. Confirm this assumption if
-  // your contract differs.
-  overage: {
-    includedMinutesPerRide: 45,
-    ratePerMinute: 0.10,
-  },
+  // What an individual pays for Bluebikes' standard Annual Membership with
+  // no employer/group rate at all — the baseline the "employee saves"
+  // figure is measured against.
+  retailAnnualPrice: 133.50,
 
-  // Subsidy tiers. employerAnnualCost + employeeAnnualCost always sum to the
-  // $101.50 corporate per-signup rate. "blurb" is the plain-language framing
-  // shown on each card instead of a raw percentage.
+  // Both tiers split the same $101.50/person/year corporate group rate
+  // differently. employerAnnualCost + employeeAnnualCost always sum to
+  // that $101.50.
   tiers: [
     {
       id: "gold",
       label: "Gold",
-      blurb: "We cover it all",
-      subsidyPct: 100,
+      blurb: "you cover the full membership",
       employerAnnualCost: 101.50,
       employeeAnnualCost: 0,
-      tentative: false,
     },
     {
       id: "silver",
       label: "Silver",
-      blurb: "We split it",
-      subsidyPct: 50,
+      blurb: "you split it evenly",
       employerAnnualCost: 50.75,
       employeeAnnualCost: 50.75,
-      tentative: false,
-    },
-    {
-      id: "bronze",
-      label: "Bronze",
-      blurb: "We help a little",
-      subsidyPct: 25.6, // 26 / 101.50 — not currently a live Bluebikes tier
-      employerAnnualCost: 26.00,
-      employeeAnnualCost: 75.50,
-      tentative: true, // NOT on Bluebikes' live corporate page as of 2026-07-10.
-      tentativeNote:
-        "We're still confirming this option with Bluebikes \u2014 don't rely on " +
-        "this number publicly yet.",
     },
   ],
 
-  defaultEmployeeCount: 50,
+  employeeCountStep: 5,
+  employeeCountMax: 100000,
+  defaultEmployeeCount: 25,
 };
 
 /* ------------------------------------------------------------
@@ -80,172 +68,147 @@ function bikeGetTier(config, tierId) {
   return config.tiers.find((t) => t.id === tierId);
 }
 
-function bikeCalcEmployerAnnualCost(tier, employeeCount) {
-  return tier.employerAnnualCost * employeeCount;
-}
-
-function bikeCalcEmployerMonthlyCost(tier, employeeCount) {
-  return bikeCalcEmployerAnnualCost(tier, employeeCount) / 12;
-}
-
-/** Marketing-comparable "$X.XX per employee per day" figure. */
-function bikeCalcCostPerEmployeePerDay(tier) {
-  return tier.employerAnnualCost / 365;
-}
-
-function bikeCalcMemberOverageCostPerMonth(overageMinutesPerMonth, ratePerMinute) {
-  return Math.max(0, overageMinutesPerMonth) * ratePerMinute;
-}
-
-function bikeCalcMemberAnnualCost(tier, overageMinutesPerMonth, ratePerMinute) {
-  return tier.employeeAnnualCost + bikeCalcMemberOverageCostPerMonth(overageMinutesPerMonth, ratePerMinute) * 12;
-}
-
-/** Bundles every derived number the UI needs for one tier + inputs. */
-function bikeCalcAll(config, tierId, employeeCount, overageMinutesPerMonth) {
+/** Employer view: cost of covering a headcount at a given tier, plus what
+ * each employee saves versus paying full retail for their own membership. */
+function bikeCalcEmployer(config, tierId, employeeCount) {
   const tier = bikeGetTier(config, tierId);
+  const employerAnnualCost = tier.employerAnnualCost * employeeCount;
+  const employerMonthlyCost = employerAnnualCost / 12;
+  const employeeSavesAnnual = config.retailAnnualPrice - tier.employeeAnnualCost;
   return {
     tier,
-    employerAnnualCost: bikeCalcEmployerAnnualCost(tier, employeeCount),
-    employerMonthlyCost: bikeCalcEmployerMonthlyCost(tier, employeeCount),
-    costPerEmployeePerDay: bikeCalcCostPerEmployeePerDay(tier),
-    memberAnnualCost: bikeCalcMemberAnnualCost(tier, overageMinutesPerMonth, config.overage.ratePerMinute),
-    memberMonthlyOverageCost: bikeCalcMemberOverageCostPerMonth(overageMinutesPerMonth, config.overage.ratePerMinute),
+    employerAnnualCost,
+    employerMonthlyCost,
+    employeeSavesAnnual,
+    employeeStillPays: tier.employeeAnnualCost,
   };
 }
 
 /* ------------------------------------------------------------
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
-   No math happens in this section. Owns a light 2-step flow: how
-   many people, then compare tiers (tap a card to pick it — no
-   separate selector row needed).
+   No math happens in this section. Single live-updating view —
+   no steps, no submit button.
    ------------------------------------------------------------ */
 
 function bikeInitCalculator(rootEl) {
-  const STEP_LABELS = ["Your team", "Compare your options"];
-  let currentStep = 1;
-  let selectedTierId = "gold";
+  let tierId = "gold";
+  let employeeCount = BIKE_CONFIG.defaultEmployeeCount;
 
-  const employeeSlider = rootEl.querySelector("[data-abc-employee-input]");
-  const employeeValueEl = rootEl.querySelector("[data-abc-employee-value]");
-  const overageInput = rootEl.querySelector("[data-abc-overage-input]");
-  const overageHintEl = rootEl.querySelector("[data-abc-overage-hint]");
-  const cardsContainer = rootEl.querySelector("[data-abc-cards-container]");
-
-  const progressDots = rootEl.querySelectorAll("[data-abc-progress-dot]");
-  const progressLabel = rootEl.querySelector("[data-abc-progress-label]");
-  const steps = rootEl.querySelectorAll("[data-abc-step]");
-  const editAnswersLink = rootEl.querySelector("[data-abc-edit-answers]");
-
-  // Build one card per config tier (so adding/removing a tier next year
-  // doesn't require touching this file's HTML/JS, only CONFIG).
-  BIKE_CONFIG.tiers.forEach((tier) => {
-    const card = document.createElement("div");
-    card.className = "abc-card abc-bikecalc-card";
-    card.dataset.abcTierCard = tier.id;
-    card.tabIndex = 0;
-    card.setAttribute("role", "button");
-    card.innerHTML = `
-      <span class="abc-badge" data-abc-badge style="visibility: hidden;">Selected</span>
-      <h3>${tier.label}${tier.tentative ? '<span class="abc-tag-caution">Not confirmed</span>' : ""}</h3>
-      <div class="abc-card-sub abc-bikecalc-blurb">${tier.blurb}</div>
-      <div class="abc-card-figure" data-abc-employer-figure>$0</div>
-      <div class="abc-card-sub" data-abc-employer-sub></div>
-      <ul>
-        <li data-abc-per-day-line></li>
-        <li data-abc-member-line></li>
-      </ul>
-      ${tier.tentative ? `<p class="abc-caution-note">${tier.tentativeNote}</p>` : ""}
-    `;
-    card.addEventListener("click", () => {
-      selectedTierId = tier.id;
+  // Tier toggle: same segmented-pill pattern as the other tools' mode
+  // toggles, just swapping Gold/Silver instead of employee/employer.
+  const tierButtons = rootEl.querySelectorAll("[data-abc-tier-select]");
+  tierButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tierId = btn.dataset.abcTierSelect;
+      tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
-    card.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        selectedTierId = tier.id;
-        render();
-      }
-    });
-    cardsContainer.appendChild(card);
   });
 
-  function goToStep(n) {
-    currentStep = n;
-    steps.forEach((stepEl) => {
-      stepEl.classList.toggle("abc-step-active", Number(stepEl.dataset.abcStep) === n);
-    });
-    progressDots.forEach((dot, i) => {
-      dot.classList.toggle("abc-dot-active", i === n - 1);
-      dot.classList.toggle("abc-dot-done", i < n - 1);
-    });
-    progressLabel.textContent = `Step ${n} of ${steps.length} \u2014 ${STEP_LABELS[n - 1]}`;
-    if (n === steps.length) render();
-  }
+  // Headcount stepper: same generic +/- pattern used across the other
+  // tools' steppers. Typing a value updates live; +/- moves in fixed steps.
+  const stepperEl = rootEl.querySelector("[data-abc-count-stepper]");
+  const input = stepperEl.querySelector("[data-abc-stepper-value]");
+  const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
+  const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
+  const min = 1;
+  const max = BIKE_CONFIG.employeeCountMax;
+  const step = BIKE_CONFIG.employeeCountStep;
 
-  rootEl.querySelectorAll("[data-abc-next]").forEach((btn) => {
-    btn.addEventListener("click", () => goToStep(currentStep + 1));
+  function paintStepper() {
+    input.value = employeeCount;
+  }
+  minusBtn.addEventListener("click", () => {
+    employeeCount = Math.max(min, employeeCount - step);
+    paintStepper();
+    render();
   });
-  editAnswersLink.addEventListener("click", () => goToStep(1));
-
-  function updateEmployeeDisplay() {
-    employeeValueEl.textContent = abcFormatNumber(Number(employeeSlider.value));
-  }
-  employeeSlider.addEventListener("input", updateEmployeeDisplay);
-  updateEmployeeDisplay();
+  plusBtn.addEventListener("click", () => {
+    employeeCount = Math.min(max, employeeCount + step);
+    paintStepper();
+    render();
+  });
+  input.addEventListener("input", () => {
+    const raw = Number(input.value);
+    if (!Number.isNaN(raw)) {
+      employeeCount = Math.min(max, Math.max(min, raw));
+      render();
+    }
+  });
+  input.addEventListener("blur", paintStepper);
 
   function render() {
-    const employeeCount = Math.max(0, Number(employeeSlider.value) || 0);
-    const overageMinutes = Math.max(0, Number(overageInput.value) || 0);
+    const r = bikeCalcEmployer(BIKE_CONFIG, tierId, employeeCount);
 
-    let selectedResult = null;
+    rootEl.querySelector("[data-abc-tier-heading]").textContent = `${r.tier.label}: ${r.tier.blurb}`;
+    rootEl.querySelector("[data-abc-annual-cost]").textContent = abcFormatCurrencyWhole(r.employerAnnualCost);
+    rootEl.querySelector("[data-abc-monthly-cost]").textContent = abcFormatCurrencyWhole(r.employerMonthlyCost);
+    rootEl.querySelector("[data-abc-savings]").textContent = abcFormatCurrency(r.employeeSavesAnnual);
 
-    BIKE_CONFIG.tiers.forEach((tier) => {
-      const result = bikeCalcAll(BIKE_CONFIG, tier.id, employeeCount, overageMinutes);
-      if (tier.id === selectedTierId) selectedResult = result;
-
-      const card = cardsContainer.querySelector(`[data-abc-tier-card="${tier.id}"]`);
-      const isSelected = tier.id === selectedTierId;
-      card.classList.toggle("abc-card-winner", isSelected);
-      card.querySelector("[data-abc-badge]").style.visibility = isSelected ? "visible" : "hidden";
-
-      card.querySelector("[data-abc-employer-figure]").textContent = abcFormatCurrency(result.employerAnnualCost);
-      card.querySelector("[data-abc-employer-sub]").textContent =
-        `${abcFormatCurrency(result.employerMonthlyCost)}/month for ${abcFormatNumber(employeeCount)} people`;
-      card.querySelector("[data-abc-per-day-line]").textContent =
-        `${abcFormatCurrency(result.costPerEmployeePerDay)} per person, per day`;
-      card.querySelector("[data-abc-member-line]").textContent =
-        overageMinutes > 0
-          ? `They pay ${abcFormatCurrency(result.memberAnnualCost)}/year (with overage)`
-          : `They pay ${abcFormatCurrency(result.memberAnnualCost)}/year`;
-    });
-
-    const takeawayEl = rootEl.querySelector("[data-abc-takeaway]");
-    const tier = selectedResult.tier;
-    if (employeeCount === 0) {
-      takeawayEl.textContent = "Add at least one person to see what this would cost.";
-    } else {
-      takeawayEl.textContent =
-        `Covering ${abcFormatNumber(employeeCount)} people at ${tier.label} runs your team ` +
-        `${abcFormatCurrency(selectedResult.employerAnnualCost)} a year ` +
-        `(${abcFormatCurrency(selectedResult.employerMonthlyCost)} a month) \u2014 about ` +
-        `${abcFormatCurrency(selectedResult.costPerEmployeePerDay)} per person, per day. ` +
-        (tier.employeeAnnualCost > 0
-          ? `Everyone else chips in ${abcFormatCurrency(tier.employeeAnnualCost)} a year.`
-          : `Nobody pays anything out of pocket.`);
-    }
-
-    overageHintEl.textContent =
-      overageMinutes > 0
-        ? `Adds ${abcFormatCurrency(bikeCalcMemberOverageCostPerMonth(overageMinutes, BIKE_CONFIG.overage.ratePerMinute))} a month per rider, paid by the rider.`
-        : `Rides include the first ${BIKE_CONFIG.overage.includedMinutesPerRide} minutes free. Leave at 0 if that's usually enough.`;
+    const detailEl = rootEl.querySelector("[data-abc-savings-detail]");
+    detailEl.textContent = r.employeeStillPays > 0
+      ? `, though they'd still chip in ${abcFormatCurrency(r.employeeStillPays)} a year themselves`
+      : "";
   }
 
-  overageInput.addEventListener("input", render);
+  // Embed button: same pattern as the other tools' — copies a ready
+  // <iframe> tag pointing at this page's own live URL.
+  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
+  if (embedBtn) {
+    const originalLabel = embedBtn.textContent;
+    let revertTimer = null;
 
-  goToStep(1);
+    function buildEmbedHtml() {
+      const src = window.location.href;
+      return `<iframe src="${src}" title="Bluebikes Membership Calculator" style="width: 100%; border: 0;" height="900" scrolling="auto" allow="clipboard-write"></iframe>`;
+    }
+
+    function copyWithExecCommand(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      let ok = false;
+      try {
+        ok = document.execCommand("copy");
+      } catch (err) {
+        ok = false;
+      }
+      document.body.removeChild(ta);
+      return ok;
+    }
+
+    async function copyToClipboard(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        return true;
+      } catch (err) {
+        return copyWithExecCommand(text);
+      }
+    }
+
+    embedBtn.addEventListener("click", async () => {
+      clearTimeout(revertTimer);
+      const copied = await copyToClipboard(buildEmbedHtml());
+      if (copied) {
+        embedBtn.textContent = "Embed code copied";
+        embedBtn.classList.add("abc-bikecalc-copied");
+        return;
+      }
+      embedBtn.textContent = "Couldn't copy, try again";
+      revertTimer = setTimeout(() => {
+        embedBtn.classList.remove("abc-bikecalc-copied");
+        embedBtn.textContent = originalLabel;
+      }, 2500);
+    });
+  }
+
+  paintStepper();
+  render();
 }
 
 document.addEventListener("DOMContentLoaded", () => {

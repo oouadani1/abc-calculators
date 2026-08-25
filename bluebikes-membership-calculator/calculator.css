@@ -1,31 +1,286 @@
 /* ============================================================
-   Bluebikes Corporate Membership Calculator — tool-specific
-   overrides on top of shared/styles/base.css. Prefix: .abc-bikecalc-*
-   Kept intentionally small: almost everything now lives in the
-   shared glass design system.
+   Bluebikes Membership Calculator — tool-specific overrides on top of
+   shared/styles/base.css. Prefix: .abc-bikecalc-*
+
+   Employer-only tool (see calculator.js) so there's no mode toggle for
+   an individual view, just a Gold/Silver tier toggle in the same spot.
+   Design/spacing patterns (stepper, stat grid, uniform control height,
+   narrow breakpoints) are carried over from regional-rail-calculator's
+   calculator.css for consistency across the tool suite — kept as a
+   separate copy per-tool rather than a shared stylesheet, same reasoning
+   as that file's own header comment.
    ============================================================ */
 
-.abc-bikecalc-card {
-  cursor: pointer;
-  transition: transform 0.12s ease, box-shadow 0.12s ease;
+:root {
+  /* Approximated from Bluebikes' livery/branding, not pulled from a
+     confirmed design-system source — swap in an exact brand hex if one
+     turns up in official guidelines. */
+  --bluebikes-blue: #0089CF;
+  --bluebikes-blue-tint: #E3F3FA;
+  --bluebikes-green: #00843D;
 }
 
-/* Guarded behind (hover: hover): touchscreens fire :hover on tap with
-   no "mouse leave" to end it, so this could otherwise hang the card in
-   its lifted state after a tap meant for scrolling past it. */
+.abc-bikecalc {
+  --abc-bikecalc-accent: var(--bluebikes-blue);
+  --abc-bikecalc-accent-tint: var(--bluebikes-blue-tint);
+  max-width: 880px;
+}
+
+.abc-bikecalc-title {
+  font-size: 1.75rem;
+  letter-spacing: -0.02em;
+}
+
+/* ---- Gold / Silver tier toggle: same segmented-pill pattern as the
+   other tools' employee/employer mode toggle. ---- */
+.abc-bikecalc-tierbar {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-bikecalc-tier-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 44px;
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  color: var(--abc-ink-muted);
+  padding: 0 18px;
+  border-radius: var(--abc-radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-bikecalc-tier-btn.abc-active {
+  background: #fff;
+  color: var(--abc-navy-deep);
+  box-shadow: var(--abc-shadow-card);
+}
+
+.abc-bikecalc-field-group {
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-bikecalc .abc-question {
+  margin: 0 0 var(--abc-space-sm);
+}
+
+/* ---- Stepper (headcount): +/- buttons flank a real <input type=number>
+   so an exact value can be typed directly. Same shape as the other
+   tools' steppers, just in the Bluebikes accent. ---- */
+.abc-bikecalc-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  border: 2px solid var(--abc-bikecalc-accent);
+  border-radius: var(--abc-radius-pill);
+  overflow: hidden;
+  width: fit-content;
+}
+
+.abc-bikecalc-stepper-btn {
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--abc-bikecalc-accent);
+  color: #fff;
+  cursor: pointer;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .abc-bikecalc-card:hover {
-    transform: translateY(-2px);
+  .abc-bikecalc-stepper-btn:hover {
+    filter: brightness(1.1);
   }
 }
 
-.abc-bikecalc-card:focus-visible {
-  outline: 2px solid var(--abc-teal);
-  outline-offset: 2px;
+.abc-bikecalc-stepper-btn:active {
+  filter: brightness(0.95);
 }
 
-.abc-bikecalc-blurb {
+.abc-bikecalc-stepper-value-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 96px;
+  height: 44px;
+  gap: 2px;
+}
+
+.abc-bikecalc-stepper-input {
+  font-family: var(--abc-font-mono);
+  font-size: 1.4rem;
   font-weight: 600;
-  color: var(--abc-navy);
+  color: var(--abc-navy-deep);
+  text-align: center;
+  width: 6ch;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  -moz-appearance: textfield;
+}
+
+.abc-bikecalc-stepper-input::-webkit-inner-spin-button,
+.abc-bikecalc-stepper-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.abc-bikecalc-stepper-input:focus {
+  color: var(--abc-bikecalc-accent);
+}
+
+/* ---- Results card ---- */
+.abc-bikecalc-results {
+  margin-top: var(--abc-space-lg);
+}
+
+.abc-bikecalc-badge {
+  background: var(--abc-bikecalc-accent);
+}
+
+.abc-bikecalc-result-card h3 {
+  margin: 0 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-lg);
+  color: var(--abc-navy-deep);
+}
+
+.abc-bikecalc-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--abc-space-md);
+  padding: var(--abc-space-md) 0;
+  border-top: 1px solid var(--abc-border);
+  border-bottom: 1px solid var(--abc-border);
+}
+
+.abc-bikecalc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.abc-bikecalc-stat-value {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  letter-spacing: -0.01em;
+}
+
+.abc-bikecalc-stat-label {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-bikecalc-note {
+  margin: var(--abc-space-md) 0 0;
+  font-size: var(--abc-font-size-base);
+  line-height: 1.5;
+  color: var(--abc-ink);
+}
+
+.abc-bikecalc-note strong {
+  color: var(--bluebikes-green);
+}
+
+/* ---- Sourcing accordion: no vertical rule alongside the bullets, same
+   reasoning as regional-rail-calculator's override of the shared
+   .abc-details-body component. ---- */
+.abc-bikecalc .abc-details-body {
+  padding-left: 0;
+  border-left: none;
+}
+
+.abc-bikecalc-assumptions {
+  margin: 0;
+  padding-left: 1.1em;
+}
+
+.abc-bikecalc-assumptions li {
   margin-bottom: var(--abc-space-sm);
+  line-height: 1.5;
+}
+
+.abc-bikecalc-assumptions li:last-child {
+  margin-bottom: 0;
+}
+
+.abc-bikecalc-credit {
+  margin: var(--abc-space-md) 0 0;
+  padding-top: var(--abc-space-sm);
+  border-top: 1px solid var(--abc-border);
+  font-size: 0.75rem;
+  color: var(--abc-ink-faint);
+}
+
+/* ---- Embed button ---- */
+.abc-bikecalc-embed {
+  margin-top: var(--abc-space-lg);
+  text-align: center;
+}
+
+.abc-bikecalc-embed-btn.abc-bikecalc-copied {
+  border-color: var(--bluebikes-green);
+  background: var(--bluebikes-green);
+  color: #fff;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ---- Narrow layout: keyed off the actual container width, same
+   pattern as the other tools. ---- */
+@container abc-calc (max-width: 480px) {
+  .abc-bikecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-bikecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-bikecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .abc-bikecalc-tier-btn {
+    height: 48px;
+  }
+  .abc-bikecalc-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--abc-space-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .abc-bikecalc-title {
+    font-size: 1.4rem;
+  }
+  .abc-bikecalc-stepper {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .abc-bikecalc-stepper-btn {
+    width: 48px;
+    height: 48px;
+  }
+  .abc-bikecalc-tier-btn {
+    height: 48px;
+  }
+  .abc-bikecalc-stat-grid {
+    grid-template-columns: 1fr;
+    gap: var(--abc-space-sm);
+  }
 }
