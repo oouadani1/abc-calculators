@@ -331,6 +331,11 @@
   margin-bottom: 0;
 }
 
+.abc-bikecalc-assumptions a {
+  color: var(--abc-bikecalc-accent);
+  font-weight: 600;
+}
+
 .abc-bikecalc-credit {
   margin: var(--abc-space-md) 0 0;
   padding-top: var(--abc-space-sm);
