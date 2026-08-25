@@ -163,6 +163,69 @@
   background: var(--abc-bikecalc-accent);
 }
 
+/* ---- Gold / Silver glass card: a banded metallic gradient standing in
+   for a "glassy" surface (no real backdrop to blur here, so the shine
+   comes from the gradient bands + a glossy top highlight instead of an
+   actual backdrop-filter). A one-shot light sweep (::after) plays across
+   it whenever the tier toggle changes tiers — see applyTierTheme() in
+   calculator.js, which adds/removes .abc-bikecalc-shimmer to retrigger
+   it even when toggling back to an already-shown tier. ---- */
+.abc-bikecalc-result-card {
+  position: relative;
+  overflow: hidden;
+  transition: background 0.5s ease, border-color 0.5s ease;
+}
+
+.abc-bikecalc-result-card--gold {
+  background: linear-gradient(135deg, #FFF8E4 0%, #F5D896 28%, #E0B44A 52%, #F5D896 76%, #FFF8E4 100%);
+  border-color: #D4AF37;
+  box-shadow: var(--abc-shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.abc-bikecalc-result-card--gold .abc-bikecalc-badge {
+  background: #9C7A17;
+}
+
+.abc-bikecalc-result-card--silver {
+  background: linear-gradient(135deg, #FFFFFF 0%, #E7E9EB 28%, #C1C7CC 52%, #E7E9EB 76%, #FFFFFF 100%);
+  border-color: #9CA4AC;
+  box-shadow: var(--abc-shadow-card), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.abc-bikecalc-result-card--silver .abc-bikecalc-badge {
+  background: #5B6570;
+}
+
+.abc-bikecalc-result-card::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(115deg, transparent 0%, rgba(255, 255, 255, 0.85) 50%, transparent 100%);
+  transform: skewX(-20deg);
+  pointer-events: none;
+  opacity: 0;
+}
+
+.abc-bikecalc-result-card.abc-bikecalc-shimmer::after {
+  animation: abc-bikecalc-shimmer-sweep 1s ease-out;
+}
+
+@keyframes abc-bikecalc-shimmer-sweep {
+  0% { left: -75%; opacity: 0; }
+  10% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { left: 125%; opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abc-bikecalc-result-card.abc-bikecalc-shimmer::after {
+    animation: none;
+  }
+}
+
 .abc-bikecalc-result-card h3 {
   margin: 0 0 var(--abc-space-md);
   font-size: var(--abc-font-size-lg);

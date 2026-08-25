@@ -34,22 +34,21 @@ const BIKE_CONFIG = {
 
   // Both tiers split the same $101.50/person/year corporate group rate
   // differently. employerAnnualCost + employeeAnnualCost always sum to
-  // that $101.50. Each tier has two blurb variants since the same fact
-  // reads differently depending on who's looking at it.
+  // that $101.50. subsidyPct drives the card heading text directly
+  // ("you cover 100% of the membership") rather than a hardcoded blurb
+  // per tier, so the two always stay in sync.
   tiers: [
     {
       id: "gold",
       label: "Gold",
-      employerBlurb: "you cover the full membership",
-      individualBlurb: "your employer covers the full membership",
+      subsidyPct: 100,
       employerAnnualCost: 101.50,
       employeeAnnualCost: 0,
     },
     {
       id: "silver",
       label: "Silver",
-      employerBlurb: "you split it evenly",
-      individualBlurb: "you split it evenly with your employer",
+      subsidyPct: 50,
       employerAnnualCost: 50.75,
       employeeAnnualCost: 50.75,
     },
@@ -131,15 +130,39 @@ function bikeInitCalculator(rootEl) {
   });
 
   // Gold / Silver toggle: same segmented-pill component, applies to
-  // both modes.
+  // both modes. Also drives the glassy gold/silver card theme and its
+  // one-shot shimmer sweep on change (see applyTierTheme below).
   const tierButtons = rootEl.querySelectorAll("[data-abc-tier-select]");
   tierButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
+      const previousTierId = tierId;
       tierId = btn.dataset.abcTierSelect;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      applyTierTheme(previousTierId !== tierId);
       render();
     });
   });
+
+  // Result cards (employer and individual variants) get a matching
+  // gold/silver glass treatment. Both are themed together even though
+  // only one is visible at a time, so switching modes never shows a
+  // stale color.
+  const resultCards = rootEl.querySelectorAll(".abc-bikecalc-result-card");
+
+  function applyTierTheme(animate) {
+    resultCards.forEach((card) => {
+      card.classList.remove("abc-bikecalc-result-card--gold", "abc-bikecalc-result-card--silver");
+      card.classList.add(`abc-bikecalc-result-card--${tierId}`);
+      if (animate) {
+        // Remove-then-reflow-then-add so the shimmer replays even when
+        // toggling back to a tier it already showed (a class that's
+        // already present won't restart a CSS animation on its own).
+        card.classList.remove("abc-bikecalc-shimmer");
+        void card.offsetWidth;
+        card.classList.add("abc-bikecalc-shimmer");
+      }
+    });
+  }
 
   // Headcount stepper: same generic +/- pattern used across the other
   // tools' steppers. Typing a value updates live; +/- moves in fixed steps.
@@ -176,7 +199,7 @@ function bikeInitCalculator(rootEl) {
   function renderEmployer() {
     const r = bikeCalcEmployer(BIKE_CONFIG, tierId, employeeCount);
 
-    rootEl.querySelector("[data-abc-tier-heading]").textContent = `${r.tier.label}: ${r.tier.employerBlurb}`;
+    rootEl.querySelector("[data-abc-tier-heading]").textContent = `${r.tier.label}: you cover ${r.tier.subsidyPct}% of the membership`;
     rootEl.querySelector("[data-abc-annual-cost]").textContent = abcFormatCurrencyWhole(r.employerAnnualCost);
     rootEl.querySelector("[data-abc-monthly-cost]").textContent = abcFormatCurrencyWhole(r.employerMonthlyCost);
     rootEl.querySelector("[data-abc-savings]").textContent = abcFormatCurrency(r.employeeSavesAnnual);
@@ -189,7 +212,7 @@ function bikeInitCalculator(rootEl) {
 
   function renderIndividual() {
     const r = bikeCalcIndividual(BIKE_CONFIG, tierId);
-    rootEl.querySelector("[data-abc-tier-heading-individual]").textContent = `${r.tier.label}: ${r.tier.individualBlurb}`;
+    rootEl.querySelector("[data-abc-tier-heading-individual]").textContent = `${r.tier.label}: your employer covers ${r.tier.subsidyPct}% of the membership`;
     rootEl.querySelector("[data-abc-you-pay]").textContent = abcFormatCurrency(r.youPay);
     rootEl.querySelector("[data-abc-you-save]").textContent = abcFormatCurrency(r.youSave);
   }
@@ -268,6 +291,7 @@ function bikeInitCalculator(rootEl) {
   }
 
   paintStepper();
+  applyTierTheme(false);
   render();
 }
 

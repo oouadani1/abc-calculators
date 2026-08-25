@@ -631,6 +631,21 @@
   margin-top: var(--abc-space-md);
 }
 
+/* ---- Cross-link to the Bluebikes calculator ---- */
+.abc-farecalc-crosslink {
+  margin-top: var(--abc-space-lg);
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  text-align: center;
+}
+
+.abc-farecalc-crosslink a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ---- Credit line under the sourcing accordion: a blank line's worth
    of separation (margin) plus a hairline rule, not run straight into
    the sourcing paragraph above it. ---- */
