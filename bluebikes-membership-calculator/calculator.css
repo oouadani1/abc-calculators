@@ -23,6 +23,12 @@
   --abc-bikecalc-accent: var(--bluebikes-blue);
   --abc-bikecalc-accent-tint: var(--bluebikes-blue-tint);
   max-width: 880px;
+  /* Overrides the shared .abc-calc panel background (base.css) so the
+     widget blends into whatever background the host page already has,
+     instead of sitting in its own light gray-blue box, this matters most
+     for the iframe embed, which otherwise shows that box against the
+     real site's actual background. */
+  background: transparent;
 }
 
 .abc-bikecalc-title {
