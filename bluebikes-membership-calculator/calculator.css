@@ -279,14 +279,19 @@
   font-weight: 600;
 }
 
-/* ---- Bulk-passes callout: reuses the shared .abc-callout component
-   (orange, "next steps" meaning) unmodified — this is genuinely a
-   "here's another option to look into" nudge, not a core result, so it
-   keeps the shared caution/attention color rather than the tool's own
-   blue accent. Hidden by default; shown via calculator.js once
-   headcount crosses Bluebikes' own bulk-pricing threshold. ---- */
+/* ---- Bulk-passes callout: overrides the shared .abc-callout component's
+   default orange with the tool's own Bluebikes blue, so it reads as part
+   of this tool rather than a generic system warning. Hidden by default;
+   shown via calculator.js once headcount crosses Bluebikes' own
+   bulk-pricing threshold. ---- */
 .abc-bikecalc-bulk-callout {
   margin-top: var(--abc-space-md);
+  background: var(--bluebikes-blue-tint);
+  border-color: var(--bluebikes-blue);
+}
+
+.abc-bikecalc-bulk-callout h4 {
+  color: var(--bluebikes-blue);
 }
 
 /* ---- Cross-link to the Commuter Rail calculator ---- */
