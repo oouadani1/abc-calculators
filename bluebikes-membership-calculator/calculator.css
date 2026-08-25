@@ -2,8 +2,10 @@
    Bluebikes Membership Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-bikecalc-*
 
-   Employer-only tool (see calculator.js) so there's no mode toggle for
-   an individual view, just a Gold/Silver tier toggle in the same spot.
+   Two toggle bars share one generic .abc-bikecalc-togglebar /
+   -toggle-btn component: employer/individual (which view) and
+   Gold/Silver (which tier) — same segmented-pill shape, different
+   data attributes wired up in calculator.js.
    Design/spacing patterns (stepper, stat grid, uniform control height,
    narrow breakpoints) are carried over from regional-rail-calculator's
    calculator.css for consistency across the tool suite — kept as a
@@ -12,11 +14,8 @@
    ============================================================ */
 
 :root {
-  /* Approximated from Bluebikes' livery/branding, not pulled from a
-     confirmed design-system source — swap in an exact brand hex if one
-     turns up in official guidelines. */
-  --bluebikes-blue: #0089CF;
-  --bluebikes-blue-tint: #E3F3FA;
+  --bluebikes-blue: #1672A1;
+  --bluebikes-blue-tint: #EBF2F6;
   --bluebikes-green: #00843D;
 }
 
@@ -31,9 +30,19 @@
   letter-spacing: -0.02em;
 }
 
-/* ---- Gold / Silver tier toggle: same segmented-pill pattern as the
-   other tools' employee/employer mode toggle. ---- */
-.abc-bikecalc-tierbar {
+/* Show only the elements that belong to the current mode, same pattern
+   as the MBTA/Commuter Rail tools' [data-mode-only]. */
+.abc-bikecalc[data-abc-mode="employer"] [data-mode-only="individual"] {
+  display: none;
+}
+
+.abc-bikecalc[data-abc-mode="individual"] [data-mode-only="employer"] {
+  display: none;
+}
+
+/* ---- Shared segmented-pill toggle: employer/individual mode above the
+   title, Gold/Silver tier below the subtitle. ---- */
+.abc-bikecalc-togglebar {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
@@ -42,7 +51,7 @@
   margin-bottom: var(--abc-space-lg);
 }
 
-.abc-bikecalc-tier-btn {
+.abc-bikecalc-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -60,7 +69,7 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.abc-bikecalc-tier-btn.abc-active {
+.abc-bikecalc-toggle-btn.abc-active {
   background: #fff;
   color: var(--abc-navy-deep);
   box-shadow: var(--abc-shadow-card);
@@ -144,7 +153,8 @@
   color: var(--abc-bikecalc-accent);
 }
 
-/* ---- Results card ---- */
+/* ---- Results card (employer and individual variants share this
+   shape). ---- */
 .abc-bikecalc-results {
   margin-top: var(--abc-space-lg);
 }
@@ -196,6 +206,39 @@
 
 .abc-bikecalc-note strong {
   color: var(--bluebikes-green);
+}
+
+/* ---- Advocacy note (individual mode only): a plain link, not an
+   emphasized dollar figure, so it doesn't inherit the green $ styling
+   above. ---- */
+.abc-bikecalc-advocacy a {
+  color: var(--abc-bikecalc-accent);
+  font-weight: 600;
+}
+
+/* ---- Bulk-passes callout: reuses the shared .abc-callout component
+   (orange, "next steps" meaning) unmodified — this is genuinely a
+   "here's another option to look into" nudge, not a core result, so it
+   keeps the shared caution/attention color rather than the tool's own
+   blue accent. Hidden by default; shown via calculator.js once
+   headcount crosses Bluebikes' own bulk-pricing threshold. ---- */
+.abc-bikecalc-bulk-callout {
+  margin-top: var(--abc-space-md);
+}
+
+/* ---- Cross-link to the Commuter Rail calculator ---- */
+.abc-bikecalc-crosslink {
+  margin-top: var(--abc-space-lg);
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  text-align: center;
+}
+
+.abc-bikecalc-crosslink a {
+  color: var(--abc-bikecalc-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ---- Sourcing accordion: no vertical rule alongside the bullets, same
@@ -255,7 +298,7 @@
     width: 48px;
     height: 48px;
   }
-  .abc-bikecalc-tier-btn {
+  .abc-bikecalc-toggle-btn {
     height: 48px;
   }
   .abc-bikecalc-stat-grid {
@@ -276,7 +319,7 @@
     width: 48px;
     height: 48px;
   }
-  .abc-bikecalc-tier-btn {
+  .abc-bikecalc-toggle-btn {
     height: 48px;
   }
   .abc-bikecalc-stat-grid {

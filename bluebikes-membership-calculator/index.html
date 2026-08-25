@@ -18,16 +18,23 @@
 <body>
 
   <!-- ABC-CALC-HTML-START -->
-  <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root>
-    <h2 class="abc-title abc-bikecalc-title">Should you subsidize Bluebikes for your team?</h2>
-    <p class="abc-subtitle">See what each tier would cost you, and save your employees.</p>
-
-    <div class="abc-bikecalc-tierbar" role="group" aria-label="Choose a subsidy tier">
-      <button type="button" class="abc-bikecalc-tier-btn abc-active" data-abc-tier-select="gold">Gold</button>
-      <button type="button" class="abc-bikecalc-tier-btn" data-abc-tier-select="silver">Silver</button>
+  <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root data-abc-mode="employer">
+    <div class="abc-bikecalc-togglebar" role="group" aria-label="View this tool as an employer or an individual">
+      <button type="button" class="abc-bikecalc-toggle-btn abc-active" data-abc-mode-select="employer">I'm an employer</button>
+      <button type="button" class="abc-bikecalc-toggle-btn" data-abc-mode-select="individual">I'm an individual</button>
     </div>
 
-    <div class="abc-bikecalc-field-group">
+    <h2 class="abc-title abc-bikecalc-title" data-mode-only="employer">Should you subsidize Bluebikes for your team?</h2>
+    <h2 class="abc-title abc-bikecalc-title" data-mode-only="individual">Could Bluebikes save you money?</h2>
+    <p class="abc-subtitle" data-mode-only="employer">See what each tier would cost you, and save your employees.</p>
+    <p class="abc-subtitle" data-mode-only="individual">See what Gold or Silver could save you, and how to ask for it.</p>
+
+    <div class="abc-bikecalc-togglebar" role="group" aria-label="Choose a subsidy tier">
+      <button type="button" class="abc-bikecalc-toggle-btn abc-active" data-abc-tier-select="gold">Gold</button>
+      <button type="button" class="abc-bikecalc-toggle-btn" data-abc-tier-select="silver">Silver</button>
+    </div>
+
+    <div class="abc-bikecalc-field-group" data-mode-only="employer">
       <p class="abc-question">How many employees do you want to cover?</p>
       <div class="abc-input-row">
         <div class="abc-field" style="flex-basis: 100%;">
@@ -42,7 +49,7 @@
       </div>
     </div>
 
-    <div class="abc-bikecalc-results">
+    <div class="abc-bikecalc-results" data-mode-only="employer">
       <div class="abc-card abc-bikecalc-result-card">
         <span class="abc-badge abc-bikecalc-badge">Your estimate</span>
         <h3 data-abc-tier-heading>Gold: you cover the full membership</h3>
@@ -62,6 +69,40 @@
       </div>
     </div>
 
+    <div class="abc-callout abc-bikecalc-bulk-callout" data-abc-bulk-callout data-mode-only="employer" style="display: none;">
+      <h4>Worth a look</h4>
+      <p>
+        At this size, Bluebikes also offers discounted short-term and monthly passes in bulk, useful if you don't need year-round membership for everyone (seasonal staff, occasional riders, and the like).
+        <a href="https://bluebikes.com/pricing/corporate-membership/corporate-program/bulk-passes" target="_blank" rel="noopener">See bulk pricing</a>.
+      </p>
+    </div>
+
+    <div class="abc-bikecalc-results" data-mode-only="individual">
+      <div class="abc-card abc-bikecalc-result-card">
+        <span class="abc-badge abc-bikecalc-badge">What this means for you</span>
+        <h3 data-abc-tier-heading-individual>Gold: your employer covers the full membership</h3>
+        <div class="abc-bikecalc-stat-grid">
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-you-pay>$0</span>
+            <span class="abc-bikecalc-stat-label">you'd pay, per year</span>
+          </div>
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-you-save>$0</span>
+            <span class="abc-bikecalc-stat-label">you'd save, per year</span>
+          </div>
+        </div>
+        <p class="abc-bikecalc-note abc-bikecalc-advocacy">
+          Don't have this benefit yet? Point your HR or benefits team to
+          <a href="https://bluebikes.com/pricing/corporate-membership" target="_blank" rel="noopener">Bluebikes' corporate program</a>
+          and let them know you'd like it.
+        </p>
+      </div>
+    </div>
+
+    <p class="abc-bikecalc-crosslink">
+      Also commuting by rail? Check out our <a href="https://oouadani1.github.io/abc-calculators/dist/regional-rail-embed.html" target="_blank" rel="noopener">Commuter Rail savings calculator</a> too.
+    </p>
+
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
@@ -69,7 +110,8 @@
           <li>Gold and Silver pricing is from bluebikes.com, checked 2026-08-25, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li><strong>Gold</strong> is the corporate group rate of $101.50 per person, per year, fully covered by your organization.</li>
           <li><strong>Silver</strong> splits that same $101.50 group rate evenly: $50.75 from your organization, $50.75 from each employee.</li>
-          <li>Employee savings compare against Bluebikes' standard individual Annual Membership ($133.50/year), what someone would pay without a group rate at all.</li>
+          <li>Savings compare against Bluebikes' standard individual Annual Membership ($133.50/year), what someone would pay without a group rate at all.</li>
+          <li>Bulk pricing on short-term and monthly passes is a separate Bluebikes program, not a discount on top of Gold or Silver, see the link above once it appears.</li>
         </ul>
 
         <p class="abc-bikecalc-credit"><strong>Built by A Better City</strong> | August 2026</p>

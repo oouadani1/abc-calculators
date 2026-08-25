@@ -580,8 +580,10 @@
    Bluebikes Membership Calculator — tool-specific overrides on top of
    shared/styles/base.css. Prefix: .abc-bikecalc-*
 
-   Employer-only tool (see calculator.js) so there's no mode toggle for
-   an individual view, just a Gold/Silver tier toggle in the same spot.
+   Two toggle bars share one generic .abc-bikecalc-togglebar /
+   -toggle-btn component: employer/individual (which view) and
+   Gold/Silver (which tier) — same segmented-pill shape, different
+   data attributes wired up in calculator.js.
    Design/spacing patterns (stepper, stat grid, uniform control height,
    narrow breakpoints) are carried over from regional-rail-calculator's
    calculator.css for consistency across the tool suite — kept as a
@@ -590,11 +592,8 @@
    ============================================================ */
 
 :root {
-  /* Approximated from Bluebikes' livery/branding, not pulled from a
-     confirmed design-system source — swap in an exact brand hex if one
-     turns up in official guidelines. */
-  --bluebikes-blue: #0089CF;
-  --bluebikes-blue-tint: #E3F3FA;
+  --bluebikes-blue: #1672A1;
+  --bluebikes-blue-tint: #EBF2F6;
   --bluebikes-green: #00843D;
 }
 
@@ -609,9 +608,19 @@
   letter-spacing: -0.02em;
 }
 
-/* ---- Gold / Silver tier toggle: same segmented-pill pattern as the
-   other tools' employee/employer mode toggle. ---- */
-.abc-bikecalc-tierbar {
+/* Show only the elements that belong to the current mode, same pattern
+   as the MBTA/Commuter Rail tools' [data-mode-only]. */
+.abc-bikecalc[data-abc-mode="employer"] [data-mode-only="individual"] {
+  display: none;
+}
+
+.abc-bikecalc[data-abc-mode="individual"] [data-mode-only="employer"] {
+  display: none;
+}
+
+/* ---- Shared segmented-pill toggle: employer/individual mode above the
+   title, Gold/Silver tier below the subtitle. ---- */
+.abc-bikecalc-togglebar {
   display: inline-flex;
   gap: 4px;
   padding: 4px;
@@ -620,7 +629,7 @@
   margin-bottom: var(--abc-space-lg);
 }
 
-.abc-bikecalc-tier-btn {
+.abc-bikecalc-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -638,7 +647,7 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.abc-bikecalc-tier-btn.abc-active {
+.abc-bikecalc-toggle-btn.abc-active {
   background: #fff;
   color: var(--abc-navy-deep);
   box-shadow: var(--abc-shadow-card);
@@ -722,7 +731,8 @@
   color: var(--abc-bikecalc-accent);
 }
 
-/* ---- Results card ---- */
+/* ---- Results card (employer and individual variants share this
+   shape). ---- */
 .abc-bikecalc-results {
   margin-top: var(--abc-space-lg);
 }
@@ -774,6 +784,39 @@
 
 .abc-bikecalc-note strong {
   color: var(--bluebikes-green);
+}
+
+/* ---- Advocacy note (individual mode only): a plain link, not an
+   emphasized dollar figure, so it doesn't inherit the green $ styling
+   above. ---- */
+.abc-bikecalc-advocacy a {
+  color: var(--abc-bikecalc-accent);
+  font-weight: 600;
+}
+
+/* ---- Bulk-passes callout: reuses the shared .abc-callout component
+   (orange, "next steps" meaning) unmodified — this is genuinely a
+   "here's another option to look into" nudge, not a core result, so it
+   keeps the shared caution/attention color rather than the tool's own
+   blue accent. Hidden by default; shown via calculator.js once
+   headcount crosses Bluebikes' own bulk-pricing threshold. ---- */
+.abc-bikecalc-bulk-callout {
+  margin-top: var(--abc-space-md);
+}
+
+/* ---- Cross-link to the Commuter Rail calculator ---- */
+.abc-bikecalc-crosslink {
+  margin-top: var(--abc-space-lg);
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  text-align: center;
+}
+
+.abc-bikecalc-crosslink a {
+  color: var(--abc-bikecalc-accent);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* ---- Sourcing accordion: no vertical rule alongside the bullets, same
@@ -833,7 +876,7 @@
     width: 48px;
     height: 48px;
   }
-  .abc-bikecalc-tier-btn {
+  .abc-bikecalc-toggle-btn {
     height: 48px;
   }
   .abc-bikecalc-stat-grid {
@@ -854,7 +897,7 @@
     width: 48px;
     height: 48px;
   }
-  .abc-bikecalc-tier-btn {
+  .abc-bikecalc-toggle-btn {
     height: 48px;
   }
   .abc-bikecalc-stat-grid {
@@ -864,16 +907,23 @@
 }
 </style>
 
-  <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root>
-    <h2 class="abc-title abc-bikecalc-title">Should you subsidize Bluebikes for your team?</h2>
-    <p class="abc-subtitle">See what each tier would cost you, and save your employees.</p>
-
-    <div class="abc-bikecalc-tierbar" role="group" aria-label="Choose a subsidy tier">
-      <button type="button" class="abc-bikecalc-tier-btn abc-active" data-abc-tier-select="gold">Gold</button>
-      <button type="button" class="abc-bikecalc-tier-btn" data-abc-tier-select="silver">Silver</button>
+  <div class="abc-calc abc-bikecalc" data-abc-bikecalc-root data-abc-mode="employer">
+    <div class="abc-bikecalc-togglebar" role="group" aria-label="View this tool as an employer or an individual">
+      <button type="button" class="abc-bikecalc-toggle-btn abc-active" data-abc-mode-select="employer">I'm an employer</button>
+      <button type="button" class="abc-bikecalc-toggle-btn" data-abc-mode-select="individual">I'm an individual</button>
     </div>
 
-    <div class="abc-bikecalc-field-group">
+    <h2 class="abc-title abc-bikecalc-title" data-mode-only="employer">Should you subsidize Bluebikes for your team?</h2>
+    <h2 class="abc-title abc-bikecalc-title" data-mode-only="individual">Could Bluebikes save you money?</h2>
+    <p class="abc-subtitle" data-mode-only="employer">See what each tier would cost you, and save your employees.</p>
+    <p class="abc-subtitle" data-mode-only="individual">See what Gold or Silver could save you, and how to ask for it.</p>
+
+    <div class="abc-bikecalc-togglebar" role="group" aria-label="Choose a subsidy tier">
+      <button type="button" class="abc-bikecalc-toggle-btn abc-active" data-abc-tier-select="gold">Gold</button>
+      <button type="button" class="abc-bikecalc-toggle-btn" data-abc-tier-select="silver">Silver</button>
+    </div>
+
+    <div class="abc-bikecalc-field-group" data-mode-only="employer">
       <p class="abc-question">How many employees do you want to cover?</p>
       <div class="abc-input-row">
         <div class="abc-field" style="flex-basis: 100%;">
@@ -888,7 +938,7 @@
       </div>
     </div>
 
-    <div class="abc-bikecalc-results">
+    <div class="abc-bikecalc-results" data-mode-only="employer">
       <div class="abc-card abc-bikecalc-result-card">
         <span class="abc-badge abc-bikecalc-badge">Your estimate</span>
         <h3 data-abc-tier-heading>Gold: you cover the full membership</h3>
@@ -908,6 +958,40 @@
       </div>
     </div>
 
+    <div class="abc-callout abc-bikecalc-bulk-callout" data-abc-bulk-callout data-mode-only="employer" style="display: none;">
+      <h4>Worth a look</h4>
+      <p>
+        At this size, Bluebikes also offers discounted short-term and monthly passes in bulk, useful if you don't need year-round membership for everyone (seasonal staff, occasional riders, and the like).
+        <a href="https://bluebikes.com/pricing/corporate-membership/corporate-program/bulk-passes" target="_blank" rel="noopener">See bulk pricing</a>.
+      </p>
+    </div>
+
+    <div class="abc-bikecalc-results" data-mode-only="individual">
+      <div class="abc-card abc-bikecalc-result-card">
+        <span class="abc-badge abc-bikecalc-badge">What this means for you</span>
+        <h3 data-abc-tier-heading-individual>Gold: your employer covers the full membership</h3>
+        <div class="abc-bikecalc-stat-grid">
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-you-pay>$0</span>
+            <span class="abc-bikecalc-stat-label">you'd pay, per year</span>
+          </div>
+          <div class="abc-bikecalc-stat">
+            <span class="abc-bikecalc-stat-value" data-abc-you-save>$0</span>
+            <span class="abc-bikecalc-stat-label">you'd save, per year</span>
+          </div>
+        </div>
+        <p class="abc-bikecalc-note abc-bikecalc-advocacy">
+          Don't have this benefit yet? Point your HR or benefits team to
+          <a href="https://bluebikes.com/pricing/corporate-membership" target="_blank" rel="noopener">Bluebikes' corporate program</a>
+          and let them know you'd like it.
+        </p>
+      </div>
+    </div>
+
+    <p class="abc-bikecalc-crosslink">
+      Also commuting by rail? Check out our <a href="https://oouadani1.github.io/abc-calculators/dist/regional-rail-embed.html" target="_blank" rel="noopener">Commuter Rail savings calculator</a> too.
+    </p>
+
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
@@ -915,7 +999,8 @@
           <li>Gold and Silver pricing is from bluebikes.com, checked 2026-08-25, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li><strong>Gold</strong> is the corporate group rate of $101.50 per person, per year, fully covered by your organization.</li>
           <li><strong>Silver</strong> splits that same $101.50 group rate evenly: $50.75 from your organization, $50.75 from each employee.</li>
-          <li>Employee savings compare against Bluebikes' standard individual Annual Membership ($133.50/year), what someone would pay without a group rate at all.</li>
+          <li>Savings compare against Bluebikes' standard individual Annual Membership ($133.50/year), what someone would pay without a group rate at all.</li>
+          <li>Bulk pricing on short-term and monthly passes is a separate Bluebikes program, not a discount on top of Gold or Silver, see the link above once it appears.</li>
         </ul>
 
         <p class="abc-bikecalc-credit"><strong>Built by A Better City</strong> | August 2026</p>
@@ -975,12 +1060,10 @@ function abcFormatPercent(value) {
 /* ============================================================
    A Better City — Bluebikes Membership Calculator
 
-   Employer-only tool: pick a subsidy tier, enter a headcount, see what
-   it costs your organization and what each employee saves. No mode
-   toggle needed (unlike the MBTA/Commuter Rail tools) since there's no
-   individual-facing angle here, just the employer decision.
-
-   Split into three sections: CONFIG, CALC LOGIC, UI / RENDER.
+   Two views: employer (pick a tier, enter a headcount, see what it
+   costs your org) and individual (pick a tier, see what you'd personally
+   pay/save, plus a nudge to ask your employer for it). Split into three
+   sections: CONFIG, CALC LOGIC, UI / RENDER.
    Depends on shared/utils/format.js being loaded first.
    ============================================================ */
 
@@ -1004,25 +1087,28 @@ const BIKE_CONFIG = {
   },
 
   // What an individual pays for Bluebikes' standard Annual Membership with
-  // no employer/group rate at all — the baseline the "employee saves"
-  // figure is measured against.
+  // no employer/group rate at all — the baseline the "you'd save" figure
+  // is measured against.
   retailAnnualPrice: 133.50,
 
   // Both tiers split the same $101.50/person/year corporate group rate
   // differently. employerAnnualCost + employeeAnnualCost always sum to
-  // that $101.50.
+  // that $101.50. Each tier has two blurb variants since the same fact
+  // reads differently depending on who's looking at it.
   tiers: [
     {
       id: "gold",
       label: "Gold",
-      blurb: "you cover the full membership",
+      employerBlurb: "you cover the full membership",
+      individualBlurb: "your employer covers the full membership",
       employerAnnualCost: 101.50,
       employeeAnnualCost: 0,
     },
     {
       id: "silver",
       label: "Silver",
-      blurb: "you split it evenly",
+      employerBlurb: "you split it evenly",
+      individualBlurb: "you split it evenly with your employer",
       employerAnnualCost: 50.75,
       employeeAnnualCost: 50.75,
     },
@@ -1031,6 +1117,16 @@ const BIKE_CONFIG = {
   employeeCountStep: 5,
   employeeCountMax: 100000,
   defaultEmployeeCount: 25,
+
+  // Bluebikes' separate Bulk Passes program (short-term/monthly passes,
+  // not a discount on Gold/Silver) starts offering volume pricing at 100
+  // passes. Surfaced as an informational nudge once headcount crosses
+  // that line, not folded into the Gold/Silver math above.
+  // Source: https://bluebikes.com/pricing/corporate-membership/corporate-program/bulk-passes
+  bulkPasses: {
+    threshold: 100,
+    url: "https://bluebikes.com/pricing/corporate-membership/corporate-program/bulk-passes",
+  },
 };
 
 /* ------------------------------------------------------------
@@ -1058,6 +1154,17 @@ function bikeCalcEmployer(config, tierId, employeeCount) {
   };
 }
 
+/** Individual view: what one person would pay and save under a tier,
+ * regardless of how many coworkers are also covered. */
+function bikeCalcIndividual(config, tierId) {
+  const tier = bikeGetTier(config, tierId);
+  return {
+    tier,
+    youPay: tier.employeeAnnualCost,
+    youSave: config.retailAnnualPrice - tier.employeeAnnualCost,
+  };
+}
+
 /* ------------------------------------------------------------
    3. UI / RENDER
    Reads form inputs, calls CALC LOGIC, writes results to the DOM.
@@ -1066,11 +1173,24 @@ function bikeCalcEmployer(config, tierId, employeeCount) {
    ------------------------------------------------------------ */
 
 function bikeInitCalculator(rootEl) {
+  let mode = "employer"; // "employer" | "individual"
   let tierId = "gold";
   let employeeCount = BIKE_CONFIG.defaultEmployeeCount;
 
-  // Tier toggle: same segmented-pill pattern as the other tools' mode
-  // toggles, just swapping Gold/Silver instead of employee/employer.
+  // Employer / individual toggle: swaps copy and which results card shows,
+  // same [data-mode-only] pattern as the MBTA/Commuter Rail tools.
+  const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mode = btn.dataset.abcModeSelect;
+      modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      rootEl.setAttribute("data-abc-mode", mode);
+      render();
+    });
+  });
+
+  // Gold / Silver toggle: same segmented-pill component, applies to
+  // both modes.
   const tierButtons = rootEl.querySelectorAll("[data-abc-tier-select]");
   tierButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1112,10 +1232,10 @@ function bikeInitCalculator(rootEl) {
   });
   input.addEventListener("blur", paintStepper);
 
-  function render() {
+  function renderEmployer() {
     const r = bikeCalcEmployer(BIKE_CONFIG, tierId, employeeCount);
 
-    rootEl.querySelector("[data-abc-tier-heading]").textContent = `${r.tier.label}: ${r.tier.blurb}`;
+    rootEl.querySelector("[data-abc-tier-heading]").textContent = `${r.tier.label}: ${r.tier.employerBlurb}`;
     rootEl.querySelector("[data-abc-annual-cost]").textContent = abcFormatCurrencyWhole(r.employerAnnualCost);
     rootEl.querySelector("[data-abc-monthly-cost]").textContent = abcFormatCurrencyWhole(r.employerMonthlyCost);
     rootEl.querySelector("[data-abc-savings]").textContent = abcFormatCurrency(r.employeeSavesAnnual);
@@ -1124,6 +1244,31 @@ function bikeInitCalculator(rootEl) {
     detailEl.textContent = r.employeeStillPays > 0
       ? `, though they'd still chip in ${abcFormatCurrency(r.employeeStillPays)} a year themselves`
       : "";
+  }
+
+  function renderIndividual() {
+    const r = bikeCalcIndividual(BIKE_CONFIG, tierId);
+    rootEl.querySelector("[data-abc-tier-heading-individual]").textContent = `${r.tier.label}: ${r.tier.individualBlurb}`;
+    rootEl.querySelector("[data-abc-you-pay]").textContent = abcFormatCurrency(r.youPay);
+    rootEl.querySelector("[data-abc-you-save]").textContent = abcFormatCurrency(r.youSave);
+  }
+
+  // Bulk-callout visibility depends on BOTH mode and headcount, so it's
+  // computed here rather than inside renderEmployer() — an inline
+  // style.display set only while in employer mode would otherwise keep
+  // overriding the CSS [data-mode-only="employer"] hide rule after
+  // switching to individual mode, since inline styles win that fight.
+  function updateBulkCallout() {
+    const bulkCallout = rootEl.querySelector("[data-abc-bulk-callout]");
+    if (!bulkCallout) return;
+    const applies = mode === "employer" && employeeCount >= BIKE_CONFIG.bulkPasses.threshold;
+    bulkCallout.style.display = applies ? "block" : "none";
+  }
+
+  function render() {
+    updateBulkCallout();
+    if (mode === "employer") renderEmployer();
+    else renderIndividual();
   }
 
   // Embed button: same pattern as the other tools' — copies a ready
@@ -1135,7 +1280,7 @@ function bikeInitCalculator(rootEl) {
 
     function buildEmbedHtml() {
       const src = window.location.href;
-      return `<iframe src="${src}" title="Bluebikes Membership Calculator" style="width: 100%; border: 0;" height="900" scrolling="auto" allow="clipboard-write"></iframe>`;
+      return `<iframe src="${src}" title="Bluebikes Membership Calculator" style="width: 100%; border: 0;" height="1000" scrolling="auto" allow="clipboard-write"></iframe>`;
     }
 
     function copyWithExecCommand(text) {
