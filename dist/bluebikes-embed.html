@@ -601,12 +601,15 @@
   --abc-bikecalc-accent: var(--bluebikes-blue);
   --abc-bikecalc-accent-tint: var(--bluebikes-blue-tint);
   max-width: 880px;
-  /* Overrides the shared .abc-calc panel background (base.css) so the
-     widget blends into whatever background the host page already has,
-     instead of sitting in its own light gray-blue box, this matters most
-     for the iframe embed, which otherwise shows that box against the
-     real site's actual background. */
-  background: transparent;
+  /* Overrides the shared .abc-calc panel background (base.css), which is
+     a pale gray-blue (#F6F8FA) that read as an unwanted blue box around
+     the tool once embedded. Plain white instead of transparent on
+     purpose: transparent lets whatever's behind it (the real host page,
+     or this dev-preview's own test background above) show straight
+     through the widget's internal gaps too, not just its outer edge,
+     which looks broken on anything but a pure white page. White keeps
+     the tool a clean, self-contained card on any background. */
+  background: #fff;
 }
 
 .abc-bikecalc-title {
