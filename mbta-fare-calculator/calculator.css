@@ -43,9 +43,15 @@
 
 /* ---- Wider container for this tool: the extra room is what makes the
    question grid below able to go two columns instead of one long
-   stacked column, cutting overall height roughly in half on desktop. ---- */
+   stacked column, cutting overall height roughly in half on desktop.
+   Background and padding also overridden here: a slightly warmer/lighter
+   gray than the shared default, and noticeably tighter padding so the
+   content sits close to the panel's own edge instead of floating in a
+   wide margin. ---- */
 .abc-farecalc {
   max-width: 880px;
+  background: #f7f8fa;
+  padding: var(--abc-space-md);
 }
 
 /* ---- Employee / employer mode toggle: a segmented pill switch at the
