@@ -180,12 +180,12 @@
   min-width: 0;
 }
 
-/* Employee mode only has 3 questions (zone, subsidy, Perq), which won't
-   split evenly into a 2-column grid — the zone question spans the full
-   row instead of leaving an empty cell, then subsidy/Perq pair up below
-   it. Employer mode has a clean 4, so its zone question stays a normal
-   paired grid item (with employee count) and needs no override. */
-.abc-farecalc[data-abc-mode="employee"] .abc-farecalc-zone-group {
+/* Both modes now have 3 questions (zone, subsidy, Perq) — employer mode's
+   old flat "how many employees" question was folded into the per-zone
+   count inputs inside the zone question itself, so neither mode has an
+   even number to pair up. The zone question spans the full row in both,
+   then subsidy/Perq pair up below it. */
+.abc-farecalc-zone-group {
   grid-column: 1 / -1;
 }
 
@@ -304,6 +304,73 @@
   box-sizing: border-box;
   padding: 0 var(--abc-space-md);
   font-size: var(--abc-font-size-sm);
+}
+
+/* ---- Employer multi-zone breakdown: each row pairs a zone select with a
+   headcount input, plus a remove button on every row after the first.
+   The select and count input both carry .abc-select, so they already pick
+   up the uniform 44px height above for free — "same dimensions and height
+   as the picklist" falls out of reusing that class rather than needing
+   its own rule. Employee mode never shows the count input (data-mode-only
+   handles that), so the select alone fills the row at full width there;
+   employer mode splits the row 50/50 once there's something to split it
+   with. ---- */
+.abc-farecalc-zonerow {
+  display: flex;
+  gap: var(--abc-space-sm);
+  align-items: center;
+  margin-bottom: var(--abc-space-sm);
+}
+
+.abc-farecalc-zonerow .abc-select {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+  flex: 1 1 50%;
+}
+
+.abc-farecalc-zonecount-input {
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.abc-farecalc-zonecount-input::-webkit-inner-spin-button,
+.abc-farecalc-zonecount-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.abc-farecalc-zone-remove {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--abc-radius-sm);
+  background: var(--abc-border);
+  color: var(--abc-ink-muted);
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-zone-remove:hover {
+    background: var(--mbta-red);
+    color: #fff;
+  }
+}
+
+.abc-farecalc-zonerows-extra:empty {
+  display: none;
+}
+
+.abc-farecalc-add-zone {
+  display: inline-block;
+  margin-bottom: var(--abc-space-sm);
 }
 
 .abc-farecalc .abc-choice-button {
@@ -572,6 +639,20 @@
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
   }
+  .abc-farecalc-zonerow {
+    flex-wrap: wrap;
+  }
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+    flex-basis: 100%;
+  }
+  .abc-farecalc-zonecount-input {
+    flex: 1 1 auto;
+  }
+  .abc-farecalc-zone-remove {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -593,5 +674,19 @@
   }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
+  }
+  .abc-farecalc-zonerow {
+    flex-wrap: wrap;
+  }
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+    flex-basis: 100%;
+  }
+  .abc-farecalc-zonecount-input {
+    flex: 1 1 auto;
+  }
+  .abc-farecalc-zone-remove {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
   }
 }

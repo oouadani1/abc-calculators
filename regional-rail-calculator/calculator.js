@@ -150,42 +150,54 @@ function mbtaCalcPass(config, passId, subsidyPct, perqPct) {
   };
 }
 
-/** Employer view: cost of subsidizing a monthly pass across a workforce.
- * Reuses the same subsidy-then-pre-tax breakdown as the employee view, but
- * reads the pieces from the employer's angle: the subsidy amount is what the
- * employer pays, and subsidy + pre-tax together is what each employee saves. */
-function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
-  const pass = mbtaGetPassOption(config, passId);
-  if (!pass) {
-    return {
-      pass: null,
-      passPrice: 0,
-      promoApplies: false,
-      perEmployeeMonth: 0,
-      totalMonth: 0,
-      totalYear: 0,
-      employeeSavesMonth: 0,
-      perqIncluded: perqPct > 0,
-      contributes: contributionPct > 0,
-    };
-  }
-  const promoApplies = mbtaPromoApplies(config, passId);
-  const passPrice = promoApplies
-    ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
-    : pass.monthlyPrice;
-  const b = mbtaCalcBreakdown(passPrice, contributionPct, perqPct);
-  const perEmployeeMonth = b.subsidyAmt;
-  const totalMonth = perEmployeeMonth * employeeCount;
+/** Clamps a typed zone-headcount value to a safe whole number: no letters
+ * (Number() on non-numeric text is NaN), no negatives, no zero, no decimals,
+ * and capped at the same ceiling the old flat headcount stepper used. Never
+ * reads the raw string anywhere else, so there's nothing here for an
+ * injected value to reach. */
+function mbtaSanitizeZoneCount(rawValue) {
+  const n = Math.floor(Number(rawValue));
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(n, MBTA_CONFIG.employeeCountMax);
+}
+
+/** Employer view: cost of subsidizing passes across a workforce spread
+ * across one or more zones. zoneRows is [{ passId, count }, ...] — one
+ * entry per zone row in the UI. Each zone's promo eligibility (Zone 1A is
+ * excluded) is resolved independently, then subsidy/Perq are applied once
+ * to the pooled total, since those percentages are shared across zones
+ * rather than set per row. */
+function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
+  let totalRaw = 0;
+  let totalCount = 0;
+  let anyPromoApplies = false;
+
+  zoneRows.forEach(({ passId, count }) => {
+    const pass = mbtaGetPassOption(config, passId);
+    if (!pass || count < 1) return;
+    const promoApplies = mbtaPromoApplies(config, passId);
+    if (promoApplies) anyPromoApplies = true;
+    const passPrice = promoApplies
+      ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
+      : pass.monthlyPrice;
+    totalRaw += passPrice * count;
+    totalCount += count;
+  });
+
+  const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
+  const totalMonth = b.subsidyAmt;
+  const perEmployeeMonth = totalCount > 0 ? totalMonth / totalCount : 0;
+  const employeeSavesMonth = totalCount > 0 ? (b.subsidyAmt + b.pretaxAmt) / totalCount : 0;
+
   return {
-    pass,
-    passPrice,
-    promoApplies,
-    perEmployeeMonth,
     totalMonth,
     totalYear: totalMonth * 12,
-    employeeSavesMonth: b.subsidyAmt + b.pretaxAmt,
+    perEmployeeMonth,
+    employeeSavesMonth,
     perqIncluded: perqPct > 0,
     contributes: contributionPct > 0,
+    promoApplies: anyPromoApplies,
+    totalCount,
   };
 }
 
@@ -202,7 +214,6 @@ function mbtaInitCalculator(rootEl) {
   let perqAnswer = null; // null | "yes" | "no" — null means unanswered
   let perqEnabled = false;
   let perqPct = MBTA_CONFIG.defaultPerqPct;
-  let employeeCount = MBTA_CONFIG.defaultEmployeeCount;
 
   // Mode toggle: swaps copy/fields/results between the employee and employer
   // views. Copy and field visibility are driven off the root's data-abc-mode
@@ -260,6 +271,107 @@ function mbtaInitCalculator(rootEl) {
   }
 
   railZoneSelect.addEventListener("change", render);
+
+  // ---- Employer multi-zone breakdown ----
+  // Employer mode can subsidize employees split across several zones
+  // instead of one flat headcount against a single zone. The first row
+  // is the original zone select + a count input that sits beside it;
+  // "+ Add another zone" appends more rows (their own select + count +
+  // remove button) into the extra-rows container. Employee mode never
+  // sees any of this — the extra-rows container and every count input
+  // are data-mode-only="employer", hidden by the existing CSS rule.
+  const zonerowsExtra = rootEl.querySelector("[data-abc-zonerows-extra]");
+  const addZoneBtn = rootEl.querySelector("[data-abc-add-zone]");
+
+  function wireZoneCountInput(input) {
+    // Live calc always reads through mbtaSanitizeZoneCount() at render
+    // time (see readZoneRow), so typing doesn't get corrected mid-keystroke.
+    // Blur snaps the visible value to what was actually used, the same
+    // convention the other steppers use.
+    input.addEventListener("input", render);
+    input.addEventListener("blur", () => {
+      input.value = mbtaSanitizeZoneCount(input.value);
+    });
+  }
+
+  function populateZoneSelect(select) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select zone";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+    MBTA_CONFIG.passOptions.forEach((pass) => {
+      const opt = document.createElement("option");
+      opt.value = pass.id;
+      opt.textContent = pass.label;
+      select.appendChild(opt);
+    });
+  }
+
+  function createZoneRow() {
+    const row = document.createElement("div");
+    row.className = "abc-farecalc-zonerow";
+    row.setAttribute("data-abc-zonerow", "");
+
+    const select = document.createElement("select");
+    select.className = "abc-select";
+    select.setAttribute("aria-label", "Which Commuter Rail zone");
+    populateZoneSelect(select);
+    select.addEventListener("change", render);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.className = "abc-select abc-farecalc-zonecount-input";
+    input.min = "1";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.value = "5";
+    input.setAttribute("aria-label", "Number of employees covered from this zone");
+    wireZoneCountInput(input);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "abc-farecalc-zone-remove";
+    removeBtn.setAttribute("aria-label", "Remove this zone");
+    removeBtn.textContent = "−";
+    removeBtn.addEventListener("click", () => {
+      row.remove();
+      render();
+    });
+
+    row.appendChild(select);
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  if (addZoneBtn && zonerowsExtra) {
+    addZoneBtn.addEventListener("click", () => {
+      zonerowsExtra.appendChild(createZoneRow());
+      render();
+    });
+  }
+
+  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
+  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
+
+  /** Every zone row currently in the DOM: the first (static) row, plus
+   * any added via "+ Add another zone". Only meaningful in employer mode. */
+  function getZoneRows() {
+    const firstRow = rootEl.querySelector("[data-abc-zonerow]");
+    const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
+    return firstRow ? [firstRow, ...extraRows] : extraRows;
+  }
+
+  function readZoneRow(rowEl) {
+    const select = rowEl.querySelector("select");
+    const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
+    return {
+      passId: select ? select.value : "",
+      count: input ? mbtaSanitizeZoneCount(input.value) : 1,
+    };
+  }
 
   // Perq yes/no: only reveals the stepper (and only counts toward the
   // math) when "yes" is picked. The advocacy line only appears once "no"
@@ -332,14 +444,6 @@ function mbtaInitCalculator(rootEl) {
     () => perqPct,
     (v) => { perqPct = v; }
   );
-  initStepper(
-    "data-abc-count-stepper",
-    MBTA_CONFIG.employeeCountStep,
-    () => employeeCount,
-    (v) => { employeeCount = v; },
-    1,
-    MBTA_CONFIG.employeeCountMax
-  );
 
   function paintCard(prefix, breakdown, subsidyPctVal, perqPctVal) {
     rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
@@ -380,7 +484,8 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function renderEmployer() {
-    const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
+    const zoneRows = getZoneRows().map(readZoneRow);
+    const r = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
     rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
     // totalYear is still computed above but not rendered while the temporary
     // 50% promo is active — see the HTML comment by the removed stat.
