@@ -83,8 +83,8 @@
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
         <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any percentage, or use +/- to move by&nbsp;5%.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any percentage, or use +/- to move by&nbsp;5%.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -95,7 +95,6 @@
               </div>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
             </div>
-            <span class="abc-field-hint">Type any percentage, or use the buttons to move by 5%.</span>
           </div>
         </div>
       </div>
@@ -104,7 +103,7 @@
         <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
         <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
         <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually straight from payroll.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually deducted right from their paycheck.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -121,7 +120,7 @@
                 </div>
                 <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
               </div>
-              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any percentage, or use the buttons to move by 5%.</span>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any percentage, or use +/- to move by&nbsp;5%.</span>
             </div>
 
             <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
@@ -177,6 +176,7 @@
             <span class="abc-farecalc-stat-label">per employee, per month</span>
           </div>
         </div>
+        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
         <p class="abc-farecalc-employer-note">
           Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>

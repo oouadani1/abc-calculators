@@ -171,6 +171,11 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
   let totalRaw = 0;
   let totalCount = 0;
   let anyPromoApplies = false;
+  // Per-zone employer cost, for the summary card's breakdown list. Subsidy
+  // is a flat percentage (not tiered), so applying it to each zone's raw
+  // cost independently and applying it once to the pooled total are
+  // mathematically the same — the per-zone amounts always sum to totalMonth.
+  const zoneBreakdown = [];
 
   zoneRows.forEach(({ passId, count }) => {
     const pass = mbtaGetPassOption(config, passId);
@@ -180,8 +185,14 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     const passPrice = promoApplies
       ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
       : pass.monthlyPrice;
-    totalRaw += passPrice * count;
+    const zoneRaw = passPrice * count;
+    totalRaw += zoneRaw;
     totalCount += count;
+    zoneBreakdown.push({
+      label: pass.label,
+      count,
+      monthCost: zoneRaw * (contributionPct / 100),
+    });
   });
 
   const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
@@ -194,6 +205,7 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     totalYear: totalMonth * 12,
     perEmployeeMonth,
     employeeSavesMonth,
+    zoneBreakdown,
     perqIncluded: perqPct > 0,
     contributes: contributionPct > 0,
     promoApplies: anyPromoApplies,
@@ -491,6 +503,27 @@ function mbtaInitCalculator(rootEl) {
     // 50% promo is active — see the HTML comment by the removed stat.
     rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
+
+    // Per-zone cost breakdown: only worth showing once there's actually
+    // more than one zone to break down — with a single zone it would just
+    // repeat the "per month" stat above.
+    const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
+    if (breakdownEl) {
+      breakdownEl.innerHTML = "";
+      if (r.zoneBreakdown.length > 1) {
+        r.zoneBreakdown.forEach((zone) => {
+          const row = document.createElement("div");
+          row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
+          const label = document.createElement("span");
+          label.textContent = `${zone.label} (${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
+          const amt = document.createElement("span");
+          amt.textContent = `${abcFormatCurrencyWhole(zone.monthCost)}/mo`;
+          row.appendChild(label);
+          row.appendChild(amt);
+          breakdownEl.appendChild(row);
+        });
+      }
+    }
 
     // Spell out where the employee's savings come from, so the number isn't
     // floating without context: contribution, Perq, or both.
