@@ -88,48 +88,18 @@
   text-align: center;
 }
 
-/* ---- Employer view results: a single summary card with a small grid of
-   headline figures. ---- */
+/* ---- Employer view results: a single card using the same line-item
+   waterfall shape as the employee "Monthly Pass" card (.abc-farecalc-line
+   / -line-promo / -line-final), just totaled across the whole team
+   instead of one person — see renderEmployer() in calculator.js. ---- */
 .abc-farecalc-employer-results {
   margin-top: var(--abc-space-lg);
-}
-
-.abc-farecalc-employer-badge {
-  background: var(--abc-farecalc-accent);
 }
 
 .abc-farecalc-employer-card h3 {
   margin: 0 0 var(--abc-space-md);
   font-size: var(--abc-font-size-lg);
   color: var(--abc-navy-deep);
-}
-
-.abc-farecalc-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: var(--abc-space-md);
-  padding: var(--abc-space-md) 0;
-  border-top: 1px solid var(--abc-border);
-  border-bottom: 1px solid var(--abc-border);
-}
-
-.abc-farecalc-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.abc-farecalc-stat-value {
-  font-family: var(--abc-font-mono);
-  font-size: var(--abc-font-size-xl);
-  font-weight: 600;
-  color: var(--abc-navy-deep);
-  letter-spacing: -0.01em;
-}
-
-.abc-farecalc-stat-label {
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-ink-muted);
 }
 
 /* ---- Per-zone cost breakdown: only populated (see calculator.js) once
@@ -156,13 +126,6 @@
 
 .abc-farecalc-employer-note strong {
   color: var(--mbta-green);
-}
-
-@container abc-calc (max-width: 480px) {
-  .abc-farecalc-stat-grid {
-    grid-template-columns: 1fr;
-    gap: var(--abc-space-sm);
-  }
 }
 
 /* ---- Bolder title, per the "make it memorable" direction. Margin-bottom
@@ -229,6 +192,14 @@
 
 .abc-farecalc .abc-input-row {
   margin-bottom: var(--abc-space-sm);
+}
+
+/* Keeps a short phrase from breaking mid-way, e.g. "+/- buttons": a plain
+   &nbsp; between two words doesn't stop a break at a hyphen elsewhere in
+   the phrase (the "-" in "+/-" is its own break opportunity, independent
+   of the space it's glued to), so the whole phrase needs wrapping instead. */
+.abc-farecalc-nowrap {
+  white-space: nowrap;
 }
 
 /* "Perq" hyperlinked directly inside its question — the accent color is
@@ -351,6 +322,11 @@
   -moz-appearance: textfield;
 }
 
+.abc-farecalc-zonecount-input::placeholder {
+  color: var(--abc-ink-faint);
+  font-weight: 400;
+}
+
 .abc-farecalc-zonecount-input::-webkit-inner-spin-button,
 .abc-farecalc-zonecount-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -386,6 +362,14 @@
 .abc-farecalc-add-zone {
   display: inline-block;
   margin-bottom: var(--abc-space-sm);
+}
+
+/* Disabled once every distinct zone already has a row (see maxZoneRows in
+   calculator.js) — nothing left to add. */
+.abc-farecalc-add-zone-disabled {
+  color: var(--abc-ink-faint);
+  cursor: default;
+  pointer-events: none;
 }
 
 .abc-farecalc .abc-choice-button {

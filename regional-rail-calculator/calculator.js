@@ -154,8 +154,12 @@ function mbtaCalcPass(config, passId, subsidyPct, perqPct) {
  * (Number() on non-numeric text is NaN), no negatives, no zero, no decimals,
  * and capped at the same ceiling the old flat headcount stepper used. Never
  * reads the raw string anywhere else, so there's nothing here for an
- * injected value to reach. */
+ * injected value to reach. An empty field (nothing typed yet) sanitizes to
+ * 0, not 1 — that's what lets a not-yet-filled-in row stay excluded from
+ * the total instead of silently counting as one employee, and what lets
+ * the placeholder text keep showing until something real is typed. */
 function mbtaSanitizeZoneCount(rawValue) {
+  if (rawValue === "" || rawValue == null) return 0;
   const n = Math.floor(Number(rawValue));
   if (!Number.isFinite(n) || n < 1) return 1;
   return Math.min(n, MBTA_CONFIG.employeeCountMax);
@@ -168,7 +172,10 @@ function mbtaSanitizeZoneCount(rawValue) {
  * to the pooled total, since those percentages are shared across zones
  * rather than set per row. */
 function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
-  let totalRaw = 0;
+  let totalSticker = 0; // sum of full, pre-promo prices — mirrors the
+  // employee card's "Total monthly cost" line, which always shows the
+  // sticker price regardless of promo (see renderEmployee's promo-row logic).
+  let totalRaw = 0; // sum of prices actually charged, after any promo
   let totalCount = 0;
   let anyPromoApplies = false;
   // Per-zone employer cost, for the summary card's breakdown list. Subsidy
@@ -186,6 +193,7 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
       ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
       : pass.monthlyPrice;
     const zoneRaw = passPrice * count;
+    totalSticker += pass.monthlyPrice * count;
     totalRaw += zoneRaw;
     totalCount += count;
     zoneBreakdown.push({
@@ -196,11 +204,17 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
   });
 
   const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
-  const totalMonth = b.subsidyAmt;
+  const totalMonth = b.subsidyAmt; // the employer's own final cost
+  const promoAmt = totalSticker - totalRaw;
+  const employeesShareAmt = b.afterSubsidy; // the portion employees collectively cover
   const perEmployeeMonth = totalCount > 0 ? totalMonth / totalCount : 0;
   const employeeSavesMonth = totalCount > 0 ? (b.subsidyAmt + b.pretaxAmt) / totalCount : 0;
 
   return {
+    totalSticker,
+    totalRaw,
+    promoAmt,
+    employeesShareAmt,
     totalMonth,
     totalYear: totalMonth * 12,
     perEmployeeMonth,
@@ -299,9 +313,12 @@ function mbtaInitCalculator(rootEl) {
     // Live calc always reads through mbtaSanitizeZoneCount() at render
     // time (see readZoneRow), so typing doesn't get corrected mid-keystroke.
     // Blur snaps the visible value to what was actually used, the same
-    // convention the other steppers use.
+    // convention the other steppers use — except when the field is empty,
+    // which is left alone so the placeholder ("Employees in this zone")
+    // keeps showing rather than getting overwritten with a number.
     input.addEventListener("input", render);
     input.addEventListener("blur", () => {
+      if (input.value.trim() === "") return;
       input.value = mbtaSanitizeZoneCount(input.value);
     });
   }
@@ -338,7 +355,7 @@ function mbtaInitCalculator(rootEl) {
     input.min = "1";
     input.step = "1";
     input.inputMode = "numeric";
-    input.value = "5";
+    input.placeholder = "Employees in this zone";
     input.setAttribute("aria-label", "Number of employees covered from this zone");
     wireZoneCountInput(input);
 
@@ -349,6 +366,7 @@ function mbtaInitCalculator(rootEl) {
     removeBtn.textContent = "−";
     removeBtn.addEventListener("click", () => {
       row.remove();
+      updateAddZoneButtonState();
       render();
     });
 
@@ -358,16 +376,6 @@ function mbtaInitCalculator(rootEl) {
     return row;
   }
 
-  if (addZoneBtn && zonerowsExtra) {
-    addZoneBtn.addEventListener("click", () => {
-      zonerowsExtra.appendChild(createZoneRow());
-      render();
-    });
-  }
-
-  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
-  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
-
   /** Every zone row currently in the DOM: the first (static) row, plus
    * any added via "+ Add another zone". Only meaningful in employer mode. */
   function getZoneRows() {
@@ -375,6 +383,31 @@ function mbtaInitCalculator(rootEl) {
     const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
     return firstRow ? [firstRow, ...extraRows] : extraRows;
   }
+
+  // There are only MBTA_CONFIG.passOptions.length distinct zones to choose
+  // from (21, as of this config) — past that, "+ Add another zone" has
+  // nothing left to add, so it's disabled rather than left to pile up
+  // rows nobody can usefully fill in.
+  const maxZoneRows = MBTA_CONFIG.passOptions.length;
+
+  function updateAddZoneButtonState() {
+    if (!addZoneBtn) return;
+    const atLimit = getZoneRows().length >= maxZoneRows;
+    addZoneBtn.disabled = atLimit;
+    addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
+  }
+
+  if (addZoneBtn && zonerowsExtra) {
+    addZoneBtn.addEventListener("click", () => {
+      if (getZoneRows().length >= maxZoneRows) return;
+      zonerowsExtra.appendChild(createZoneRow());
+      updateAddZoneButtonState();
+      render();
+    });
+  }
+
+  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
+  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   function readZoneRow(rowEl) {
     const select = rowEl.querySelector("select");
@@ -498,9 +531,26 @@ function mbtaInitCalculator(rootEl) {
   function renderEmployer() {
     const zoneRows = getZoneRows().map(readZoneRow);
     const r = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
-    rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
-    // totalYear is still computed above but not rendered while the temporary
-    // 50% promo is active — see the HTML comment by the removed stat.
+
+    // Waterfall card, mirroring the employee card's line-item shape: total
+    // (always the pre-promo sticker sum) → promo deduction → what employees
+    // collectively cover → the employer's own final line.
+    rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
+
+    const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
+    if (r.promoApplies) {
+      rootEl.querySelector("[data-abc-emp-promo-amt]").textContent = `-${abcFormatCurrency(r.promoAmt)}`;
+      promoRow.style.display = "flex";
+    } else {
+      promoRow.style.display = "none";
+    }
+
+    rootEl.querySelector("[data-abc-emp-share-label]").textContent = `Employees' share (${100 - subsidyPct}%)`;
+    rootEl.querySelector("[data-abc-emp-share-amt]").textContent =
+      r.employeesShareAmt > 0 ? `-${abcFormatCurrency(r.employeesShareAmt)}` : abcFormatCurrency(0);
+
+    rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
+
     rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
@@ -517,7 +567,7 @@ function mbtaInitCalculator(rootEl) {
           const label = document.createElement("span");
           label.textContent = `${zone.label} (${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
           const amt = document.createElement("span");
-          amt.textContent = `${abcFormatCurrencyWhole(zone.monthCost)}/mo`;
+          amt.textContent = `${abcFormatCurrency(zone.monthCost)}/mo`;
           row.appendChild(label);
           row.appendChild(amt);
           breakdownEl.appendChild(row);

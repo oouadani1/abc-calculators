@@ -63,7 +63,7 @@
                 min="1"
                 step="1"
                 inputmode="numeric"
-                value="25"
+                placeholder="Employees in this zone"
                 aria-label="Number of employees covered from this zone"
               />
             </div>
@@ -72,8 +72,12 @@
 
             <button type="button" class="abc-text-link abc-farecalc-add-zone" data-abc-add-zone data-mode-only="employer">+ Add another zone</button>
 
-            <span class="abc-field-hint">
+            <span class="abc-field-hint" data-mode-only="employee">
               Not sure which zone you're in?
+              <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
+            </span>
+            <span class="abc-field-hint" data-mode-only="employer">
+              Not sure which zone to select?
               <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
             </span>
           </div>
@@ -83,8 +87,8 @@
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
         <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any percentage, or use +/- to move by&nbsp;5%.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any percentage, or use +/- to move by&nbsp;5%.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -102,8 +106,8 @@
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
         <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually deducted right from their paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Typically, your employer will take the cost right out of your paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Typically, you'll take the cost right out of employees' paychecks.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -120,7 +124,7 @@
                 </div>
                 <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
               </div>
-              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any percentage, or use +/- to move by&nbsp;5%.</span>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
             </div>
 
             <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
@@ -161,24 +165,29 @@
 
     <div class="abc-farecalc-employer-results" data-mode-only="employer">
       <div class="abc-card abc-farecalc-employer-card">
-        <span class="abc-badge abc-farecalc-employer-badge">Your estimate</span>
         <h3>What this pass program would cost your organization</h3>
-        <div class="abc-farecalc-stat-grid">
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-permonth>$0</span>
-            <span class="abc-farecalc-stat-label">per month</span>
-          </div>
-          <!-- Per-year stat intentionally removed while the temporary 50% promo is
-               active — an annualized figure would understate the post-promo cost.
-               Add back once the promo ends (see MBTA_CONFIG.promo.endDate). -->
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-peremployee>$0.00</span>
-            <span class="abc-farecalc-stat-label">per employee, per month</span>
-          </div>
+
+        <div class="abc-farecalc-line">
+          <span>Total monthly cost</span>
+          <span data-abc-emp-total>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
+          <span>Commuter Rail promo</span>
+          <span data-abc-emp-promo-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line">
+          <span data-abc-emp-share-label>Employees' share (100%)</span>
+          <span data-abc-emp-share-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-final">
+          <span>Your estimated monthly cost</span>
+          <span data-abc-emp-final>$0.00</span>
+        </div>
+
         <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
+
         <p class="abc-farecalc-employer-note">
-          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
+          That's about <strong data-abc-emp-peremployee>$0.00</strong> per employee, per month. Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
     </div>
