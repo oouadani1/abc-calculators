@@ -91,15 +91,12 @@
 /* ---- Employer view results: a single card using the same line-item
    waterfall shape as the employee "Monthly Pass" card (.abc-farecalc-line
    / -line-promo / -line-final), just totaled across the whole team
-   instead of one person — see renderEmployer() in calculator.js. ---- */
+   instead of one person — see renderEmployer() in calculator.js. The h3
+   picks up the shared small/muted .abc-card h3 style (base.css) rather
+   than its own override, so it reads the same as "Monthly Pass" on the
+   employee card. ---- */
 .abc-farecalc-employer-results {
   margin-top: var(--abc-space-lg);
-}
-
-.abc-farecalc-employer-card h3 {
-  margin: 0 0 var(--abc-space-md);
-  font-size: var(--abc-font-size-lg);
-  color: var(--abc-navy-deep);
 }
 
 /* ---- Per-zone cost breakdown: itemized detail shown above the waterfall
@@ -110,15 +107,6 @@
    off into the note below. Each line is a sticker-price subtotal (unit
    price × headcount), so the rows sum exactly to "Full monthly cost"
    right underneath them. ---- */
-.abc-farecalc-zone-breakdown-label {
-  margin: 0 0 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--abc-ink-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-}
-
 .abc-farecalc-zone-breakdown:empty {
   display: none;
 }

@@ -204,8 +204,13 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
       count,
       unitPrice: pass.monthlyPrice,
       subtotal: pass.monthlyPrice * count,
+      zoneOrder: config.passOptions.indexOf(pass),
     });
   });
+
+  // Listed in zone order (1A, 1, 2, 3, ...) regardless of the order the
+  // rows were added in, so the breakdown reads the same way every time.
+  zoneBreakdown.sort((a, b) => a.zoneOrder - b.zoneOrder);
 
   const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
   const totalMonth = b.subsidyAmt; // the employer's own final cost
@@ -537,10 +542,13 @@ function mbtaInitCalculator(rootEl) {
     const r = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
 
     // Waterfall card, mirroring the employee card's line-item shape: total
-    // (always the pre-promo sticker sum) → promo deduction → the employer's
-    // own final line. No "employees' share" middle step — this card is
-    // titled around what it costs the organization specifically, and a
-    // line about what employees pay doesn't belong on it.
+    // (always the pre-promo sticker sum) → promo deduction → employees'
+    // share (the complement of your contribution %, i.e. the part of the
+    // post-promo cost employees cover themselves) → the employer's own
+    // final line. Naming it by what's actually subtracted (employees'
+    // share) rather than "Employer subsidy" keeps the subtraction reading
+    // correctly — subtracting your own contribution wouldn't leave your
+    // own cost.
     rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
 
     const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
@@ -552,6 +560,10 @@ function mbtaInitCalculator(rootEl) {
       promoRow.style.display = "none";
     }
 
+    const employeesSharePct = 100 - subsidyPct;
+    rootEl.querySelector("[data-abc-emp-share-label]").textContent = `Employees' share (${employeesSharePct}%)`;
+    rootEl.querySelector("[data-abc-emp-share-amt]").textContent = `-${abcFormatCurrency(r.employeesShareAmt)}`;
+
     rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
 
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
@@ -562,11 +574,9 @@ function mbtaInitCalculator(rootEl) {
     // there's actually more than one zone to break down, since a single
     // zone would just repeat that line.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
-    const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";
-      const showBreakdown = r.zoneBreakdown.length > 1;
-      if (showBreakdown) {
+      if (r.zoneBreakdown.length > 1) {
         r.zoneBreakdown.forEach((zone) => {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
@@ -579,7 +589,6 @@ function mbtaInitCalculator(rootEl) {
           breakdownEl.appendChild(row);
         });
       }
-      if (breakdownLabelEl) breakdownLabelEl.style.display = showBreakdown ? "block" : "none";
     }
 
     // Spell out where the employee's savings come from, so the number isn't

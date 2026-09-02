@@ -166,6 +166,7 @@ function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCoun
       perEmployeeMonth: 0,
       totalMonth: 0,
       totalYear: 0,
+      employeesShareAmt: 0,
       employeeSavesMonth: 0,
       perqIncluded: perqPct > 0,
       contributes: contributionPct > 0,
@@ -185,6 +186,7 @@ function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCoun
     perEmployeeMonth,
     totalMonth,
     totalYear: totalMonth * 12,
+    employeesShareAmt: b.afterSubsidy * employeeCount,
     employeeSavesMonth: b.subsidyAmt + b.pretaxAmt,
     perqIncluded: perqPct > 0,
     contributes: contributionPct > 0,
@@ -241,12 +243,18 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
       count,
       unitPrice: pass.monthlyPrice,
       subtotal: pass.monthlyPrice * count,
+      zoneOrder: config.passOptions.indexOf(pass),
     });
   });
+
+  // Listed in zone order (1A, 1, 2, 3, ...) regardless of the order the
+  // rows were added in, so the breakdown reads the same way every time.
+  zoneBreakdown.sort((a, b) => a.zoneOrder - b.zoneOrder);
 
   const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
   const totalMonth = b.subsidyAmt; // the employer's own final cost
   const promoAmt = totalSticker - totalRaw;
+  const employeesShareAmt = b.afterSubsidy; // the portion employees collectively cover
   const perEmployeeMonth = totalCount > 0 ? totalMonth / totalCount : 0;
   const employeeSavesMonth = totalCount > 0 ? (b.subsidyAmt + b.pretaxAmt) / totalCount : 0;
 
@@ -254,6 +262,7 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     totalSticker,
     totalRaw,
     promoAmt,
+    employeesShareAmt,
     totalMonth,
     totalYear: totalMonth * 12,
     perEmployeeMonth,
@@ -716,6 +725,7 @@ function mbtaInitCalculator(rootEl) {
       r = {
         totalSticker: single.pass ? single.pass.monthlyPrice * employeeCount : 0,
         promoAmt: 0, // the promo never applies to Subway & Bus (LinkPass isn't a rail pass)
+        employeesShareAmt: single.employeesShareAmt,
         totalMonth: single.totalMonth,
         perEmployeeMonth: single.perEmployeeMonth,
         employeeSavesMonth: single.employeeSavesMonth,
@@ -727,9 +737,12 @@ function mbtaInitCalculator(rootEl) {
 
     // Waterfall card, mirroring the employee card's line-item shape: full
     // (always the pre-promo sticker sum) → promo deduction (Commuter Rail
-    // only) → the employer's own final line. No "employees' share" middle
-    // step — this card is titled around what it costs the organization
-    // specifically, and a line about what employees pay doesn't belong on it.
+    // only) → employees' share (the complement of your contribution %, i.e.
+    // the part of the post-promo cost employees cover themselves) → the
+    // employer's own final line. Naming it by what's actually subtracted
+    // (employees' share) rather than "Employer subsidy" keeps the
+    // subtraction reading correctly — subtracting your own contribution
+    // wouldn't leave your own cost.
     rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
 
     const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
@@ -741,6 +754,10 @@ function mbtaInitCalculator(rootEl) {
       promoRow.style.display = "none";
     }
 
+    const employeesSharePct = 100 - subsidyPct;
+    rootEl.querySelector("[data-abc-emp-share-label]").textContent = `Employees' share (${employeesSharePct}%)`;
+    rootEl.querySelector("[data-abc-emp-share-amt]").textContent = `-${abcFormatCurrency(r.employeesShareAmt)}`;
+
     rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
@@ -751,11 +768,9 @@ function mbtaInitCalculator(rootEl) {
     // zone would just repeat that line. Never applies to Subway & Bus
     // (zoneBreakdown stays empty for that route above).
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
-    const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";
-      const showBreakdown = zoneBreakdown.length > 1;
-      if (showBreakdown) {
+      if (zoneBreakdown.length > 1) {
         zoneBreakdown.forEach((zone) => {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
@@ -768,7 +783,6 @@ function mbtaInitCalculator(rootEl) {
           breakdownEl.appendChild(row);
         });
       }
-      if (breakdownLabelEl) breakdownLabelEl.style.display = showBreakdown ? "block" : "none";
     }
 
     // Spell out where the employee's savings come from, so the number isn't
