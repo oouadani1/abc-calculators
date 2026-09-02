@@ -107,10 +107,9 @@
    zone row, so it collapses to nothing rather than leaving an empty gap
    when there's just the one. Every row keeps its border, including the
    last, since it now leads into "Full monthly cost" rather than trailing
-   off into the note below. The label makes explicit that these are
-   already-subsidized per-zone figures — a different number than the
-   sticker-price "Full monthly cost" line right underneath them, even
-   though they sit next to each other. ---- */
+   off into the note below. Each line is a sticker-price subtotal (unit
+   price × headcount), so the rows sum exactly to "Full monthly cost"
+   right underneath them. ---- */
 .abc-farecalc-zone-breakdown-label {
   margin: 0 0 4px;
   font-size: 0.75rem;

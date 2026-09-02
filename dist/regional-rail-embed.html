@@ -685,10 +685,9 @@
    zone row, so it collapses to nothing rather than leaving an empty gap
    when there's just the one. Every row keeps its border, including the
    last, since it now leads into "Full monthly cost" rather than trailing
-   off into the note below. The label makes explicit that these are
-   already-subsidized per-zone figures — a different number than the
-   sticker-price "Full monthly cost" line right underneath them, even
-   though they sit next to each other. ---- */
+   off into the note below. Each line is a sticker-price subtotal (unit
+   price × headcount), so the rows sum exactly to "Full monthly cost"
+   right underneath them. ---- */
 .abc-farecalc-zone-breakdown-label {
   margin: 0 0 4px;
   font-size: 0.75rem;
@@ -1429,7 +1428,7 @@
       <div class="abc-card abc-farecalc-employer-card">
         <h3>What this pass program would cost your organization</h3>
 
-        <p class="abc-farecalc-zone-breakdown-label" data-abc-zone-breakdown-label style="display: none;">Your cost by zone</p>
+        <p class="abc-farecalc-zone-breakdown-label" data-abc-zone-breakdown-label style="display: none;">Passes by zone</p>
         <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
 
         <div class="abc-farecalc-line">
@@ -1462,7 +1461,7 @@
           <li>Fares are from mbta.com, checked 2026-08-19, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li><strong>Total monthly cost</strong> (<strong>Full monthly cost</strong> on the employer side) is the current MBTA price for a Commuter Rail monthly pass: $90 to $426 depending on the zone, before any promo or contribution.</li>
           <li>The Commuter Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
-          <li>If you're subsidizing more than one zone, "Your cost by zone" already reflects the promo and your contribution, so those figures sum to <strong>Your estimated monthly cost</strong> at the bottom, not to the <strong>Full monthly cost</strong> line above them.</li>
+          <li>If you're subsidizing more than one zone, <strong>Passes by zone</strong> lists each zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them. The promo and your contribution are applied once, after that, to reach <strong>Your estimated monthly cost</strong>.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if a different rate applies.</li>
         </ul>
 
@@ -1700,10 +1699,13 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
   let totalRaw = 0; // sum of prices actually charged, after any promo
   let totalCount = 0;
   let anyPromoApplies = false;
-  // Per-zone employer cost, for the summary card's breakdown list. Subsidy
-  // is a flat percentage (not tiered), so applying it to each zone's raw
-  // cost independently and applying it once to the pooled total are
-  // mathematically the same — the per-zone amounts always sum to totalMonth.
+  // Per-zone sticker subtotal (unit price × headcount), for the summary
+  // card's itemized breakdown list — plain invoice-style line items that
+  // sum exactly to "Full monthly cost" directly below them, not to the
+  // final post-promo/post-contribution number at the bottom of the card.
+  // (An earlier version showed each zone's already-subsidized cost here
+  // instead, which summed to the wrong line and read as the numbers not
+  // adding up.)
   const zoneBreakdown = [];
 
   zoneRows.forEach(({ passId, count }) => {
@@ -1721,7 +1723,8 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     zoneBreakdown.push({
       label: pass.label,
       count,
-      monthCost: zoneRaw * (contributionPct / 100),
+      unitPrice: pass.monthlyPrice,
+      subtotal: pass.monthlyPrice * count,
     });
   });
 
@@ -2074,13 +2077,11 @@ function mbtaInitCalculator(rootEl) {
 
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
-    // Per-zone cost breakdown, shown above the waterfall (itemized detail
-    // first, then the roll-up total) — only worth showing once there's
-    // actually more than one zone to break down, since a single zone would
-    // just repeat the "Full monthly cost" line below it. The label makes
-    // explicit that these are already-subsidized figures (they sum to
-    // "Your estimated monthly cost" at the bottom, not to "Full monthly
-    // cost" directly below them) — see the accordion note too.
+    // Per-zone breakdown, shown above the waterfall: plain invoice-style
+    // line items (unit price × headcount = subtotal) that sum exactly to
+    // "Full monthly cost" directly below them — only worth showing once
+    // there's actually more than one zone to break down, since a single
+    // zone would just repeat that line.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
     const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
@@ -2091,9 +2092,9 @@ function mbtaInitCalculator(rootEl) {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
           const label = document.createElement("span");
-          label.textContent = `${zone.label} (${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
+          label.textContent = `${zone.label} (${abcFormatCurrency(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
           const amt = document.createElement("span");
-          amt.textContent = `${abcFormatCurrency(zone.monthCost)}/mo`;
+          amt.textContent = abcFormatCurrency(zone.subtotal);
           row.appendChild(label);
           row.appendChild(amt);
           breakdownEl.appendChild(row);

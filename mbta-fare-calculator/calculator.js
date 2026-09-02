@@ -29,7 +29,7 @@ const MBTA_CONFIG = {
       "since it's not a permanent rate.",
   },
 
-  // Official MBTA Regional Rail zone map, for the "which zone am I in" question.
+  // Official MBTA Commuter Rail zone map, for the "which zone am I in" question.
   // Linked out to rather than embedded — keeps this tool dependency-free.
   zoneMapUrl: "https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf",
 
@@ -42,7 +42,7 @@ const MBTA_CONFIG = {
   employeeCountMax: 100000,
   defaultEmployeeCount: 25,
 
-  // Temporary Regional Rail promo: 50% off monthly passes, extended
+  // Temporary Commuter Rail promo: 50% off monthly passes, extended
   // through Fall 2026 (originally June-Aug, now through Nov 30). Zone 1A
   // is excluded, matching MBTA's own terms. Auto-expires on its own past
   // endDate (see mbtaPromoIsActive) so nothing has to be remembered by
@@ -76,7 +76,7 @@ const MBTA_CONFIG = {
   defaultPerqPct: 30,
 
   // First entry is used directly for the "Subway & Bus" choice.
-  // Everything else is Regional Rail, shown only if that's selected.
+  // Everything else is Commuter Rail, shown only if that's selected.
   // Zone 1A and LinkPass are both $90 as of this pricing period — that's a
   // real coincidence in current MBTA fares, not a bug.
   passOptions: [
@@ -134,6 +134,13 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
+/** Whole days remaining until the promo ends. Never negative; 0 on the last day. */
+function mbtaPromoDaysLeft(config, today) {
+  const end = new Date(config.promo.endDate + "T23:59:59");
+  const ms = end.getTime() - (today || new Date()).getTime();
+  return Math.max(0, Math.ceil(ms / 86400000));
+}
+
 /** True when a specific pass qualifies for the promo right now: the promo
  * hasn't expired, it's a rail pass, and it isn't on the exclusion list
  * (Zone 1A). Pay-per-ride fares are never discounted, only monthly passes. */
@@ -144,14 +151,26 @@ function mbtaPromoApplies(config, passId, today) {
   return mbtaPromoIsActive(config, today);
 }
 
-/** Employer view: cost of subsidizing a monthly pass across a workforce.
- * Reuses the same subsidy-then-pre-tax breakdown as the employee view, but
- * reads the pieces from the employer's angle: the subsidy amount is what the
- * employer pays, and subsidy + pre-tax together is what each employee saves.
- * Pay-per-ride / days-per-week don't apply here — a pass program is a flat
- * monthly benefit, so those are employee-view-only inputs. */
+/** Employer view, single pass (Subway & Bus, always just LinkPass): cost of
+ * subsidizing a monthly pass across a flat headcount. Reuses the same
+ * subsidy-then-pre-tax breakdown as the employee view, but reads the pieces
+ * from the employer's angle: the subsidy amount is what the employer pays,
+ * and subsidy + pre-tax together is what each employee saves. */
 function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
   const pass = mbtaGetPassOption(config, passId);
+  if (!pass) {
+    return {
+      pass: null,
+      passPrice: 0,
+      promoApplies: false,
+      perEmployeeMonth: 0,
+      totalMonth: 0,
+      totalYear: 0,
+      employeeSavesMonth: 0,
+      perqIncluded: perqPct > 0,
+      contributes: contributionPct > 0,
+    };
+  }
   const promoApplies = mbtaPromoApplies(config, passId);
   const passPrice = promoApplies
     ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
@@ -172,9 +191,96 @@ function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCoun
   };
 }
 
+/** Clamps a typed zone-headcount value to a safe whole number: no letters
+ * (Number() on non-numeric text is NaN), no negatives, no zero, no decimals,
+ * capped at the same ceiling the flat headcount stepper uses. An empty
+ * field (nothing typed yet) sanitizes to 0, not 1 — that's what lets a
+ * not-yet-filled-in row stay excluded from the total instead of silently
+ * counting as one employee, and what lets the placeholder text keep
+ * showing until something real is typed. */
+function mbtaSanitizeZoneCount(rawValue) {
+  if (rawValue === "" || rawValue == null) return 0;
+  const n = Math.floor(Number(rawValue));
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(n, MBTA_CONFIG.employeeCountMax);
+}
+
+/** Employer view, Commuter Rail: cost of subsidizing passes across a
+ * workforce spread across one or more zones. zoneRows is
+ * [{ passId, count }, ...] — one entry per zone row in the UI. Each zone's
+ * promo eligibility (Zone 1A is excluded) is resolved independently, then
+ * subsidy/Perq are applied once to the pooled total, since those
+ * percentages are shared across zones rather than set per row. */
+function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
+  let totalSticker = 0; // sum of full, pre-promo prices — mirrors the
+  // employee card's "Total monthly cost" line, which always shows the
+  // sticker price regardless of promo.
+  let totalRaw = 0; // sum of prices actually charged, after any promo
+  let totalCount = 0;
+  let anyPromoApplies = false;
+  // Per-zone sticker subtotal (unit price × headcount), for the summary
+  // card's itemized breakdown list — plain invoice-style line items that
+  // sum exactly to "Full monthly cost" directly below them, not to the
+  // final post-promo/post-contribution number at the bottom of the card.
+  const zoneBreakdown = [];
+
+  zoneRows.forEach(({ passId, count }) => {
+    const pass = mbtaGetPassOption(config, passId);
+    if (!pass || count < 1) return;
+    const promoApplies = mbtaPromoApplies(config, passId);
+    if (promoApplies) anyPromoApplies = true;
+    const passPrice = promoApplies
+      ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
+      : pass.monthlyPrice;
+    const zoneRaw = passPrice * count;
+    totalSticker += pass.monthlyPrice * count;
+    totalRaw += zoneRaw;
+    totalCount += count;
+    zoneBreakdown.push({
+      label: pass.label,
+      count,
+      unitPrice: pass.monthlyPrice,
+      subtotal: pass.monthlyPrice * count,
+    });
+  });
+
+  const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
+  const totalMonth = b.subsidyAmt; // the employer's own final cost
+  const promoAmt = totalSticker - totalRaw;
+  const perEmployeeMonth = totalCount > 0 ? totalMonth / totalCount : 0;
+  const employeeSavesMonth = totalCount > 0 ? (b.subsidyAmt + b.pretaxAmt) / totalCount : 0;
+
+  return {
+    totalSticker,
+    totalRaw,
+    promoAmt,
+    totalMonth,
+    totalYear: totalMonth * 12,
+    perEmployeeMonth,
+    employeeSavesMonth,
+    zoneBreakdown,
+    perqIncluded: perqPct > 0,
+    contributes: contributionPct > 0,
+    promoApplies: anyPromoApplies,
+    totalCount,
+  };
+}
+
 /** Bundles every derived number the UI needs for both options + inputs. */
 function mbtaCalcAll(config, passId, daysPerWeek, subsidyPct, perqPct) {
   const pass = mbtaGetPassOption(config, passId);
+  if (!pass) {
+    const zeroBreakdown = mbtaCalcBreakdown(0, subsidyPct, perqPct);
+    return {
+      pass: null,
+      passBreakdown: zeroBreakdown,
+      rideBreakdown: zeroBreakdown,
+      winner: "pass",
+      annualSavings: 0,
+      promoApplies: false,
+      promoOriginalPrice: 0,
+    };
+  }
   const rideTotal = mbtaCalcPayPerRideTotal(pass.oneWayFare, daysPerWeek, config.weeksPerMonth);
 
   // The promo discounts the monthly pass itself, not pay-per-ride fares, so
@@ -238,7 +344,7 @@ function mbtaInitCalculator(rootEl) {
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
   const dayButtons = rootEl.querySelectorAll("[data-abc-day-select]");
 
-  // Regional Rail promo: the button badge only depends on whether the promo
+  // Commuter Rail promo: the button badge only depends on whether the promo
   // as a whole is still running, so it's set once here rather than on every
   // render. The callout and price strikethrough depend on which specific
   // pass is selected (Zone 1A is excluded), so those are recomputed in
@@ -250,11 +356,34 @@ function mbtaInitCalculator(rootEl) {
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && mbtaPromoApplies(MBTA_CONFIG, currentPassId());
+    // Only relevant for Commuter Rail at all — Subway & Bus never qualifies
+    // regardless of what mbtaPromoApplies would say about "linkpass" not
+    // being on the exclusion list. Within rail, shown for every zone,
+    // including before one's picked (the empty placeholder value) — only
+    // Zone 1A itself turns it off. That's deliberately not the same check
+    // mbtaCalcAll/mbtaCalcEmployer use (which also require a real, priced
+    // zone) since the callout is just announcing the promo, not computing
+    // a discount off a specific price.
+    const applies = promoActive && routeType === "rail" && !MBTA_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
+    if (applies) {
+      const days = mbtaPromoDaysLeft(MBTA_CONFIG);
+      rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
+    }
   }
 
-  // Populate the rail zone dropdown from config (everything except linkpass).
+  // Populate the rail zone dropdown from config (everything except
+  // linkpass), starting on an unselected "Select zone" placeholder rather
+  // than defaulting to a real zone — mbtaCalcAll/mbtaCalcEmployer* below
+  // all treat an empty passId as "nothing chosen yet" and return
+  // zeroed-out results instead of erroring.
+  const zonePlaceholderOpt = document.createElement("option");
+  zonePlaceholderOpt.value = "";
+  zonePlaceholderOpt.textContent = "Select zone";
+  zonePlaceholderOpt.disabled = true;
+  zonePlaceholderOpt.selected = true;
+  railZoneSelect.appendChild(zonePlaceholderOpt);
+
   MBTA_CONFIG.passOptions
     .filter((p) => p.group === "rail")
     .forEach((pass) => {
@@ -268,11 +397,142 @@ function mbtaInitCalculator(rootEl) {
     return routeType === "subway" ? "linkpass" : railZoneSelect.value;
   }
 
+  // ---- Employer multi-zone breakdown (Commuter Rail only) ----
+  // Employer mode can subsidize employees split across several zones
+  // instead of one flat headcount against a single zone. The first row is
+  // the original zone select + a count input that sits beside it;
+  // "+ Add another zone" appends more rows (their own select + count +
+  // remove button) into the extra-rows container. Employee mode and
+  // Subway & Bus employer mode never see any of this — the extra-rows
+  // container and every count input are data-mode-only="employer", hidden
+  // by the existing CSS rule, and the whole rail-zone-field itself is
+  // hidden whenever routeType isn't "rail" (see the route button handler
+  // below).
+  const zonerowsExtra = rootEl.querySelector("[data-abc-zonerows-extra]");
+  const addZoneBtn = rootEl.querySelector("[data-abc-add-zone]");
+  const countField = rootEl.querySelector("[data-abc-count-field]");
+
+  function wireZoneCountInput(input) {
+    // Live calc always reads through mbtaSanitizeZoneCount() at render
+    // time (see readZoneRow), so typing doesn't get corrected mid-keystroke.
+    // Blur snaps the visible value to what was actually used, the same
+    // convention the other steppers use — except when the field is empty,
+    // which is left alone so the placeholder ("Number of employees in
+    // this zone") keeps showing rather than getting overwritten.
+    input.addEventListener("input", render);
+    input.addEventListener("blur", () => {
+      if (input.value.trim() === "") return;
+      input.value = mbtaSanitizeZoneCount(input.value);
+    });
+  }
+
+  function populateZoneSelect(select) {
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.textContent = "Select zone";
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    select.appendChild(placeholder);
+    MBTA_CONFIG.passOptions
+      .filter((p) => p.group === "rail")
+      .forEach((pass) => {
+        const opt = document.createElement("option");
+        opt.value = pass.id;
+        opt.textContent = pass.label;
+        select.appendChild(opt);
+      });
+  }
+
+  function createZoneRow() {
+    const row = document.createElement("div");
+    row.className = "abc-farecalc-zonerow";
+    row.setAttribute("data-abc-zonerow", "");
+
+    const select = document.createElement("select");
+    select.className = "abc-select";
+    select.setAttribute("aria-label", "Which Commuter Rail zone");
+    populateZoneSelect(select);
+    select.addEventListener("change", render);
+
+    const input = document.createElement("input");
+    input.type = "number";
+    input.className = "abc-select abc-farecalc-zonecount-input";
+    input.min = "1";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.placeholder = "Number of employees in this zone";
+    input.setAttribute("aria-label", "Number of employees covered from this zone");
+    wireZoneCountInput(input);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "abc-farecalc-zone-remove";
+    removeBtn.setAttribute("aria-label", "Remove this zone");
+    removeBtn.textContent = "−";
+    removeBtn.addEventListener("click", () => {
+      row.remove();
+      updateAddZoneButtonState();
+      render();
+    });
+
+    row.appendChild(select);
+    row.appendChild(input);
+    row.appendChild(removeBtn);
+    return row;
+  }
+
+  /** Every zone row currently in the DOM: the first (static) row, plus
+   * any added via "+ Add another zone". Only meaningful in employer mode
+   * with Commuter Rail selected. */
+  function getZoneRows() {
+    const firstRow = rootEl.querySelector("[data-abc-zonerow]");
+    const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
+    return firstRow ? [firstRow, ...extraRows] : extraRows;
+  }
+
+  function readZoneRow(rowEl) {
+    const select = rowEl.querySelector("select");
+    const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
+    return {
+      passId: select ? select.value : "",
+      count: input ? mbtaSanitizeZoneCount(input.value) : 1,
+    };
+  }
+
+  // There are only as many distinct zones as MBTA_CONFIG.passOptions has
+  // rail entries (21, as of this config) — past that, "+ Add another
+  // zone" has nothing left to add, so it's disabled rather than left to
+  // pile up rows nobody can usefully fill in.
+  const maxZoneRows = MBTA_CONFIG.passOptions.filter((p) => p.group === "rail").length;
+
+  function updateAddZoneButtonState() {
+    if (!addZoneBtn) return;
+    const atLimit = getZoneRows().length >= maxZoneRows;
+    addZoneBtn.disabled = atLimit;
+    addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
+  }
+
+  if (addZoneBtn && zonerowsExtra) {
+    addZoneBtn.addEventListener("click", () => {
+      if (getZoneRows().length >= maxZoneRows) return;
+      zonerowsExtra.appendChild(createZoneRow());
+      updateAddZoneButtonState();
+      render();
+    });
+  }
+
+  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
+  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
+
   routeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       railZoneField.style.display = routeType === "rail" ? "flex" : "none";
+      // The flat headcount question only makes sense for Subway & Bus
+      // (one flat LinkPass price for everyone); Commuter Rail replaces it
+      // with the per-zone breakdown above instead.
+      if (countField) countField.style.display = routeType === "rail" ? "none" : "";
       rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
       render();
     });
@@ -403,7 +663,7 @@ function mbtaInitCalculator(rootEl) {
       const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
       rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.promoOriginalPrice);
       rootEl.querySelector("[data-abc-pass-promo-label]").textContent =
-        `Regional Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
+        `Commuter Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
       rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
       promoRow.style.display = "flex";
     } else {
@@ -426,12 +686,90 @@ function mbtaInitCalculator(rootEl) {
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
 
+  /** Total employees covered right now, regardless of route: the flat
+   * stepper for Subway & Bus, or the sum of every zone row's count for
+   * Commuter Rail. Used both for the results card and for analytics. */
+  function currentEmployeeCount() {
+    if (routeType === "rail") {
+      return getZoneRows()
+        .map(readZoneRow)
+        .reduce((sum, row) => sum + (row.count > 0 ? row.count : 0), 0);
+    }
+    return employeeCount;
+  }
+
   function renderEmployer() {
-    const r = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
-    rootEl.querySelector("[data-abc-emp-permonth]").textContent = abcFormatCurrencyWhole(r.totalMonth);
-    rootEl.querySelector("[data-abc-emp-peryear]").textContent = abcFormatCurrencyWhole(r.totalYear);
-    rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
+    let r;
+    let zoneBreakdown = [];
+
+    if (routeType === "rail") {
+      const zoneRows = getZoneRows().map(readZoneRow);
+      const multi = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
+      r = multi;
+      zoneBreakdown = multi.zoneBreakdown;
+    } else {
+      // Subway & Bus: one flat LinkPass price times a flat headcount, no
+      // zones involved. Reshaped to the same field names
+      // mbtaCalcEmployerMultiZone returns, so the DOM-writing code below
+      // doesn't need to branch a second time.
+      const single = mbtaCalcEmployer(MBTA_CONFIG, currentPassId(), subsidyPct, perqEnabled ? perqPct : 0, employeeCount);
+      r = {
+        totalSticker: single.pass ? single.pass.monthlyPrice * employeeCount : 0,
+        promoAmt: 0, // the promo never applies to Subway & Bus (LinkPass isn't a rail pass)
+        totalMonth: single.totalMonth,
+        perEmployeeMonth: single.perEmployeeMonth,
+        employeeSavesMonth: single.employeeSavesMonth,
+        perqIncluded: single.perqIncluded,
+        contributes: single.contributes,
+        promoApplies: false,
+      };
+    }
+
+    // Waterfall card, mirroring the employee card's line-item shape: full
+    // (always the pre-promo sticker sum) → promo deduction (Commuter Rail
+    // only) → the employer's own final line. No "employees' share" middle
+    // step — this card is titled around what it costs the organization
+    // specifically, and a line about what employees pay doesn't belong on it.
+    rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
+
+    const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
+    if (r.promoApplies) {
+      rootEl.querySelector("[data-abc-emp-promo-label]").textContent = `Commuter Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
+      rootEl.querySelector("[data-abc-emp-promo-amt]").textContent = `-${abcFormatCurrency(r.promoAmt)}`;
+      promoRow.style.display = "flex";
+    } else {
+      promoRow.style.display = "none";
+    }
+
+    rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
+
+    // Per-zone breakdown, shown above the waterfall: plain invoice-style
+    // line items (unit price × headcount = subtotal) that sum exactly to
+    // "Full monthly cost" directly below them — only worth showing once
+    // there's actually more than one zone to break down, since a single
+    // zone would just repeat that line. Never applies to Subway & Bus
+    // (zoneBreakdown stays empty for that route above).
+    const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
+    const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
+    if (breakdownEl) {
+      breakdownEl.innerHTML = "";
+      const showBreakdown = zoneBreakdown.length > 1;
+      if (showBreakdown) {
+        zoneBreakdown.forEach((zone) => {
+          const row = document.createElement("div");
+          row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
+          const label = document.createElement("span");
+          label.textContent = `${zone.label} (${abcFormatCurrency(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
+          const amt = document.createElement("span");
+          amt.textContent = abcFormatCurrency(zone.subtotal);
+          row.appendChild(label);
+          row.appendChild(amt);
+          breakdownEl.appendChild(row);
+        });
+      }
+      if (breakdownLabelEl) breakdownLabelEl.style.display = showBreakdown ? "block" : "none";
+    }
 
     // Spell out where the employee's savings come from, so the number isn't
     // floating without context: contribution, Perq, or both.
@@ -566,7 +904,7 @@ function mbtaInitCalculator(rootEl) {
   function currentTransitLabel() {
     if (routeType === "subway") return "Subway & Bus (LinkPass)";
     const opt = mbtaGetPassOption(MBTA_CONFIG, railZoneSelect.value);
-    return "Regional Rail — " + (opt ? opt.label : "");
+    return "Commuter Rail: " + (opt ? opt.label : "");
   }
 
   function analyticsPayload() {
@@ -578,7 +916,7 @@ function mbtaInitCalculator(rootEl) {
       contributionPct: subsidyPct,
       offersPerq: perqEnabled,
       perqPct: perqEnabled ? perqPct : 0,
-      employeeCount: mode === "employer" ? employeeCount : null,
+      employeeCount: mode === "employer" ? currentEmployeeCount() : null,
       source: (typeof window !== "undefined") ? window.location.href : "",
     };
   }

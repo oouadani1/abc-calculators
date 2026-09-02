@@ -7,7 +7,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>MBTA Fare Calculator — Dev Preview</title>
+  <title>MBTA Fare Calculator (Dev Preview)</title>
   <link rel="stylesheet" href="../shared/styles/fonts.css" />
   <link rel="stylesheet" href="../shared/styles/base.css" />
   <link rel="stylesheet" href="calculator.css" />
@@ -19,8 +19,8 @@
 
   <!-- ABC-CALC-HTML-START -->
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root data-abc-mode="employee">
-    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an employee or an employer">
-      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an employee</button>
+    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an individual or an employer">
+      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an individual</button>
       <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
     </div>
 
@@ -50,16 +50,39 @@
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Regional Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
             </div>
           </div>
 
           <div class="abc-field" data-abc-rail-zone-field style="display: none; flex-basis: 100%;">
             <label for="abc-farecalc-zone" data-mode-only="employee">Which zone do you commute from?</label>
-            <label for="abc-farecalc-zone" data-mode-only="employer">Which Regional Rail zone?</label>
-            <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select></select>
-            <span class="abc-field-hint">
+            <label for="abc-farecalc-zone" data-mode-only="employer">Which zones are you subsidizing?</label>
+
+            <div class="abc-farecalc-zonerow" data-abc-zonerow>
+              <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Commuter Rail zone"></select>
+              <input
+                type="number"
+                class="abc-select abc-farecalc-zonecount-input"
+                data-abc-zone-count-input
+                data-mode-only="employer"
+                min="1"
+                step="1"
+                inputmode="numeric"
+                placeholder="Number of employees in this zone"
+                aria-label="Number of employees covered from this zone"
+              />
+            </div>
+
+            <div class="abc-farecalc-zonerows-extra" data-abc-zonerows-extra data-mode-only="employer"></div>
+
+            <button type="button" class="abc-text-link abc-farecalc-add-zone" data-abc-add-zone data-mode-only="employer">+ Add another zone</button>
+
+            <span class="abc-field-hint" data-mode-only="employee">
               Not sure which zone you're in?
+              <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
+            </span>
+            <span class="abc-field-hint" data-mode-only="employer">
+              Not sure which zone to select?
               <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
             </span>
           </div>
@@ -81,7 +104,7 @@
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group" data-mode-only="employer">
+      <div class="abc-farecalc-field-group" data-mode-only="employer" data-abc-count-field>
         <p class="abc-question">How many employees are you covering?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
@@ -99,8 +122,8 @@
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
         <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
@@ -118,8 +141,8 @@
       <div class="abc-farecalc-field-group">
         <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
         <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Perq lets you pay for your MBTA pass with pre-tax earnings, usually deducted right from your paycheck.</span>
-        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Perq lets employees pay for their MBTA pass with pre-tax earnings, usually straight from payroll.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Typically, your employer will take the cost right out of your paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Typically, you'll take the cost right out of employees' paychecks.</span>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -136,7 +159,7 @@
                 </div>
                 <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
               </div>
-              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Adjust it if you know your own rate.</span>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
             </div>
 
             <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
@@ -149,13 +172,19 @@
     </div>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
-      <h4>Limited-time savings</h4>
+      <div class="abc-farecalc-promo-callout-head">
+        <h4>Limited-time savings</h4>
+        <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
+      </div>
       <p>
-        Regional Rail monthly passes are <strong>50% off</strong> through November 30, 2026. Perq users get this discount automatically.
+        Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded). Perq users get this discount automatically.
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's&nbsp;site</a>.
       </p>
-      <p>
-        Ordering through Perq? Your employer needs to place that order by <strong>October 10</strong> for it to qualify. Buying a pass directly (not through Perq) still works all the way through&nbsp;November.
+      <p data-mode-only="employee">
+        Ordering through Perq? Your employer needs to order by <strong>September 10</strong> for October passes, and <strong>October 10</strong> for November passes. Purchase a discounted monthly pass at any time through the MBTA's <a href="https://www.mbta.com/fares/commuter-rail-fares" target="_blank" rel="noopener">many sales options</a>.
+      </p>
+      <p data-mode-only="employer">
+        Ordering through Perq? You need to order by <strong>September 10</strong> for October passes, and <strong>October 10</strong> for November passes. Purchase discounted monthly passes at any time through the MBTA's <a href="https://www.mbta.com/fares/commuter-rail-fares" target="_blank" rel="noopener">many sales options</a>.
       </p>
     </div>
 
@@ -194,7 +223,7 @@
           <span data-abc-pass-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
-          <span data-abc-pass-promo-label>Regional Rail promo</span>
+          <span data-abc-pass-promo-label>Commuter Rail promo</span>
           <span data-abc-pass-promo-amt>-$0.00</span>
         </div>
         <div class="abc-farecalc-line">
@@ -217,22 +246,24 @@
 
     <div class="abc-farecalc-employer-results" data-mode-only="employer">
       <div class="abc-card abc-farecalc-employer-card">
-        <span class="abc-badge abc-farecalc-employer-badge">Your estimate</span>
         <h3>What this pass program would cost your organization</h3>
-        <div class="abc-farecalc-stat-grid">
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-permonth>$0</span>
-            <span class="abc-farecalc-stat-label">per month</span>
-          </div>
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-peryear>$0</span>
-            <span class="abc-farecalc-stat-label">per year</span>
-          </div>
-          <div class="abc-farecalc-stat">
-            <span class="abc-farecalc-stat-value" data-abc-emp-peremployee>$0.00</span>
-            <span class="abc-farecalc-stat-label">per employee, per month</span>
-          </div>
+
+        <p class="abc-farecalc-zone-breakdown-label" data-abc-zone-breakdown-label style="display: none;">Passes by zone</p>
+        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
+
+        <div class="abc-farecalc-line">
+          <span>Full monthly cost</span>
+          <span data-abc-emp-total>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
+          <span data-abc-emp-promo-label>Commuter Rail promo</span>
+          <span data-abc-emp-promo-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-final">
+          <span>Your estimated monthly cost</span>
+          <span data-abc-emp-final>$0.00</span>
+        </div>
+
         <p class="abc-farecalc-employer-note">
           Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
@@ -247,11 +278,12 @@
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
-          <li>Fares are from mbta.com, checked 2026-07-10, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
+          <li>Fares are from mbta.com, checked 2026-08-19, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
           <li>Picking a number of days assumes a round trip each day: one ride there, one ride back.</li>
-          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month. LinkPass is $2.40 a ride. Regional Rail ranges from $2.40 to $13.25 a ride depending on your zone.</li>
-          <li><strong>Monthly Pass's total monthly cost</strong> is simply the current MBTA price for that pass: $90 for LinkPass, or $90 to $426 for Regional Rail depending on your zone.</li>
+          <li><strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; 2 for the round trip &times; the number of days you picked &times; 4.345, the average number of weeks in a month. LinkPass is $2.40 a ride. Commuter Rail ranges from $2.40 to $13.25 a ride depending on your zone.</li>
+          <li><strong>Monthly Pass's total monthly cost</strong> (<strong>Full monthly cost</strong> on the employer side) is simply the current MBTA price for that pass: $90 for LinkPass, or $90 to $426 for Commuter Rail depending on your zone, before any promo or contribution.</li>
           <li>Employer subsidy and pre-tax savings are applied the same way to both options.</li>
+          <li>If you're subsidizing more than one Commuter Rail zone, <strong>Passes by zone</strong> lists each zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them. The promo and your contribution are applied once, after that, to reach <strong>Your estimated monthly cost</strong>.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
         </ul>
 

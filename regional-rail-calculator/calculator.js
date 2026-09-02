@@ -178,10 +178,13 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
   let totalRaw = 0; // sum of prices actually charged, after any promo
   let totalCount = 0;
   let anyPromoApplies = false;
-  // Per-zone employer cost, for the summary card's breakdown list. Subsidy
-  // is a flat percentage (not tiered), so applying it to each zone's raw
-  // cost independently and applying it once to the pooled total are
-  // mathematically the same — the per-zone amounts always sum to totalMonth.
+  // Per-zone sticker subtotal (unit price × headcount), for the summary
+  // card's itemized breakdown list — plain invoice-style line items that
+  // sum exactly to "Full monthly cost" directly below them, not to the
+  // final post-promo/post-contribution number at the bottom of the card.
+  // (An earlier version showed each zone's already-subsidized cost here
+  // instead, which summed to the wrong line and read as the numbers not
+  // adding up.)
   const zoneBreakdown = [];
 
   zoneRows.forEach(({ passId, count }) => {
@@ -199,7 +202,8 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     zoneBreakdown.push({
       label: pass.label,
       count,
-      monthCost: zoneRaw * (contributionPct / 100),
+      unitPrice: pass.monthlyPrice,
+      subtotal: pass.monthlyPrice * count,
     });
   });
 
@@ -552,13 +556,11 @@ function mbtaInitCalculator(rootEl) {
 
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
-    // Per-zone cost breakdown, shown above the waterfall (itemized detail
-    // first, then the roll-up total) — only worth showing once there's
-    // actually more than one zone to break down, since a single zone would
-    // just repeat the "Full monthly cost" line below it. The label makes
-    // explicit that these are already-subsidized figures (they sum to
-    // "Your estimated monthly cost" at the bottom, not to "Full monthly
-    // cost" directly below them) — see the accordion note too.
+    // Per-zone breakdown, shown above the waterfall: plain invoice-style
+    // line items (unit price × headcount = subtotal) that sum exactly to
+    // "Full monthly cost" directly below them — only worth showing once
+    // there's actually more than one zone to break down, since a single
+    // zone would just repeat that line.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
     const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
@@ -569,9 +571,9 @@ function mbtaInitCalculator(rootEl) {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
           const label = document.createElement("span");
-          label.textContent = `${zone.label} (${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
+          label.textContent = `${zone.label} (${abcFormatCurrency(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
           const amt = document.createElement("span");
-          amt.textContent = `${abcFormatCurrency(zone.monthCost)}/mo`;
+          amt.textContent = abcFormatCurrency(zone.subtotal);
           row.appendChild(label);
           row.appendChild(amt);
           breakdownEl.appendChild(row);

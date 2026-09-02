@@ -3,7 +3,7 @@
    shared/styles/base.css. Prefix: .abc-farecalc-*
 
    Route buttons get MBTA's own line colors instead of the shared
-   ABC palette: Regional Rail is a real, single MBTA line with an
+   ABC palette: Commuter Rail is a real, single MBTA line with an
    official color; Subway & Bus uses MBTA Blue. Whichever route is
    selected becomes the accent color (--abc-farecalc-accent) for the
    rest of the form's interactive controls — a deliberate "theme"
@@ -27,7 +27,7 @@
   --mbta-blue: #003DA5;
   --mbta-blue-tint: #E6ECF8;
   --mbta-silver: #7C878E;
-  --mbta-purple: #80276C; /* Regional Rail's own official color */
+  --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
 }
 
@@ -109,14 +109,12 @@
   text-align: center;
 }
 
-/* ---- Employer view results: a single summary card with a small grid of
-   headline figures, in place of the employee view's two comparison cards. ---- */
+/* ---- Employer view results: a single card using the same line-item
+   waterfall shape as the employee "Monthly Pass" card (.abc-farecalc-line
+   / -line-promo / -line-final), just totaled across the whole team
+   instead of one person — see renderEmployer() in calculator.js. ---- */
 .abc-farecalc-employer-results {
   margin-top: var(--abc-space-lg);
-}
-
-.abc-farecalc-employer-badge {
-  background: var(--abc-farecalc-accent);
 }
 
 .abc-farecalc-employer-card h3 {
@@ -125,32 +123,29 @@
   color: var(--abc-navy-deep);
 }
 
-.abc-farecalc-stat-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--abc-space-md);
-  padding: var(--abc-space-md) 0;
-  border-top: 1px solid var(--abc-border);
-  border-bottom: 1px solid var(--abc-border);
-}
-
-.abc-farecalc-stat {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.abc-farecalc-stat-value {
-  font-family: var(--abc-font-mono);
-  font-size: var(--abc-font-size-xl);
-  font-weight: 600;
-  color: var(--abc-navy-deep);
-  letter-spacing: -0.01em;
-}
-
-.abc-farecalc-stat-label {
-  font-size: var(--abc-font-size-sm);
+/* ---- Per-zone cost breakdown: itemized detail shown above the waterfall
+   total (see calculator.js), only populated once there's more than one
+   Commuter Rail zone row, so it collapses to nothing rather than leaving
+   an empty gap when there's just the one (or when Subway & Bus is
+   selected). Every row keeps its border, including the last, since it now
+   leads into "Full monthly cost" rather than trailing off into the note
+   below. Each line is a sticker-price subtotal (unit price × headcount),
+   so the rows sum exactly to "Full monthly cost" right underneath them. ---- */
+.abc-farecalc-zone-breakdown-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
   color: var(--abc-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.abc-farecalc-zone-breakdown:empty {
+  display: none;
+}
+
+.abc-farecalc-zone-breakdown-line {
+  font-size: 0.8rem;
 }
 
 .abc-farecalc-employer-note {
@@ -162,13 +157,6 @@
 
 .abc-farecalc-employer-note strong {
   color: var(--mbta-green);
-}
-
-@container abc-calc (max-width: 480px) {
-  .abc-farecalc-stat-grid {
-    grid-template-columns: 1fr;
-    gap: var(--abc-space-sm);
-  }
 }
 
 /* ---- Organization picker (seeds the analytics log). Sits right under
@@ -270,6 +258,14 @@
   margin-bottom: var(--abc-space-sm);
 }
 
+/* Keeps a short phrase from breaking mid-way, e.g. "+/- buttons": a plain
+   &nbsp; between two words doesn't stop a break at a hyphen elsewhere in
+   the phrase (the "-" in "+/-" is its own break opportunity, independent
+   of the space it's glued to), so the whole phrase needs wrapping instead. */
+.abc-farecalc-nowrap {
+  white-space: nowrap;
+}
+
 /* "Perq" hyperlinked directly inside its question, instead of a separate
    toggle button — the accent color is what marks it as a link/theme tie-in. */
 .abc-farecalc-inline-link {
@@ -292,7 +288,7 @@
   margin-bottom: var(--abc-space-sm);
 }
 
-/* ---- Regional Rail promo badge: a small corner tag on the route button
+/* ---- Commuter Rail promo badge: a small corner tag on the route button
    itself, visible before anyone even picks a zone. Hidden entirely by JS
    once the promo (see MBTA_CONFIG.promo) has expired. ---- */
 .abc-farecalc-btn-rail {
@@ -319,7 +315,7 @@
    but recolored to blue instead of the shared component's default orange
    (orange stays reserved for the "Next steps" / caution meaning elsewhere;
    this scoped override doesn't touch .abc-callout itself). Only shown when
-   the currently-selected pass actually qualifies (Regional Rail, not Zone
+   the currently-selected pass actually qualifies (Commuter Rail, not Zone
    1A, promo not expired) — see updatePromoUI(). ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
@@ -528,6 +524,107 @@
   box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
 }
 
+/* ---- Uniform control height: every .abc-select (and the mode/route
+   choice buttons) lands on the same 44px regardless of how many digits
+   or how much padding its content needs, so a select sitting next to a
+   number input (the zone rows below) or a remove button lines up cleanly
+   whenever a question is answered or a reveal opens. box-sizing: border-box
+   makes the border differences between these control types (none / 1.5px /
+   2px) a non-issue — the outer height stays exactly 44px either way. ---- */
+.abc-farecalc .abc-select {
+  height: 44px;
+  box-sizing: border-box;
+  padding: 0 var(--abc-space-md);
+  font-size: var(--abc-font-size-sm);
+}
+
+/* ---- Employer multi-zone breakdown: each row pairs a zone select with a
+   headcount input, plus a remove button on every row after the first.
+   The select and count input both carry .abc-select, so they already pick
+   up the uniform 44px height above for free — "same dimensions and height
+   as the picklist" falls out of reusing that class rather than needing
+   its own rule. Employee mode never shows the count input (data-mode-only
+   handles that), so the select alone fills the row at full width there;
+   employer mode splits the row 50/50 once there's something to split it
+   with. ---- */
+.abc-farecalc-zonerow {
+  display: flex;
+  gap: var(--abc-space-sm);
+  align-items: center;
+  margin-bottom: var(--abc-space-sm);
+}
+
+.abc-farecalc-zonerow .abc-select {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+.abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+  flex: 1 1 50%;
+}
+
+.abc-farecalc-zonecount-input {
+  text-align: center;
+  -moz-appearance: textfield;
+}
+
+.abc-farecalc-zonecount-input::placeholder {
+  color: var(--abc-ink-faint);
+  font-weight: 400;
+}
+
+.abc-farecalc-zonecount-input::-webkit-inner-spin-button,
+.abc-farecalc-zonecount-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.abc-farecalc-zone-remove {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: var(--abc-radius-sm);
+  background: var(--abc-border);
+  color: var(--abc-ink-muted);
+  font-family: var(--abc-font-mono);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-zone-remove:hover {
+    background: var(--mbta-red);
+    color: #fff;
+  }
+}
+
+.abc-farecalc-zonerows-extra:empty {
+  display: none;
+}
+
+.abc-farecalc-add-zone {
+  display: inline-block;
+  margin-bottom: var(--abc-space-sm);
+}
+
+/* Disabled once every distinct Commuter Rail zone already has a row (see
+   maxZoneRows in calculator.js) — nothing left to add. */
+.abc-farecalc-add-zone-disabled {
+  color: var(--abc-ink-faint);
+  cursor: default;
+  pointer-events: none;
+}
+
+.abc-farecalc .abc-choice-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+}
+
 /* ---- Spacing rhythm: one value for "hint below a control," one
    value for "conditionally-revealed block below a control." Applied
    the same way everywhere it occurs in this tool. ---- */
@@ -680,7 +777,7 @@
 }
 
 /* ---- Embed button: same plain gray/white look as an unselected
-   choice button (Yes/No, Regional Rail when not picked) — .abc-choice-
+   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
    button already provides that, this just adds the "copied" state. On
    click, the same color-swipe pattern as the Subway & Bus hover plays
    once, landing on green instead of blue (a distinct "success" cue vs.
@@ -768,8 +865,27 @@
     width: 48px;
     height: 48px;
   }
+  .abc-farecalc-mode-btn,
+  .abc-farecalc .abc-select,
+  .abc-farecalc .abc-choice-button {
+    height: 48px;
+  }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
+  }
+  .abc-farecalc-zonerow {
+    flex-wrap: wrap;
+  }
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+    flex-basis: 100%;
+  }
+  .abc-farecalc-zonecount-input {
+    flex: 1 1 auto;
+  }
+  .abc-farecalc-zone-remove {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
   }
 }
 
@@ -793,7 +909,26 @@
     width: 48px;
     height: 48px;
   }
+  .abc-farecalc-mode-btn,
+  .abc-farecalc .abc-select,
+  .abc-farecalc .abc-choice-button {
+    height: 48px;
+  }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
+  }
+  .abc-farecalc-zonerow {
+    flex-wrap: wrap;
+  }
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
+    flex-basis: 100%;
+  }
+  .abc-farecalc-zonecount-input {
+    flex: 1 1 auto;
+  }
+  .abc-farecalc-zone-remove {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
   }
 }
