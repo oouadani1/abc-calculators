@@ -106,8 +106,20 @@
    total (see calculator.js), only populated once there's more than one
    zone row, so it collapses to nothing rather than leaving an empty gap
    when there's just the one. Every row keeps its border, including the
-   last, since it now leads into "Total monthly cost" rather than trailing
-   off into the note below. ---- */
+   last, since it now leads into "Full monthly cost" rather than trailing
+   off into the note below. The label makes explicit that these are
+   already-subsidized per-zone figures — a different number than the
+   sticker-price "Full monthly cost" line right underneath them, even
+   though they sit next to each other. ---- */
+.abc-farecalc-zone-breakdown-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--abc-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .abc-farecalc-zone-breakdown:empty {
   display: none;
 }

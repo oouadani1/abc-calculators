@@ -675,8 +675,20 @@
    total (see calculator.js), only populated once there's more than one
    zone row, so it collapses to nothing rather than leaving an empty gap
    when there's just the one. Every row keeps its border, including the
-   last, since it now leads into "Total monthly cost" rather than trailing
-   off into the note below. ---- */
+   last, since it now leads into "Full monthly cost" rather than trailing
+   off into the note below. The label makes explicit that these are
+   already-subsidized per-zone figures — a different number than the
+   sticker-price "Full monthly cost" line right underneath them, even
+   though they sit next to each other. ---- */
+.abc-farecalc-zone-breakdown-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--abc-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
 .abc-farecalc-zone-breakdown:empty {
   display: none;
 }
@@ -1408,10 +1420,11 @@
       <div class="abc-card abc-farecalc-employer-card">
         <h3>What this pass program would cost your organization</h3>
 
+        <p class="abc-farecalc-zone-breakdown-label" data-abc-zone-breakdown-label style="display: none;">Your cost by zone</p>
         <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
 
         <div class="abc-farecalc-line">
-          <span>Total monthly cost</span>
+          <span>Full monthly cost</span>
           <span data-abc-emp-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
@@ -1438,9 +1451,9 @@
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares are from mbta.com, checked 2026-08-19, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
-          <li><strong>Total monthly cost</strong> is the current MBTA price for a Commuter Rail monthly pass: $90 to $426 depending on the zone.</li>
+          <li><strong>Total monthly cost</strong> (<strong>Full monthly cost</strong> on the employer side) is the current MBTA price for a Commuter Rail monthly pass: $90 to $426 depending on the zone, before any promo or contribution.</li>
           <li>The Commuter Rail promo, employer subsidy, and pre-tax savings are applied in that order, each on top of what's left after the step before it.</li>
-          <li>If you're subsidizing more than one zone, each zone's cost is added together first, then your contribution and Perq savings are applied once to that combined total.</li>
+          <li>If you're subsidizing more than one zone, "Your cost by zone" already reflects the promo and your contribution, so those figures sum to <strong>Your estimated monthly cost</strong> at the bottom, not to the <strong>Full monthly cost</strong> line above them.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if a different rate applies.</li>
         </ul>
 
@@ -2055,11 +2068,16 @@ function mbtaInitCalculator(rootEl) {
     // Per-zone cost breakdown, shown above the waterfall (itemized detail
     // first, then the roll-up total) — only worth showing once there's
     // actually more than one zone to break down, since a single zone would
-    // just repeat the "Total monthly cost" line below it.
+    // just repeat the "Full monthly cost" line below it. The label makes
+    // explicit that these are already-subsidized figures (they sum to
+    // "Your estimated monthly cost" at the bottom, not to "Full monthly
+    // cost" directly below them) — see the accordion note too.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
+    const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";
-      if (r.zoneBreakdown.length > 1) {
+      const showBreakdown = r.zoneBreakdown.length > 1;
+      if (showBreakdown) {
         r.zoneBreakdown.forEach((zone) => {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
@@ -2072,6 +2090,7 @@ function mbtaInitCalculator(rootEl) {
           breakdownEl.appendChild(row);
         });
       }
+      if (breakdownLabelEl) breakdownLabelEl.style.display = showBreakdown ? "block" : "none";
     }
 
     // Spell out where the employee's savings come from, so the number isn't

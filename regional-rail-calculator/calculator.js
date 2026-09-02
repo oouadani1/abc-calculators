@@ -555,11 +555,16 @@ function mbtaInitCalculator(rootEl) {
     // Per-zone cost breakdown, shown above the waterfall (itemized detail
     // first, then the roll-up total) — only worth showing once there's
     // actually more than one zone to break down, since a single zone would
-    // just repeat the "Total monthly cost" line below it.
+    // just repeat the "Full monthly cost" line below it. The label makes
+    // explicit that these are already-subsidized figures (they sum to
+    // "Your estimated monthly cost" at the bottom, not to "Full monthly
+    // cost" directly below them) — see the accordion note too.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
+    const breakdownLabelEl = rootEl.querySelector("[data-abc-zone-breakdown-label]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";
-      if (r.zoneBreakdown.length > 1) {
+      const showBreakdown = r.zoneBreakdown.length > 1;
+      if (showBreakdown) {
         r.zoneBreakdown.forEach((zone) => {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
@@ -572,6 +577,7 @@ function mbtaInitCalculator(rootEl) {
           breakdownEl.appendChild(row);
         });
       }
+      if (breakdownLabelEl) breakdownLabelEl.style.display = showBreakdown ? "block" : "none";
     }
 
     // Spell out where the employee's savings come from, so the number isn't
