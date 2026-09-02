@@ -102,19 +102,18 @@
   color: var(--abc-navy-deep);
 }
 
-/* ---- Per-zone cost breakdown: only populated (see calculator.js) once
-   there's more than one zone row, so it collapses to nothing rather than
-   leaving an empty gap when there's just the one. ---- */
+/* ---- Per-zone cost breakdown: itemized detail shown above the waterfall
+   total (see calculator.js), only populated once there's more than one
+   zone row, so it collapses to nothing rather than leaving an empty gap
+   when there's just the one. Every row keeps its border, including the
+   last, since it now leads into "Total monthly cost" rather than trailing
+   off into the note below. ---- */
 .abc-farecalc-zone-breakdown:empty {
   display: none;
 }
 
 .abc-farecalc-zone-breakdown-line {
   font-size: 0.8rem;
-}
-
-.abc-farecalc-zone-breakdown-line:last-child {
-  border-bottom: none;
 }
 
 .abc-farecalc-employer-note {

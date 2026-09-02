@@ -314,7 +314,7 @@ function mbtaInitCalculator(rootEl) {
     // time (see readZoneRow), so typing doesn't get corrected mid-keystroke.
     // Blur snaps the visible value to what was actually used, the same
     // convention the other steppers use — except when the field is empty,
-    // which is left alone so the placeholder ("Employees in this zone")
+    // which is left alone so the placeholder ("Number of employees in this zone")
     // keeps showing rather than getting overwritten with a number.
     input.addEventListener("input", render);
     input.addEventListener("blur", () => {
@@ -355,7 +355,7 @@ function mbtaInitCalculator(rootEl) {
     input.min = "1";
     input.step = "1";
     input.inputMode = "numeric";
-    input.placeholder = "Employees in this zone";
+    input.placeholder = "Number of employees in this zone";
     input.setAttribute("aria-label", "Number of employees covered from this zone");
     wireZoneCountInput(input);
 
@@ -533,30 +533,29 @@ function mbtaInitCalculator(rootEl) {
     const r = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
 
     // Waterfall card, mirroring the employee card's line-item shape: total
-    // (always the pre-promo sticker sum) → promo deduction → what employees
-    // collectively cover → the employer's own final line.
+    // (always the pre-promo sticker sum) → promo deduction → the employer's
+    // own final line. No "employees' share" middle step — this card is
+    // titled around what it costs the organization specifically, and a
+    // line about what employees pay doesn't belong on it.
     rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
 
     const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
     if (r.promoApplies) {
+      rootEl.querySelector("[data-abc-emp-promo-label]").textContent = `Commuter Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
       rootEl.querySelector("[data-abc-emp-promo-amt]").textContent = `-${abcFormatCurrency(r.promoAmt)}`;
       promoRow.style.display = "flex";
     } else {
       promoRow.style.display = "none";
     }
 
-    rootEl.querySelector("[data-abc-emp-share-label]").textContent = `Employees' share (${100 - subsidyPct}%)`;
-    rootEl.querySelector("[data-abc-emp-share-amt]").textContent =
-      r.employeesShareAmt > 0 ? `-${abcFormatCurrency(r.employeesShareAmt)}` : abcFormatCurrency(0);
-
     rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
 
-    rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
-    // Per-zone cost breakdown: only worth showing once there's actually
-    // more than one zone to break down — with a single zone it would just
-    // repeat the "per month" stat above.
+    // Per-zone cost breakdown, shown above the waterfall (itemized detail
+    // first, then the roll-up total) — only worth showing once there's
+    // actually more than one zone to break down, since a single zone would
+    // just repeat the "Total monthly cost" line below it.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";

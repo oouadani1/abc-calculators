@@ -671,19 +671,18 @@
   color: var(--abc-navy-deep);
 }
 
-/* ---- Per-zone cost breakdown: only populated (see calculator.js) once
-   there's more than one zone row, so it collapses to nothing rather than
-   leaving an empty gap when there's just the one. ---- */
+/* ---- Per-zone cost breakdown: itemized detail shown above the waterfall
+   total (see calculator.js), only populated once there's more than one
+   zone row, so it collapses to nothing rather than leaving an empty gap
+   when there's just the one. Every row keeps its border, including the
+   last, since it now leads into "Total monthly cost" rather than trailing
+   off into the note below. ---- */
 .abc-farecalc-zone-breakdown:empty {
   display: none;
 }
 
 .abc-farecalc-zone-breakdown-line {
   font-size: 0.8rem;
-}
-
-.abc-farecalc-zone-breakdown-line:last-child {
-  border-bottom: none;
 }
 
 .abc-farecalc-employer-note {
@@ -1305,7 +1304,7 @@
                 min="1"
                 step="1"
                 inputmode="numeric"
-                placeholder="Employees in this zone"
+                placeholder="Number of employees in this zone"
                 aria-label="Number of employees covered from this zone"
               />
             </div>
@@ -1409,27 +1408,23 @@
       <div class="abc-card abc-farecalc-employer-card">
         <h3>What this pass program would cost your organization</h3>
 
+        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
+
         <div class="abc-farecalc-line">
           <span>Total monthly cost</span>
           <span data-abc-emp-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
-          <span>Commuter Rail promo</span>
+          <span data-abc-emp-promo-label>Commuter Rail promo</span>
           <span data-abc-emp-promo-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line">
-          <span data-abc-emp-share-label>Employees' share (100%)</span>
-          <span data-abc-emp-share-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-emp-final>$0.00</span>
         </div>
 
-        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
-
         <p class="abc-farecalc-employer-note">
-          That's about <strong data-abc-emp-peremployee>$0.00</strong> per employee, per month. Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
+          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
     </div>
@@ -1819,7 +1814,7 @@ function mbtaInitCalculator(rootEl) {
     // time (see readZoneRow), so typing doesn't get corrected mid-keystroke.
     // Blur snaps the visible value to what was actually used, the same
     // convention the other steppers use — except when the field is empty,
-    // which is left alone so the placeholder ("Employees in this zone")
+    // which is left alone so the placeholder ("Number of employees in this zone")
     // keeps showing rather than getting overwritten with a number.
     input.addEventListener("input", render);
     input.addEventListener("blur", () => {
@@ -1860,7 +1855,7 @@ function mbtaInitCalculator(rootEl) {
     input.min = "1";
     input.step = "1";
     input.inputMode = "numeric";
-    input.placeholder = "Employees in this zone";
+    input.placeholder = "Number of employees in this zone";
     input.setAttribute("aria-label", "Number of employees covered from this zone");
     wireZoneCountInput(input);
 
@@ -2038,30 +2033,29 @@ function mbtaInitCalculator(rootEl) {
     const r = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
 
     // Waterfall card, mirroring the employee card's line-item shape: total
-    // (always the pre-promo sticker sum) → promo deduction → what employees
-    // collectively cover → the employer's own final line.
+    // (always the pre-promo sticker sum) → promo deduction → the employer's
+    // own final line. No "employees' share" middle step — this card is
+    // titled around what it costs the organization specifically, and a
+    // line about what employees pay doesn't belong on it.
     rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
 
     const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
     if (r.promoApplies) {
+      rootEl.querySelector("[data-abc-emp-promo-label]").textContent = `Commuter Rail promo (${MBTA_CONFIG.promo.discountPct}%)`;
       rootEl.querySelector("[data-abc-emp-promo-amt]").textContent = `-${abcFormatCurrency(r.promoAmt)}`;
       promoRow.style.display = "flex";
     } else {
       promoRow.style.display = "none";
     }
 
-    rootEl.querySelector("[data-abc-emp-share-label]").textContent = `Employees' share (${100 - subsidyPct}%)`;
-    rootEl.querySelector("[data-abc-emp-share-amt]").textContent =
-      r.employeesShareAmt > 0 ? `-${abcFormatCurrency(r.employeesShareAmt)}` : abcFormatCurrency(0);
-
     rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
 
-    rootEl.querySelector("[data-abc-emp-peremployee]").textContent = abcFormatCurrency(r.perEmployeeMonth);
     rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
 
-    // Per-zone cost breakdown: only worth showing once there's actually
-    // more than one zone to break down — with a single zone it would just
-    // repeat the "per month" stat above.
+    // Per-zone cost breakdown, shown above the waterfall (itemized detail
+    // first, then the roll-up total) — only worth showing once there's
+    // actually more than one zone to break down, since a single zone would
+    // just repeat the "Total monthly cost" line below it.
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
     if (breakdownEl) {
       breakdownEl.innerHTML = "";

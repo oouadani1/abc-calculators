@@ -63,7 +63,7 @@
                 min="1"
                 step="1"
                 inputmode="numeric"
-                placeholder="Employees in this zone"
+                placeholder="Number of employees in this zone"
                 aria-label="Number of employees covered from this zone"
               />
             </div>
@@ -167,27 +167,23 @@
       <div class="abc-card abc-farecalc-employer-card">
         <h3>What this pass program would cost your organization</h3>
 
+        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
+
         <div class="abc-farecalc-line">
           <span>Total monthly cost</span>
           <span data-abc-emp-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
-          <span>Commuter Rail promo</span>
+          <span data-abc-emp-promo-label>Commuter Rail promo</span>
           <span data-abc-emp-promo-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line">
-          <span data-abc-emp-share-label>Employees' share (100%)</span>
-          <span data-abc-emp-share-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-emp-final>$0.00</span>
         </div>
 
-        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
-
         <p class="abc-farecalc-employer-note">
-          That's about <strong data-abc-emp-peremployee>$0.00</strong> per employee, per month. Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
+          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month<span data-abc-emp-saves-detail></span>.
         </p>
       </div>
     </div>
