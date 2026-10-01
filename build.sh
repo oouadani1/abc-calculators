@@ -52,6 +52,7 @@ build_tool() {
 build_tool "mbta-fare-calculator" "mbta-fare-chunk.html"
 build_tool "bluebikes-membership-calculator" "bluebikes-chunk.html" "no"
 build_tool "regional-rail-calculator" "regional-rail-chunk.html" "no"
+build_tool "bu-fare-calculator" "bu-fare-chunk.html" "no"
 
 # Standalone iframe-embed pages: wraps the same chunk in a full <html> doc
 # with no external dependencies, for CMSes (like ModX resource content
@@ -85,6 +86,7 @@ build_embed() {
 build_embed "mbta-fare-calculator" "mbta-fare-chunk.html" "mbta-fare-embed.html" "MBTA Fare Calculator"
 build_embed "bluebikes-membership-calculator" "bluebikes-chunk.html" "bluebikes-embed.html" "Bluebikes Membership Calculator"
 build_embed "regional-rail-calculator" "regional-rail-chunk.html" "regional-rail-embed.html" "Regional Rail Pass Calculator"
+build_embed "bu-fare-calculator" "bu-fare-chunk.html" "bu-fare-embed.html" "BU Fare Calculator"
 
 echo "Done. Paste dist/*-chunk.html directly into a ModX Chunk, or point an"
 echo "iframe at the hosted dist/*-embed.html page if Chunk access isn't available."
