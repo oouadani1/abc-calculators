@@ -901,32 +901,68 @@
    it reads as a native part of the design system, not a bolted-on banner,
    but recolored to blue instead of the shared component's default orange
    (orange stays reserved for the "Next steps" / caution meaning elsewhere;
-   this scoped override doesn't touch .abc-callout itself). Only shown when
-   the currently-selected pass actually qualifies (Commuter Rail, not Zone
-   1A, promo not expired) — see updatePromoUI(). ---- */
+   this scoped override doesn't touch .abc-callout itself). A small pill in
+   the header carries the live day countdown, instead of its own line.
+   Only shown when the currently-selected pass actually qualifies
+   (Commuter Rail, not Zone 1A, promo not expired) — see updatePromoUI().
+   Lives inside the route field-group itself now (see index.html), right
+   under the route pills, rather than after every other question. ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
   background: var(--mbta-blue-tint);
   border-color: var(--mbta-blue);
 }
 
+.abc-farecalc-promo-callout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-sm);
+  margin-bottom: 6px;
+}
+
 .abc-farecalc-promo-callout h4 {
+  margin: 0;
   color: var(--mbta-blue);
 }
 
-/* Second paragraph (the Perq-vs-retail deadline note) needs its own gap —
-   the shared .abc-callout p rule is margin:0, meant for a single paragraph. */
-.abc-farecalc-promo-callout p + p {
-  margin-top: var(--abc-space-sm);
+.abc-farecalc-promo-days {
+  flex-shrink: 0;
+  background: var(--mbta-blue);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--abc-radius-pill);
+  white-space: nowrap;
 }
 
 /* Promo discount as its own emphasized line item on the Monthly Pass
-   card, matching the blue used elsewhere for this promo rather than a
-   discreet strikethrough — sits between the full "Total monthly cost"
-   and the employer subsidy / Perq deduction rows below it. */
-.abc-farecalc-line-promo,
-.abc-farecalc-line-promo span {
-  color: var(--mbta-blue);
+   card: purple, matching Commuter Rail's own route color, since this is
+   an MBTA discount rather than BU's own subsidy (which gets BU's mint
+   treatment instead — see .abc-farecalc-line-subsidy below). Sits between
+   the full "Total monthly cost" and the BU subsidy deduction row below it. */
+/* Compound selector (.abc-farecalc-line.abc-farecalc-line-promo) rather
+   than a bare class, so this reliably beats the plain .abc-farecalc-line
+   rule on specificity regardless of which one happens to come first in
+   the file — two single-class selectors tie on specificity and whichever
+   is declared later in source order wins, which silently broke this
+   exact override once before. */
+.abc-farecalc-line.abc-farecalc-line-promo,
+.abc-farecalc-line.abc-farecalc-line-promo span {
+  color: var(--mbta-purple);
+  font-weight: 700;
+}
+
+/* ---- BU subsidy line, highlighted the same way across every card it
+   appears on (Pay-Per-Ride, Monthly Pass, regardless of pass/zone/Reduced
+   Fare selected) — BU's own mint, bold, the same visual treatment the
+   Commuter Rail promo line gets in its own color. Compound selector for
+   the same specificity-tie reason as .abc-farecalc-line-promo above. ---- */
+.abc-farecalc-line.abc-farecalc-line-subsidy,
+.abc-farecalc-line.abc-farecalc-line-subsidy span {
+  color: var(--bu-mint);
   font-weight: 700;
 }
 
@@ -937,19 +973,6 @@
   color: #fff;
 }
 
-.abc-farecalc-btn-subway.abc-active {
-  background: var(--mbta-blue);
-  border-color: var(--mbta-blue);
-  color: #fff;
-}
-
-/* Swipe flourish: a wide hard-stop gradient strip slides across the
-   button on hover (not a color crossfade) and the animation is only
-   ever a hover preview — the persistent "selected" look is the solid
-   blue above, not whatever frame the swipe happens to end on. Guarded
-   behind (hover: hover) — on touch devices, :hover fires on tap and
-   has no "mouse leave" to end it, so this animation (and the color
-   change) could otherwise fire and hang on a tap meant for scrolling. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
@@ -961,72 +984,6 @@
     border-color: var(--mbta-purple);
     color: #fff;
   }
-
-  .abc-farecalc-btn-subway:hover {
-    border-color: transparent;
-    color: #fff;
-    animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-}
-
-@keyframes abc-farecalc-line-swipe {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
-  }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
-  .abc-farecalc-btn-subway:hover {
-    animation: none;
-    background: var(--mbta-blue);
-    color: #fff;
-  }
-}
-
-/* ---- Day-per-week picker: bold chips ---- */
-.abc-farecalc-day-grid {
-  gap: 10px;
-}
-
-.abc-farecalc-day-btn {
-  font-family: var(--abc-font-mono);
-  font-size: 1.1rem;
-  font-weight: 600;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--abc-navy-deep);
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-day-btn:hover {
-    transform: translateY(-2px);
-  }
-}
-
-.abc-farecalc-day-btn.abc-active {
-  background: var(--abc-farecalc-accent);
 }
 
 /* ---- Stepper (subsidy / pre-tax): +/- buttons flank a real
@@ -1299,29 +1256,6 @@
   color: var(--mbta-green);
 }
 
-/* ---- Perq yes/no: "Yes" follows the route theme, "No" is a fixed
-   red — a consistent "you opted out" signal, not a route color. ---- */
-.abc-farecalc [data-abc-perq-select].abc-active {
-  background: var(--abc-farecalc-accent);
-  border-color: var(--abc-farecalc-accent);
-  color: #fff;
-}
-
-.abc-farecalc [data-abc-perq-select="no"].abc-active {
-  background: var(--mbta-red);
-  border-color: var(--mbta-red);
-}
-
-/* ---- Perq advocacy line: only shown once "No" is explicitly picked ---- */
-.abc-farecalc-perq-advocacy a {
-  color: var(--abc-farecalc-accent);
-  font-weight: 600;
-}
-
-.abc-farecalc-perq-advocacy {
-  margin-top: var(--abc-space-md);
-}
-
 /* ---- Cross-link to the Bluebikes calculator ---- */
 .abc-farecalc-crosslink {
   margin-top: var(--abc-space-lg);
@@ -1337,17 +1271,6 @@
   text-underline-offset: 2px;
 }
 
-/* ---- Credit line under the sourcing accordion: a blank line's worth
-   of separation (margin) plus a hairline rule, not run straight into
-   the sourcing paragraph above it. ---- */
-.abc-farecalc-credit {
-  margin: var(--abc-space-md) 0 0;
-  padding-top: var(--abc-space-sm);
-  border-top: 1px solid var(--abc-border);
-  font-size: 0.75rem;
-  color: var(--abc-ink-faint);
-}
-
 /* ---- Assumptions list inside the sourcing accordion ---- */
 .abc-farecalc-assumptions {
   margin: 0;
@@ -1361,55 +1284,6 @@
 
 .abc-farecalc-assumptions li:last-child {
   margin-bottom: 0;
-}
-
-/* ---- Embed button: same plain gray/white look as an unselected
-   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
-   button already provides that, this just adds the "copied" state. On
-   click, the same color-swipe pattern as the Subway & Bus hover plays
-   once, landing on green instead of blue (a distinct "success" cue vs.
-   that button's route-identity blue), then holds until it reverts. ---- */
-.abc-farecalc-embed {
-  margin-top: var(--abc-space-lg);
-  text-align: center;
-}
-
-.abc-farecalc-embed-btn.abc-farecalc-copied {
-  border-color: transparent;
-  color: #fff;
-  animation: abc-farecalc-embed-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes abc-farecalc-embed-swipe {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
-  }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .abc-farecalc-embed-btn.abc-farecalc-copied {
-    animation: none;
-    background: var(--mbta-green);
-    border-color: transparent;
-    color: #fff;
-  }
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -1526,32 +1400,27 @@
    None of this exists in the other fare calculators.
    ============================================================ */
 
-/* ---- Subway & Bus / Drive active states recolored to BU's own mint,
-   leaving Commuter Rail on MBTA's official purple (real line identity,
-   not institution branding). The hover swipe keeps its MBTA-line-colors
-   flourish but now culminates in mint instead of MBTA blue, so there's
-   no color mismatch when the animation ends and the persistent active
-   state takes over. ---- */
-.abc-farecalc-btn-subway.abc-active {
-  background: var(--bu-mint);
-  border-color: var(--bu-mint);
-  color: #fff;
-}
-
-.abc-farecalc-btn-drive.abc-active {
-  background: var(--bu-mint);
-  border-color: var(--bu-mint);
-  color: #fff;
+/* ---- Selected pills use BU's exact sampled accent (#70FFC8), not a
+   darkened version — dark ink text instead of white, since that bright a
+   green fails contrast badly with white-on-top. Covers every pill in the
+   tool except Commuter Rail's own route button, which keeps MBTA's
+   official purple (real line identity, not institution branding) via its
+   own rule above. One rule covers Subway & Bus / Drive route pills, the
+   pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
+   there's a single color to change later rather than five. ---- */
+.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail) {
+  background: var(--bu-mint-bright);
+  border-color: var(--bu-mint-bright);
+  color: var(--bu-ink);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .abc-farecalc-btn-subway:hover {
     animation: abc-farecalc-line-swipe-bu 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    color: var(--bu-ink);
   }
-  .abc-farecalc-btn-drive:hover {
-    border-color: var(--bu-mint);
-    background: var(--bu-mint);
-    color: #fff;
+  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):hover {
+    border-color: var(--bu-mint-bright);
   }
 }
 
@@ -1562,7 +1431,7 @@
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
       var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--bu-mint) 80%, var(--bu-mint) 100%);
+      var(--bu-mint-bright) 80%, var(--bu-mint-bright) 100%);
     background-size: 500% 100%;
     background-position: 0% 0%;
   }
@@ -1572,7 +1441,7 @@
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
       var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--bu-mint) 80%, var(--bu-mint) 100%);
+      var(--bu-mint-bright) 80%, var(--bu-mint-bright) 100%);
     background-size: 500% 100%;
     background-position: 100% 0%;
   }
@@ -1610,7 +1479,8 @@
   box-sizing: border-box;
 }
 
-/* ---- Reduced Fare checkbox ---- */
+/* ---- Checkboxes (Reduced Fare, Medical Campus daily-rate toggle): same
+   look wherever this pattern shows up. ---- */
 .abc-farecalc-checkbox-field {
   display: flex;
   align-items: center;
@@ -1632,20 +1502,47 @@
   cursor: pointer;
 }
 
-/* ---- Drive mode: campus/zone sub-pickers reuse .abc-choice-grid and
-   .abc-choice-button as-is; the medical select reuses .abc-select. Only
-   the two result cards below need their own rules. ---- */
-.abc-farecalc-drive-card h3 {
-  margin: 0 0 var(--abc-space-md);
-  font-size: var(--abc-font-size-base);
+.abc-farecalc-checkbox-label a {
+  color: var(--bu-mint);
   font-weight: 600;
+}
+
+/* Reduced Fare always lands in the grid's right column (row 2 once the
+   trips/employee-count field already fills row 1 there, row 1 on its own
+   when neither does — e.g. employer + Commuter Rail), so it reads as
+   "beside the route pills, under whatever else is in that column"
+   regardless of which other fields are visible for the current mode/route. */
+@container abc-calc (min-width: 520px) {
+  .abc-farecalc-field-group[data-abc-reduced-fare-field] {
+    grid-column: 2;
+  }
+}
+
+/* ---- CRC zone pills: only the zone name is bold, the price in
+   parentheses is a lighter secondary detail. ---- */
+.abc-farecalc-pill-detail {
+  margin-left: 4px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* ---- Drive mode: campus/zone/garage sub-pickers reuse .abc-choice-grid
+   and .abc-choice-button as-is. The two result cards' h3 picks up the
+   shared small/muted .abc-card h3 style for free, same as every other
+   card header in this tool — no override needed. A context line (pre-tax/
+   post-tax, the weekend-rate note, the comparison card's basis note) can
+   sit between the header and the total line, styled exactly like the
+   itemized line-item rows elsewhere so it doesn't read as a mismatched
+   footnote; nothing is ever placed below the final total line, matching
+   every other card in the tool. ---- */
+.abc-farecalc-line-note {
+  margin: 0 0 var(--abc-space-sm);
+  font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
 }
 
-.abc-farecalc-drive-card .abc-farecalc-line-final span:first-child {
-  font-size: var(--abc-font-size-base);
-  font-weight: 600;
-  color: var(--abc-navy-deep);
+.abc-farecalc-line-note:empty {
+  display: none;
 }
 
 /* ---- BU logo: a trust/attribution mark at the bottom of the tool,
@@ -1654,15 +1551,31 @@
    width so it reads as a credit line, not a banner. ---- */
 .abc-farecalc-bu-logo {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-md);
   margin-top: var(--abc-space-lg);
   padding-top: var(--abc-space-md);
   border-top: 1px solid var(--abc-border);
 }
 
+.abc-farecalc-credit-line {
+  margin: 0;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
 .abc-farecalc-bu-logo img {
+  flex-shrink: 0;
   width: 140px;
   height: auto;
+}
+
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-bu-logo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @container abc-calc (max-width: 480px) {
@@ -1704,12 +1617,12 @@
             <div class="abc-choice-grid abc-choice-grid-3">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive" data-mode-only="employee">Drive</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive" data-mode-only="employee">Private Car</button>
             </div>
           </div>
 
           <div class="abc-field" data-abc-subway-tier-field style="flex-basis: 100%;">
-            <span class="abc-field-hint">Which Subway &amp; Bus pass?</span>
+            <label>Which subway or bus pass do you want to compare?</label>
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Local Bus</button>
               <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway & Bus)</button>
@@ -1723,7 +1636,6 @@
             <div class="abc-field-hint-wrap" data-mode-only="employee">
               <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" list="abc-farecalc-station-list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
               <datalist id="abc-farecalc-station-list" data-abc-station-list></datalist>
-              <span class="abc-field-hint">Type the first few letters to find your station. Your station's fare zone is looked up automatically.</span>
             </div>
 
             <div class="abc-farecalc-zonerow" data-abc-zonerow data-mode-only="employer">
@@ -1751,31 +1663,52 @@
           </div>
 
           <div class="abc-field" data-abc-drive-fields style="display: none; flex-basis: 100%;">
-            <span class="abc-field-hint">Which campus?</span>
+            <label>Which campus?</label>
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button abc-active" data-abc-campus-select="charles-river">Charles River Campus</button>
               <button type="button" class="abc-choice-button" data-abc-campus-select="medical">Medical Campus</button>
             </div>
 
             <div data-abc-crc-fields style="display: block; margin-top: var(--abc-space-sm);">
-              <span class="abc-field-hint">Which parking zone?</span>
               <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-crc-zone-select="crc-zone-1">Zone 1 ($14/day)</button>
-                <button type="button" class="abc-choice-button" data-abc-crc-zone-select="crc-zone-2">Zone 2 ($10/day)</button>
+                <button type="button" class="abc-choice-button abc-active" data-abc-crc-zone-select="crc-zone-1"><span class="abc-farecalc-pill-label">Zone 1</span> <span class="abc-farecalc-pill-detail">($14/day)</span></button>
+                <button type="button" class="abc-choice-button" data-abc-crc-zone-select="crc-zone-2"><span class="abc-farecalc-pill-label">Zone 2</span> <span class="abc-farecalc-pill-detail">($10/day)</span></button>
               </div>
-              <span class="abc-field-hint">Zone 1 covers lots east of the BU Bridge (Warren Towers Garage, Kenmore Lot, and others). Zone 2 covers lots west of the BU Bridge and the Fenway Campus.</span>
+              <span class="abc-field-hint">
+                Not sure which parking zone?
+                <a href="https://www.bu.edu/transportation/files/2026/08/2026-Parking-Map-EMPLOYEE-FLEX-1.1.png" target="_blank" rel="noopener">Check out the parking map</a>.
+              </span>
             </div>
 
             <div data-abc-medical-fields style="display: none; margin-top: var(--abc-space-sm);">
-              <span class="abc-field-hint">Which parking option?</span>
-              <select class="abc-select" data-abc-medical-option-select aria-label="Which Medical Campus parking option"></select>
+              <label>Which garage?</label>
+              <div class="abc-choice-grid">
+                <button type="button" class="abc-choice-button abc-active" data-abc-medical-location-select="crosstown">Crosstown Garage</button>
+                <button type="button" class="abc-choice-button" data-abc-medical-location-select="610-albany">610 Albany Street Garage</button>
+              </div>
+              <div class="abc-field abc-farecalc-checkbox-field" data-abc-medical-daily-field style="margin-top: var(--abc-space-sm);">
+                <label class="abc-farecalc-checkbox-label">
+                  <input type="checkbox" data-abc-medical-daily-toggle />
+                  Pay the daily rate instead of a monthly permit
+                </label>
+              </div>
             </div>
+          </div>
+
+          <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none; flex-basis: 100%;">
+            <div class="abc-farecalc-promo-callout-head">
+              <h4>Limited-time savings</h4>
+              <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
+            </div>
+            <p>
+              Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded, <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>), and BU's 50% subsidy applies on top of that through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>.
+            </p>
           </div>
         </div>
       </div>
 
       <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-trips-field>
-        <p class="abc-question" data-abc-trips-label>How many one-way trips do you take to campus per week?</p>
+        <p class="abc-question" data-abc-trips-label>How many one-way trips do you take per week?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-trips-stepper>
@@ -1805,31 +1738,15 @@
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-reduced-fare-field>
-        <p class="abc-question">Reduced Fare</p>
-        <span class="abc-field-hint abc-farecalc-hint-top">MBTA Reduced Fare is available for riders 65+, people with disabilities, and Medicare cardholders.</span>
         <div class="abc-input-row">
           <div class="abc-field abc-farecalc-checkbox-field" style="flex-basis: 100%;">
             <label class="abc-farecalc-checkbox-label">
               <input type="checkbox" data-abc-reduced-fare-toggle />
-              I qualify for Reduced Fare
+              I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a>
             </label>
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
-      <div class="abc-farecalc-promo-callout-head">
-        <h4>Limited-time savings</h4>
-        <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
-      </div>
-      <p>
-        Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded).
-        <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's&nbsp;site</a>.
-      </p>
-      <p>
-        BU's 50% subsidy applies on top of this promo, and is paid through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>. Enroll, modify, or cancel by the <span class="abc-farecalc-nowrap">10th of the month</span> for the following month.
-      </p>
     </div>
 
     <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
@@ -1841,7 +1758,7 @@
           <span>Total monthly cost</span>
           <span data-abc-ride-total>$0.00</span>
         </div>
-        <div class="abc-farecalc-line">
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
           <span>BU subsidy (50%)</span>
           <span data-abc-ride-subsidy-amt>$0.00</span>
         </div>
@@ -1860,17 +1777,17 @@
 
       <div class="abc-card" data-abc-card-pass data-abc-mode-card="transit">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3>Monthly Pass</h3>
+        <h3 data-abc-pass-title>Monthly Pass</h3>
 
         <div class="abc-farecalc-line">
-          <span>Total monthly cost</span>
+          <span data-abc-pass-total-label>Total monthly cost</span>
           <span data-abc-pass-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
           <span data-abc-pass-promo-label>Commuter Rail promo</span>
           <span data-abc-pass-promo-amt>-$0.00</span>
         </div>
-        <div class="abc-farecalc-line">
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
           <span>BU subsidy (50%)</span>
           <span data-abc-pass-subsidy-amt>$0.00</span>
         </div>
@@ -1884,22 +1801,30 @@
       </div>
 
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
+        <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3 data-abc-drive-label>Driving to Campus</h3>
+        <p class="abc-farecalc-line-note" data-abc-drive-tax-note></p>
+        <p class="abc-farecalc-line-note" data-abc-drive-weekend-note style="display: none;"></p>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-drive-total>$0.00</span>
         </div>
-        <p class="abc-farecalc-employer-note" data-abc-drive-tax-note></p>
-        <p class="abc-field-hint" data-abc-drive-weekend-note style="display: none;"></p>
+        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
+          You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>taking Subway & Bus</span>.
+        </p>
       </div>
 
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
-        <h3>If You Took Subway &amp; Bus Instead</h3>
+        <span class="abc-badge" data-abc-badge>Recommended for you</span>
+        <h3>Subway &amp; Bus Instead</h3>
+        <p class="abc-farecalc-line-note">LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-drive-compare-total>$0.00</span>
         </div>
-        <p class="abc-farecalc-employer-note">Based on a LinkPass at the same number of weekly campus visits, with BU's 50% subsidy applied.</p>
+        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
+          You save <span data-abc-savings-amt>$0</span> a year versus driving.
+        </p>
       </div>
     </div>
 
@@ -1949,16 +1874,11 @@
           <li>Driving-to-campus estimates use BU Transportation Services' published Charles River Campus Employee FLEX Permit rates and Medical Campus garage rates. Charles River Zone 1 has a lower weekend rate ($10/day instead of $14); this tool uses the weekday rate for simplicity. Crosstown Garage's daily rate is post-tax; the two monthly permit options and both Charles River zones are pre-tax. These are shown as raw dollar figures without adjusting for individual tax rates.</li>
           <li>If you're subsidizing more than one Commuter Rail zone, each row above lists that zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them.</li>
         </ul>
-
-        <p class="abc-farecalc-credit"><strong>Built by A Better City for Boston University</strong> | October 2026</p>
       </div>
     </details>
 
-    <div class="abc-farecalc-embed">
-      <button type="button" class="abc-choice-button abc-farecalc-embed-btn" data-abc-embed-btn>Copy embed code</button>
-    </div>
-
     <div class="abc-farecalc-bu-logo">
+      <p class="abc-farecalc-credit-line">Built by Oussama Ouadani @ A Better City for Boston University | October 2026</p>
       <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAADgCAIAAAB6hAPkAAAAAXNSR0IArs4c6QAAAERlWElmTU0AKgAAAAgAAYdpAAQAAAABAAAAGgAAAAAAA6ABAAMAAAABAAEAAKACAAQAAAABAAAB9KADAAQAAAABAAAA4AAAAAApUixnAABAAElEQVR4Ae2dCZgVxdX3gVlg2PedYXUAxSgao3EJLphI1Ci+inGJqDEaE43GaDRqPjXucZckLjER1LwqJm7RSF5RjLiLIqLsm4Dsw86wDFe+39ChbKq763b37e7b986Z5z5QXV116tS/qk+dOnWqquGkkpIGmUwD+RMEBAFBQBAoGgRKShoVTV2kIoKAICAICAIKARHuCgoJCAKCgCBQPAiIcC+etpSaCAKCgCCgEBDhrqCQgCAgCAgCxYOACPfiaUupiSAgCAgCCgER7goKCQgCgoAgUDwIiHAvnraUmggCgoAgoBAoVSEt0GPUqKZ7761FyqMgIAgIAoJAehComTp10cUXu/LjKdyb7bdfs4MPds0jkYKAICAICAJpQKBhWZkXG2KW8UJG4gUBQUAQKGAEPDV3VafNU6euffZZ9SgBQUAQEAQEgfwi0Pqkkyqymc2zC/eaTz5Zcv31+a2JlC4ICAKCgCCgECjv0yercBezjIJLAoKAICAIFA8CItyLpy2lJoKAICAIKAREuCsoJCAICAKCQPEgIMK9eNpSaiIICAKCgEJAhLuCQgKCgCAgCBQPAiLci6ctpSaCgCAgCCgERLgrKCQgCAgCgkDxICDCvXjaUmoiCAgCgoBCQIS7gkICgoAgIAgUDwIi3IunLaUmgoAgIAgoBES4KygkIAgIAoJA8SAgwr142lJqIggIAoKAQkCEu4JCAoKAICAIFA8CItyLpy2lJoKAICAIKAREuCsoJCAICAKCQPEgIMK9eNpSaiIICAKCgEJAhLuCQgKCgCAgCBQPAiLci6ctpSaCgCAgCCgERLgrKCQgCAgCgkDxICDCvXjaUmoiCAgCgoBCQIS7gkICgoAgIAgUDwIi3IunLaUmgoAgIAgoBES4KygkIAgIAoJA8SAgwr142lJqIggIAoKAQkCEu4JCAoKAICAIFA8CItyLpy2lJoKAICAIKAREuCsoJCAICAKCQPEgIMK9eNpSaiIICAKCgEJAhLuCQgKCgCAgCBQPAiLci6ctpSaCgCAgCCgESlWogAINKyrKKyvLu3Qx8/zVtm3bq6sz1dXbV60yp0ztW2raYsiQxn37Nu7dm3+pdUmLFiVt2pS2b//Vhg3Ubvvq1bXLln21aVPt8uW1X3656b33Nr7//o7Nm1NVI7htduCBLY44otk3v1nSti2/snbtGjZpYjFJ62xbuHDz55+ve+mltf/8Z1TMd7/zzk6/+tXW2bM/q6pKFRqKmUGzZjXeY4/ld921+PLLVWSsgabf+lbFwIH0pfI+fRrTl2xtse3LLzOrV/OrXbGirl9VV9d89NHGiRML99uJFcmCIJ5/4V6x775tTjxRgdWoefMmAweWNGtGTHm/fuXduqlXuQSsvrt17tzNU6bUTJmS5l6LKGw9fHjzww5ruu++FXvv7VXrRi1alPPr1cuZYNM77yAlV48du23ePOfbJGNaHnNMx4svbvX97xsKpb78mu63X7sf/Yhka555pnrMmPWvv66kPESaH3TQhjfe4Gego70q7diRGKQnMnTtiy9+tXGjliCfj6WlbUeMgDd4YMCOlZNWxx7LsNr8299udvDBhoLqPjS3b43REfQYdwOBbyjI9RW8tfrud11fuUYuvf121T1cE0QV2eaHP6wYMCBHaolxq/HZcFJJSYNMRovlccDbb1u9ofrxxxecdZYzQVQxwNfnySdzoWapfmiyigiCT2m4KlILIO4RghvffXftCy/kXQjCGwKu/XnntT7+eK+P0BqfqGZphw5lnTtTR61Gzseajz9e9de/8kvmS7AzQC16jx5tyS97vBW2mqxhWVlZly5U3JmAmM1Tp6I8omY2HzKEx+rRoxecc45rStfI/m+8YWV0fZueyI3/+c/Mww+PnJ82I0a0Pe20Vscco2ZI9iLAP7NmzfaVK+lFhibQsjDoLr/33trFi+3xkYQ7X3VVt1tv9U+KL3fm0KEJ9Op+L79sVk388Pxpjx6Rg9brsccsZQgoZhxyiAsbJSX519y3L1tG/7aYq/vae/b0qa0jueadfvrWmTNdKmaLKuvevfnBB6MIt/re9+yyhlLKTzmlzSmn9Lj77hV/+MPSG27I1wwUOdjp0kvhxMZ1XZBmWz9hAgKOqYbr8MPkGsnY7IAD6H8tjzzS+RmjDlfut1/3W29dNWbMsttvj7yHaQyrR8skoh6tQGbdulWPPLJ+/PgN//mP/bPE9NT8wAObHXRQh4susjc9sxb7xAUprxE0P5Z17WpOkJK30fJJb6cvtRs5Uhsyty1YsPall2omTaIvbf7kE2fdyUiWJlVVrYYNa3H00faGsBLzFjMXv7XPP7/ivvuiVeS3zpvHFMGnygI/fDJVr7wya9gwe0dyVir3mC3Tp1tWBJqJuWBJq1Y+aQJ47ZIlO2prSb9jyxafuaJNln/N3bU+jfv3b3faaV2uu871rRW57l//mnPssYYEzleYO7pcey0iz/mKmCStnxYD2EB7/P73moJJL19+331rnn466GDDJ93h/PO9FH9K5LNccsMNrt+2KyAhIpHU/ceP13igcy+++uoV99yTlSDTOIYiV1sTE5ep3btnpaAS7Lt2rf9PUeVKPsBUbHLLlrmXi3Tucs01HX76UzspiDOur/rLX4I2eovDD+/ws585FQ5FHNUKdWHN2LEqJpJAnSp26KHoYa2OO04bn5z0Q0gAJ5FAMbDX+oQTOlxwgV3tUBRAe/ndd695/vmgaCsK/gN+NPeUCnerkpjjq1591auNQzctQrBy1ChXswZziATUAWqHEOw9Zoz28SDNvzj//LXPPee/jZ0pEazdb7lFGzDsyeIbw2ipPf79b23sRCjPOuqorBMsO4ddr7/edVz/qGFDezJDGHj3q6mxJ6BlGTKxRdgj/YRhxhVMCC65/no/FOxpWAzvdMklGsGPmzbNUQPFrNH1uuu0qRuT0Rytvciybjfe2O7ss+1VsIcBYd6ZZ8Y0I+Q7ZQro9flbbKCvzB0+3M5SMuE+Y8dqHy/lYh5htp0MAwUv3IGp4y9/idnEFa/Qwh1qGDSqxo2zW2lUEZh6Z3//+zH1V6sUFPa+Tz+t6adUZ8HIkUG1dcW2FmAZrcc997hWkJRMDmYff3wggavRd33s+9xzrW1r46TBFDNtv/1cbUquFFQk/Pd76SX1aAU+GzDAJ8+0795z56rsc447bt3LL6vHQAHXzxgKuYgVZpB9n31WsTG1b98QEFnZkX29xozR7MLYBOaeemrNBx+oInIJAGaPu+7SWlYRRF1dcP75a556SsVEGOjw859X/uEPZoJxLwq6lg7s+6xcaX8VdE3InjdE2I9wT7uf++rHHw9R86xZ+JbmjhjhagtjwtXvhRcasM4czx/D1cD339ck+5e/+Q0mpqgkO4wjy3ABXHTZZa6VQOjv+eGHeKG4vg0XiTh2fv+Lr7ginNiCf/QgrYGa9OvnkzestyolCmxoya6IRBtgcrb05psVTTu3KtJPAC1h4CefaJIdLWH6AQdEJdlho+5jGT581hFHMAlzcsUMGIcIVGznq2RiWFfs9eijyZSlSuFTZXRXjwQ2TZpkf0xDOO3CHRBRQ+JACrvYwl/8wpUyhoWuN9zg+irHSHqhcyKCXrnstttypOyaHTM33yS6lfMt3+Qer7zCSON8FS6m8qGHtIy03ao//1mL9P/IDHf2sGH29NqIaH+lhcs6dbJimDpgmtDepuFxxb33qnYpD7KWoJjHalGnJezuv4hrQLRagiqOFdQZBx2EqV3F2AMstDJvwxpmj0wsjOGox6hRiRVnFYRTtb3EHdu22R/TEE67cAcjFp1jQgrRg4HClThrU1j8XV+Fi6Tf413qNF/OPemkWPVKvslpBxzgNSdgpIlE50Jt16QMKOEcHQ4rlQvm5512mnr07zCjXFCYs+dozlalRxugRdb84x8WzbLdBbSfgrredFOv0aO1lEj2RRdfrEVG+Iitcsahh3qZlZm3sZZuNpFHyIxGquNFF0XSkzWyhkfXeYwhffKvCkC4b1+7Nj5c7LNjrZT2P/6xFhP6Ecnu9CGB2sKLLspx+dQPS9ipZx19tNITtSzoXLnPatEiNbI81nz6qTMyaAzGXOwMVi726PrMju+2lRJHEZ9Zkk+G27hVqHNcNDODZEf50NKAUqyS3SqOkRIHcy/9ncX8Ae+8E598N0/i6cksLGuwxPfopTDFV2JQyoUg3Kurg9bKf3qD1tx+5Mioppn45GregXDIVsyVf/yjf1ZzSYkNas4PfuBFgfkE8sLrrZ949kA6k0W1KfSLCy6wiPsX7pa45PNLwCnNWXGfMRsmTrQWFazNtD5zIb+ckh0tktV4nxRyTIZ8n/2973nJWZZz8JiK6sPRWGUNCf8cLdL+yE4o1mDtMfU5XADC3XUDbVRtxvfvZZnBKt108ODcC8IaqLm+QZOvcX5SX6NVBUwc+Fl6VQd54ap9e6XfLZ69cG67TIMqpLvRtD1gDVj54INENNm5X9/2xjNoict1r7zimSINLzIZTlmAkdJ27Xyywxq4607OBWeemaQiSVmzjjnGay7IklWf//1fnzUKlAy7Np7KXnYhixTeNe1/8pNAZIs1cSEI95ix58gqrxL8SxMvCkhMrIHOt1+cd17ytmDWGCwp6eSHmJ4PPsjeMddX5sjynj1dE3jFuyY2R1rWM/y48bw2p7TelvfoQaBm8mQ/ifOYpubDDynd4jYrG7gk9nHzOKRNGbmzZo82AbY++3KIRhz7e0watNkuZLHR8+GHOX1BY6kePopwb7DN+6wMZboN1zOQREhMZ17Mo+vHjXPGJxDDxNZrIQjR2feZZ0L4gHJohCvn7GJ3jQ8RifLODiZ+PvcfWA3H3vEQZSWZZdNO4e6zm/V5/HHnnlvUZy+H17grgkmT9WqvUnrceSejkdfbXOKR76zrek24Lcp9nn6azQS5lFIEeUW4N+CkXK+GdLU2eCV2xvd86CFt06CVhjMAnImTieHDWLjLhO0sER//zldc4Yw3x3Bgr2sCzDL5miBbDbf5s89cGUtPJCe9wIyfbgaSzmUb8i6///7kp4AKwMWXXeZlDvqvrqCSRhqok+8HH2yW72wTi3YnR6Q1SIKYCHfTp+Wl5PppGRQHbXeJlYsVoQg3mPjhREuDwmWwWrKL3afpQ5HlS9N2G6lX3W65Jaa1NVWEayCQmu9KIZlINSMxF4f0737HHc40wI6/vDM+sRgkO6dZeBWH8T38Qo4X0V3xFD3zyCPNX2i/555zHRF30Sjy/0W4m5azcpnXd/fYO8MJJ3nvU186HOkUSyhcSGT16DOw6f33XVMilXr+6U+uryTSPwJ4yDgNMmRf/dRTXoqzf+I5pqQ/G3joevPN8Y3uDI0zv/Mdg3ynM/d/7TX28eZYxwLNLsK9QcU3vuHaeKhF61991fVV1kgm0a7nuvAZJODYnpU91t+8XJXJy37uoMp79d/+5lUofpb5Ms54sVRY8bQFHtyuPK944AHX+CQjmbcZPHoxzbU788z4+OFoBOS7YXSpk+/jx0e7ITG+6kRLub4Ld1RL7RRDhe9qVhfdrjFRCQwB10MNSY+qZciV5CuD2wxsaCfHZmWMEcvLMkNevBdy9KPPykARJ3B6tVuVxdM8v/Y9hfnKRx5RYWeAq7ickRHGIN/Zo8c5E1408Wnm5pZ6KN/ru3Bvu/NqN9duEeJAV4sOyzheLt6rc7tzypXPcJHVTzxhEMecWB2ILKqT+QtHQnG8YghXnEBsFF9ibBrtzjjDtV6G2ZJr+vgiMY+oXcTOUlilj9vwzVY1brMy9GeMWhweHpP3jrPKKYmp18KdL6fL1Ve7tgTHNIY7zhBq7c8915Umnc+wkumaJb5IZtPrvN0xmdAE/SAX//rXBusnFeH86wFvvhmfBTY+rPJImatWUTxdGdgwfrxrfF4itSMSNR5cPQu0NDk+1sn3o44yyHe6dP8336xX8r1eC3fW+mhyZ6/CoSX0MY0IL+cp/lYRBmHq5CGBmCwfZJALi+GW0SLr2SYMGINmz+aWnwRqVxxFtPe4NhYplvzGJQOk5pUkru4z5I3qFZqTdoyoRpn5NPI96HqSRqSAHuuvcK984AHnGY20HF2ELc6hm5Arib3yermUeKWPO95wrg5Ftwy+BYkvnIMJzWzzgVVNmMCRDKLCm4HiLRA5D66wchnWw7OSjSMBdjnDrJRlLVctKnJOGPA4ZtVAlu43YOLEZJgxsJHMq/oo3FlaGfjRR65rhiwz5nireosjj/RquRq3i4m9EicQzwdp2Abitc5sZmzRpZcaPnKVlyMZBk2bVs/3mCg0vALcG+71KpITN72Ih4vf+O67howVgwYZ3kb4Cg1j3qmnGghyK0CsR1caik74VT0S7sh07qbgUPU9J092Sq662/WGDVt44YWYF3Jpg+YHH+yVPYUbJje+954Xt/iQhTFQZjKMjuaj+6wS+ca4LYTbwuqJGuWFsyHeYL9KYV8yX0XUZK+9DDWN9hXXdhvOyKMs3JSrXn+96OeOpdHCmiQ1TvXi8mJDiY2aN+e8PQ4I5BozpzS3MuJPxsmrjPZmo6GhFO2VV0Ek83kuikYw1keO1sKr3auIioEDQ6wqMzqytMUZ8QbKqkTStP7BD9hUZfCVVonrW6Bin328qhzfDTZeJWaNNx/TlpjmbvHJGXkNy8sN96/iwzPgrbc4oyZHZS4rLHlMUMDCneHXy53cP6DbvvgCL661L77oP4shpUHVNeyzMBCM+5XXqdxWueo+o8BsZDILzjpry7RprufTatRwU6s7pvXccxf8+MdpPn5dYzuBR8P59WbHpAR4cxZhvrs89D2xzoJ8xqAulHXoYBAR6GFctMACW7HK9wIW7tiLVxuPjbY090bNmpV17EhDurqUsWDFL/Pgg6seeWT5vffmqFw3qary6nlfbd3q9SqP8WYZ4f+ccdcq4HG0dd683mPGYOFxTWCPpIEwl7Eei0tlsX5s9vr6CaNd+kmWnjRoMF5GNr7B5Plkq0pJu3auZ25bzPDtI9+ZaIberph8pfyXWMDCfcvs2YH2GbF813LoUE4ycvY/lEd2ePOrHj168RVXhNayDQdzN2rc2H+rJJbSbHVxAhWUMayfWxcs6PPEE66HMTip8R1y4BpXT6TKz8/JZwIxuYOfAJNaEZwP6sV2aYcOWuJkHnHP5es2WAiR7/1efLHunrKw29GTqUiIUurRgipHqC++/PJPKyvZoOS1WRnnyIGffBJ0/47CHTOfCmuBdAr30MOYVjvDI1vkPxs4EMwNG0zs2S1fybrjCkpK7PH1LdyoZUtDlUuaNjW8zder2mXL8lW0oVwshFxpaUjAHqs+qdk6buAz6Kt6JNwtaJjyYy6Y0qWL1xaeOk/Yt98Od49MicdmQop2NQoFba040hvke1SXoKITgflne+2FS5LPKnBcwcAPPvBSA30SKehkXlegWJXC2JjC2m1fscKLq8yGDV6vEojn0ijDAQkwwMZDHLcS4CTJIuqdcLfARcTPHT7ccBQ1S3zh5Luh8dLpepVZs8aL5+3ehzF5ZTHEYwKaNniwdWGeIZl6hRV+r+nTDe6AKmU9DKRUuHvfZe914WpCbZfJYHgxe+hiumFjY0L8JFJMPRXuFrZYaZZ6X4qEfA96E6N51TTH9cmY+sNXW7Z4Ua5dutTrVcj4TGbJtdci4n1usERzZztr0FYIyVvKsu2orTVwhB3Z8DZfr0x9yVupT4jbTCbr5dpsbOx+550J8RN/MfVauAMvS7Je9hne9nrkkUAnUZjtGE369Yu/QQOXYDAl4esSmJyPDPg7Tt9/f7aZeK18aDS4DzO+C320stLz+NX69QZmmoS6ytxAMJJXhiFny6xZkRSRCxHm6+ywMysWeFWYd8/kwkDCeeu7cAfueaef7rULH0M5nh7+m8Qsrcp79vRPKrGUOIx6leXfRO5FwRDPNpPPBw0yr3Sp7L1Gj65v+rthLQRYyisrFTjpCZQY+lI67rNFvme9XBvX+MhNsnlpIxHudccZfvn//p8X+nhK+T8CZdvixV50iPfpDmigEMcrr0VLXOBBJo4SFU12FcwbMYKTnsyDopUef/n6dt+CQb4b9jcpeJMPsBvcq9AtM2Z4vUo4vk6+Z7tcu25X3U9+kjBjkRcnwr0O0jVPPWXQUrvdfLNP3M07sFsceqhPOoklMxid/Jz/FQmfHPyACm+eLFMQO6G47zidi9KR4OAksuXzz52RVgyrzSmEwmufB16wqdp7zKiZ9XJtrg8rdGOgCPf/fj4rH3rI8CEZhKA9F0qBYc9nM+9D/uxEkgwblgHMBwJHyyQqPFb47McF9+rV/fe/j7boNFPbPH26gT3DmZGGXLG+4rgnV/ppu8kAJuly5su1SVPoxkAR7v/tjWtfeMG1X1qRrU84wfDW/mrzlCn2R3sY3TNtF7FXDB5s59AeXv/aa/bHBMJsJsREY97rxBbW+mOcMc9m0uYkysFKXudMrE/TpVGqJ+Oba75cm5Qs5vu3yirKKQmIcP9vQzCSGywz/pVu814Jbk1LScNbbDT9xjdc+UGsAIjrq1gj60w0++5rsDVTun8rWaysJkB83SuvGEppbbyVwpAxplfNvvlNL8pmzckrVwLxyHfz5drwgDEwbeOoT2REuH8N1Na5c79+2D3UpG/f3SM8n8z9uM3//I9nzny88Oq1XJ+dD3bqyuRwQfwZDPKdzeIpNDfHAZdZ4eBYMcMppHHwY6bZ/LDDXBOwdSgvioIrM87IustXjZdrMx3h4oHQR5I4S0wsRoT711AbfF38H35LPzbMprmhIj29hIUE+Pm6/rbQ6scftz0lHUS+o08ZSk3bBMjAao6v1j77rIGC11XshizxvWoxZIgr8VWPPuoan57IOvluvFwb+d7/tdcKzh4owv3rPpbx3jzdoKzs63TZQivuv9+QxPV6P0P6+F55LSTge25QnOPjx06Z723hRRfZY+zhFpzRWj/+Vj7yiKGiHS64wPA2yVfMIVwPKKYjrR47NklOwpWFb5j5cu06+f7GG4Ul30W42zpDaantYbfgjpqa3Z6ND9VjxhiEI0dYeLmWG6lG/7Ld6ae7Ev3yt791jU84kssWvA4DqUjwzraEa60Vx0Sw2nsWRUdq88Mfalny8ug1l1p6yy1x75aIqr5ZL9dm/23Vq682TuXeYFcQRLh/DQvnQX79sHuIs+N3j8jyRJ82pDDcDmPIFe0r+qirgYgrws1X6kTLhpna8vvuc03g5XLnmrjQI81HrXX73e/SUEFXAxFuwSvuuScN7PnkgfV88+XajKZczpeqpQ5D1US4fw1O4969v37YPbTF6HG8e9q6J0SkweEdf768949Ol17qZJudokuCq+0cDMBxHF5rs85S/MfwsbnOgTgWop6sqYIVYy13yHiBxrbnvO+Vb3Xssa67r/Ft9WI7tfFZL9dGvvd/802fG1/yW00R7l/jbzCobZgw4et0PkJMRZdcc40hYeWoUYa3cb+ig7Y/+2xnKeFuocJNgrlITMctbfrgAyefxBTKZN+V+aCRGMoM7v8gT4MGpRlh+s5XXOGkxnl8jM3O+PTHcOqRYb0H/uuufJg40b+TRb6qLML9v8gj2b3OtOMo6hDbNbG8G3ze8efL4+EVna+6yrnfBAM33TpER7QOj+QQnjhEjOucyXyvd4gqpDwLlvdFl1/uxSSw9wzVcF4EA8Vj3KPptSx8MgtjUNt3JHUTHus9hsPAqSxuZpw/o9U6bY8FLNxLW7eOEM12Z57pRW3NP/7h9coc/8UFFxiOxKq8//68LM4wo+RcU41zjEjzvBHQEmuPStRy/an2KqbH2iVLYqKcWrKIG4Ou0PrEE/OlK/S44w4naPNHjozDt71hgjcvchh41vMwnBVPVUwBC/cIL67DgGs4JAgdPFyb0b/neTszoDtXjRsXh7Zr5ran2yk67PsP/TVunT/fKrFjDMqa69m26wNaycyAFMrbBSNHqnHUyTMHXSW/UZ4Rxbksj85boAYZDVXWDFg80yIL6LGAhXtZly5RAY3vuZeQxViBj1TogriVe4GbddsiyORuj3//O8m1QTznsAhp1eGGSa6x1iL9P26ZOdNKjKdz5Mp7kwEDnJys+utfnZFFH8Pa8qxjjnFdYbbq3nfsWMO6UeT4MAXscdddGlk2SaDzapGF+7jwwgsNrqgpr1cBCHev6yIRx5GsWUOkm/dlewvdvEoCNSqK/6LLLvPKwtmt/cePT0a+c2xZb8d2QcYeTjz2Ys9PvP0szK7eSPohpaXBbOXcGsN+E44E0VLWk0c8Z2Yfe6zXfaTMZdlok4ytjx67x7/+pc2ekewc0B9fW3iJgvhKhPKCc84xXNYWa9E5Ei9g4U7NWw0blmP9GSGcfVTRxMU4knOo8fY16O9MbKteeSVu+Y7z5R4vv6yto6KzhzY6KZQIbJszx3pEFkd4C2UHtwsTltx4o73ouMNeAqVheXncRbvSZ4417YADvBxtcQrAETsB/Z0eq427cUh2DeRGFRWumMQbmcnMHT7csOARb+k5UC8A4V6x555eFcxxKz+Sver117U+qspiuOY2Z/WYYwAZyv5mL50Lf4OB778fyUTElU8kO865mulpznHH5aizq7KU2Z0YVmsjMc6ggToXfmkULF2q3AQCZZ07u5biFe+aONpI9PcZBx3kdYQRrTzgzTfxPY+2UDu1fi+/rHnIsPYYh86u7Ss07ESxsxdHeO7JJ3vtl46juEhopl24I++8Drei/tg0Qu/gQF8e+OGHXpKduT93q0YCsSKCVOI8W6/7WuFkz8mTIxGLqkQrwPYiJLv9O8GHZ8Yhh4Tw79Qoq0dldrdi+j77rGGBWuUyB3q7GdbjcLAzs0Efc01g0Dlc00cbyeo3Z2eiLLuSxVrS76WXut50k+vbXCL5HrH8aMs2rKDGtF+p+be/bee2ibeeZ08WRxjb46xhwxK7niySKqRduLtupLTXHG/Tjr/8pT0maxiVsO9zzw14+22vYYMmnHPCCXFsk8FY/Pk++3gt0aBzIRb7jB0blQoPwcoHHqiaMMEu2VF+P+vXL9puunXBAg12brEJLVywUCFBnG4YTDVCu/Ro7Pl8NIy1GLiS906xs03/RFlmOcdrf1OXa67Z89NPnTDaiQQK4xszaNo0u86OpoKWENMKKktEGvNtTjlFm30G4j/HxAA+c+hQw60POdKPPHuqhTtauXNi7oSgx913D/zoo6wnKNFR2MtHykEzZuAX7KRjxbA5jf5q8Enwyugzni6y4Kyzpg0e7CVe6cHfWLQIEZ/jhn50572mT7dbrnCkw8iOATHy2ln7mDQEEC6gHXR9j096rylT7BIEssivWUccEeFUQ2PV9ZEhlq7l+sqKZKdCHmWNxQPLOZ/26OHlscd0ECWGVshxIkWjQARvS7WCSouwIvVZVZVXNzbg5ucVwPZxu1Sg79//HvfqlIE9Pt5ZRx7pNfk2ZMzLq4aT2Bfgtu+LPmENm6iZCKPEmKNRMRA3P+QQdhV5zYgNzCC/2OFSu2JF7bJl26ur0Vix05X37OmlpNtJYcRc8OMfR7KCaidrCGMY7XbrrV6mITLSjXD74+oM/xorALb90Y86/eIX9iojzVGv2AhjYCaXVxS6z8qVXhQQPQiCrFVAmHa+8koO3tHoAMLcESOSbBfEB92v2y23UC+NGe0RYBdffnkki9Ia5aCPDKLdb7vNoLWw3lP9t79xV3AgJJm7dLrkEm2s5awbTkTI2qBBq0B6+gD3+rY59VSOx9AW/xU1FpOX3Xort+LEwYAqxRCASY4fsH9fJP7i/PPDbfA2FGR41euxxzhflgQMriijLilLSvIs3OmRvXbuqWlYVsZZDRpeLhzHEIUBevWTT3KlQC6+3rnwhVbFBMUg4iHOZHD9//3fpkmTaiZPdp7aSG9rus8+zQ44oOXRR2szWaTP8rvu4nhFlI5cmMyad9+1a73Ob7DyYiBG9eanzRvoA00HD8aMa3VWrSBW6hb/+tfxMd9j1Kime+9tL5R+6HoMlj2NM4xmoK2Wc701XtLOlLHG4CfT5eqrmfwZSgH/dS+9tPGdd2qmTKFfadgysNEc/FoOHdrqmGM0CYtYx1spcldUzsNoe/rpjXv1UjMDA//qFRXZtnChBXtm06Y5ca4hq0KtQJ18f+89u7UzhcLd8wRzrTIxPSIONKUgpoKcZJHp7KNb8/e/JzzZd3KC3sePmW/HCy/kHj7X/o3ot0t/unXt0qV0ayQRbhvaF2gVgbhB5Udr1r5eJwORxHBJoTXTQohvmTaNGz7tDFMEEscsdDQ2WBtYdscdMc36VVnN9ttPGw7Vq0AB5yzTtR0D0QyRGK0cQzyiB3NcuzPOcNWWmI60O/tsfhZ9PoTtK1ZsX7mytEOH0o4dXUdolGU+luX33BO5WLd4YKVU6y1+6k5F1NTKa+HBD50QaZg0cLk2Hm6KgRBE4s6SZ+GOCcV8QE+E9f9qyxYEYu3y5VhsaBtNf4ywoHCkmDcs4HfOOdhqWh13HIYpQ3e3d2t7cVRq41tvbXjzTSRswpNWBHHFgAEb33vPclXECoSIqRg0CAWw5Xe/a6iLnX/C1kRq+b33OicoWspIHleNHr3+1VcjIaUR8XJF15LF8UjT48XLD0W+zYknMp8Df6/BBmnOz3WyUrc9+6231r74YtyTWkaOHIcNvu44kDTQhGEug8Tr1AtYQ95kXuXZLJNMJQu3FJYfmlRVNRk4sHGfPvxQ0kvbti1t147+hBzPrFnD6IiPOZ6ILGkyy05GIIbAk9GIk4FbHHkkmnLjqiql7yDKqcX21asZcTdOnLhu3LhAFuEQnNTbLGAO8lxi1aR//8Z9+3JoT0mLFiVt2hCvlHcGpC2zZrHIgU0pboFeHA3BF9q4spK6bJkzJ0l1yo/NPc+ae3E0cHy1QDvgl/C2nTiqw1CEdsYvDuJC0w8CNAG/uM1cfjgppjTWF5rOGqXaFTKdkAlXgoAgIAikHwER7ulvI+FQEBAEBIHACIhwDwyZZBAEBAFBIP0IiHBPfxsJh4KAICAIBEZAhHtgyCSDICAICALpR0CEe/rbSDgUBAQBQSAwAiLcA0MmGQQBQUAQSD8CItzT30bCoSAgCAgCgREQ4R4YMskgCAgCgkD6ERDhnv42Eg4FAUFAEAiMgAj3wJBJBkFAEBAE0o+ACPf0t5FwKAgIAoJAYAREuAeGTDIIAoKAIJB+BES4p7+NhENBQBAQBAIjIMI9MGSSQRAQBASB9CMgwj39bSQcCgKCgCAQGAER7oEhkwyCgCAgCKQfARHu6W8j4VAQEAQEgcAIiHAPDJlkEAQEAUEg/QiIcE9/GwmHgoAgIAgERkCEe2DIJIMgIAgIAulHQIR7+ttIOBQEBAFBIDACItwDQyYZBAFBQBBIPwIi3NPfRsKhICAICAKBERDhHhgyySAICAKCQPoREOGe/jYSDgUBQUAQCIyACPfAkEkGQUAQEATSj4AI9/S3kXAoCAgCgkBgBES4B4ZMMggCgoAgkH4ERLinv42EQ0FAEBAEAiNQGjiHZBAEBIGUIdD0W99q3KtXWbdupa1awdq2L7+smTKl5oMP0sBmw4qKLldeuXnatDVjx8bNT7uRIxv37r309tt3bN4cd1npp59/4d75qqsaNWniH6mt8+dXjxnjPz0pWx5zTPODDvKZZfOMGWueesqe2Oqd9hgtvOb55zd/8okWGfSxxeGH8/OZy/CptPnhDysGDPBJh2Tal5C1sq6UzY0SlOaS669XpVifq3qMNmAvyEkZidn6+9//b3xpaXllZePKSuuxvGfP8l69nFm+2rBh+/r1mdWr+W1duHDbvHl0p00ffEDAmTjHGFBtO2JE+3POaT5kiBepjf/5z7px46qfeKJ28eJWxx7b7IADzFW20+n4y19aQ4U90iu8fd26Fffc4/q2Sf/+Xa67jlcrjzhi+/LlrmkiiCwtbf2DH1TsvTekVj32mAK8z9ixZR07BqIPRBveeMOcxQLTnEa91T4xFR93oOGkkpIGmYyzmAFvv93s4IOJr3788QVnneVMEFXMPitXlrZv758a/XWmbyFoke1+552dfvUrn0Ws+9e/5hx7rD0x7MGkPUYLZ9atg6Uc5XvXm27qcs01GmWvxzXPPDNvxAjXt32fe671iSe6vnKNnNKhw/ZVq9SrrJVVKe0Bc6MEpflRw4aKeP833jAIL5UsXECru0akw89/XvmHP2iR2mPNxx9vmDDhq40bG5SWlrZrxw9R0nS//Rq1aGFPufb551c+9ND6cePskbmE+TYRW+XdullEti1YgMZjiaTGe+yBPG0ycGArNTLZSvq0Rw8EvS3CM7j3/PmuA5hrBuYKU7t3d32FarXHK6+4voopctYRRyjpvPfixQoln8XNO+00Tb1zZuwxalTHiy5yxrvG+MfcNbtrZK/HHmv3ox/xatM778w45BCXNCUl+RfuFlsV++7b/JBDOlxwgTX2arzyCS296aaNEyfaxZCWxvxY3qdPk6qqppRy2GHOTo90XnLDDUhMr36PltR08GB+zb75zVbHHeccjWBsxqGHbp0508yGn7cojEDR5eqr7aVAf/Hll2+ZPXvrrFnZQSgpabr//uh0HX76U9cSl99115pnn62ZPNlr9kp9WwwZQnN4jRObp05d++KLG996q2bSpOz82JigodudeaZzrEU8Lf7Nb9a+8IKBJRRVxmk7LDbCYYLmr66se/cm/fpBt1GzZi2OOII5hLPouSedtPa555xlk7fVsGGdr7gCUaveAtqXv/nNupdfVjHhAvZRZ+vs2YuvvNKVh8b9+3e78cY2p5xiL8Uu+OzxrmG6QfMDD+x0xRXOT4b0TFOW3nILMwPq5aogWjTb/+QnPR9+2JV+TJFO6UyvY9bCN+U1XC294Qa7vu+TMfpD+/PO63rddQ0dtgdEFhOmzZMnb/7ss0AfiM+iC0m4W1Xik/jGokVa9eg60w880Oub1xL7eex6/fXWPNFKjNIx46CDvMS6kyAtOuCdd+wfraIz8zvfUfNBZ8ZAMZSy1/TpSppM7ds3BGXXKYuz6xsYc6VgmDcYSNlfMeXvcffdKobZ0tyTT/bTxPSQPSdPVrBYFPzXiIwdL71UzZCmDR7sf76FfrDXJ59oKrmXcFdVc4o2Zjmzhg3zU1lFxB7AjNnt1lutGKQGVTB3XWx9fZ55RiH2xfnnr/rzn+0Es4dLSvq/9ppz/uQTPcUwH/L8s87KCjh2xT5PPmnnas5xx2UdEVGJ+jzxhPVVLrrsMlcbESB0vfFGp8azY8uWjysq7CUGCmvyhEZZcPbZWRkOVIQzsR/hni5vGbop37lWkxWjRoX+EjRS1iM2NQS6esWgbf48VEorQOPVLlmiRfLI7I9vAOnjfBUihlJW7zL9Ew4h2Sl0peMzZo6CaPbPz5e//S2la+nR+rWYoI+b3n9fZUHH8SnZyUJLrfn731XeoAHqsuTaa6tHj7YyNmra1D8FmoDFFf/prZRIUoQgSq7KiJQc8NZbStqqeD+BOmV8l2Qn/cKLL87adTFQwIDq8KwW+ClotzSZzIoHH9wtpkEDhqisYtrKwjIvAZBHRfOZRSvLzyOrxzMOPhgxTWIvOww8LLzwwqU336wRRO9mbNAi/T+WtGunEoMz1YxbsqvizIF0CXd43TJ9usYx6/5aTO6PGKoUkXXRGQSZ9PV//fVw363iRwU2f/qpCocLbJ0zR8tY93W5LbFoydQjwypTb/VoBSoGDdJigj6yOKmyfHHhhYEG7y2zZqm84QKLr7jCkgKlbdoEooAhK1B6KzGYzx850p4Ro3zfUEMUZhZFB1GV1TRsJWYAQPm1whgnFQX/gS0zZmiJN02apMV4PZbvVHdW/vGPgVrZi5ohHkBW7Ry2S40rqIzu6BManUqP1WAtmfMRy5Vl++YVDEQ4d3eWFTQmdcIdgLQ67Ni2TYvJ/XHbwoUWET7yrLqPoTgsxdpbJoZVEcl3tGyNeODHTMauM5I9s2lTUCIrH3xQ46Td2WcHJaKlb3PSSVYMo2xQj71a26xLI+vzkT6GpZjEmo0la/bapUuzpnFNgE1cm5Kiv2OvcE3sFYkcaX388eotqy8qnDXAAMMMlWSN+/bNmtiZILN+vRb51U4dWYt0fbQG8urdLS2uKb0iG5aXe73S4tc8/TQxyqlJe6se551+ugpbARaoWcnQIv08drrkkpKd7qckrjMJxOAW5YcN1zSpE+6uXEYeqYaQHbW1uRDHRWGFw6GCNWHkO59iLpTJmyNvOZausqNwrXrkEfVIgGlv6+HD7TGBwnYhtXzUqEB5SfxV8PHJWcT68eOJLNndp8WZTIvZsXWrFuP/ceWf/qQldq4qawm0R5a47Qt39rCW0vURhzwG6Sa2BV7XZJFHlnbqhLEiEl+DrLxtmDgRda2sa1dzSpjBLK6l6XHnnUFtqqRnNdWiw8o2sxONZn4f66twr66OCvdFF1+MbqtRQ75jV81dvmtk8/W4wiGYcBIIzQxOL5ZgQtbgHhOaTi4ZN334IdnxXMyFSKC8619/3bIFqVyY7/zvbCBXWadOKi+BoGKaQRp7FBaJhLslqoDdCmqvQvThTIYKlnXunJUyapk2l6JP9nzooawZ7Qm63XKLGmJZqba/SkO4ngr3jG2BK/dmYJXGuUqJXbXqlVcS/pByr4srBSabLKDZX+EbF3ppAR9Ni9TqJ5+M2w5r59kexhaEmWLTe+/ZI2MNU1O2nmlFBBLumm0EmxKOJRpB8yOru2zISBJzSxfe4qi4mc9c3m589906axvbd7L9fXHBBZrRkl7tH1LWYJW1nX0MyrM+W7HJva+nwj1ygPHGo4E1sthVke9++pmWMYWPTn8JfApD8MnXrpzqVj36aAgKUWXxsxExqrIsOrXLlmkEA/musA1Yyx6t179GPJJHFrTYkgbUkVDzQ4TtIHWb4Hx4DcAbWys0mpWjRvnUWnrtslUyIcNtSaOThkcR7hG1QiaDP5+m3kIaQdbvxReLQL4zNVELFRZk4ZZVlZcxNsqgS6kRNVXeyGxfsUIr2+zXoSVmUVR5NFqvsHjgdVMcs0Otssk8YiXXTEZI9u62HRhebLB9QW23ZP9jLk4ZXkXkHi/CPXcMd1HIZNic4pTvzPXC+b3topuO/zMZ7UifcMuqakhY8cAD6ahYclyw01UrLOjicPUubVHRQXvoP368T2VT5ZKAQmDezk386pEAxhaOTLDHaGFG0+533GFF4i+3bFdYS5b3RxHuUTYB1kzku6YLUACb+NlRFmVJ+aCV+7Iq3wxDArwzk3WuQidTJ/YTmj/d+NhwnmAV1GcfjxdNeYdb3PgGfvgh+5vi47yIKbOeZDmJ2uvY85FHDPOh7r//vXJ/XMACkg8TkJ14YmER7hFDjXyfOXRo3Wkbu/+hDlQWuK6a+7Jq+3PPtVBZ+89/Jrmsp5oCCcjJEy2HDlUxSQacFvZN774biAFA+8LNT4ndc4NmzMBWEIiaJLYQWHLjjRgJ7WiggiDB7TEqTBdSR4alcx1VsSrCXUERWaBOfz/ySK27QB1zM4fJRVZMPgjlsqyKKqT24Kz661/zwX6Dpvvsk5dyKZSjabRTq3DVwD8yKD8cLenldcf5XJwJKiaaoJCies8780wtFxKc48a0SB577+q6qV1HVTyLcFdQRBlg7ZGTLpz7V+kxHO0bZUnJ0mJZNfRuVdR2yykYw0KEh98GAqDNyScHSh9h4tYnnKBRW37//eGmL3g0LvQ4bxYDIOfNhdtsqbFXrx5Z23fuRuyNKXV3l8o2I0ZYB6EDTmrXUVXDiXBXUEQcqJPvhx3mtJByJCFnIkZcWGLkMpnQu1WVTUad25UY11ZBfJna+beJMcCshfNm7cVhuOOQE3tMoDBuHs49lhYFNHeOoec09kBO9IFKL8rEi3/9a+1rxR+m629/+3VlS0q633679ZjmdVTFcKkKSSByBHCQ4iCh/m++aa0iKvqcdsuBOWnbrKzYMwdYVtX2zbNb1fU8cTsdLJXs6rJiIl9K7fa733X0OLle8eB1d5JKEGuArY92awkD/2y3mzQC8YDzUu3y5X2eekot7tmzYwKqmjABqDn/Ntz8wE6tPoSt9QztXpHOV16pznlH0CvDWprXUVVjiXBXUMQSYBES+T7w/fft3zYloVtxfY/mXBgLB1ETtZZV1UYkyFu7VTUveK1YtQaFq2jkTsEc1uY8Xl9jII+PGOLUVkbYqDvi+JRTIgEB69bngwZxjrm9Oew1ZZmn1THHzDvjDKcHlz2ZhC0EwBPDo316hyGxz+OPc9URm+8Q9FaylK+jqtYUs4yCIq4A0nDW0UdrpmoK6zV6NIaCuEqNk27gZdWSEiXdnHnj5DTPtLHPcl2luhsEbjhMfPr++9MlouKsbnZ4+OEssWo76RV9lE2uGfC/q15lrJ+BhT/7mfap0oi4ITHbtlaM0r+OqhpOhLuCIsYAewvrzvRwnJLa5+mnczleMUaOjaSDLqtyc7FlOojppDDOfmDHufn3cdOmydj6Ma9j7OY430GzZqmLiIET0LhOKxc7u6FNWGL9bM89vSpYp34++WQBr/QYah71Kyagiy65RKPa4667lDqf/nVUxbwIdwVFvIE6+X7UUU753vfZZwtv4Svgsqo6QpLL1vNl/6Vc7KRO/9QcW53m23/HDvtvv5oajN3cl6RZilh3CX0cvB8mUeGpIJcuOW+isLKjewY9Qd5PucWXBmOpts9cnftfEOuoqkVEuCsoYg9g95zN5ZkO/Z01HOVfFTsTERXgf7cqiw0Y5a1iV/3lLxGVH5LM6rFjQ+b0yIY+zv5GBi3EAf9y8zgLmFys6tz0SBP3HjPGg0xk0egQmH2cN8lZBTDkcM13ZIUVLyHc3p3fKdUtiHVU1SwFsKDq/x4WVausgaC3NGQl6DMB54LOGT5cW5Fn1oxVdMaQIQV0kJbrsiqLTs51QqW24/yH6PEJVEzJNr71VrSUudB1jduAUec+VFpqt7ZTLlN7dOdlt90WLQ9Oahh/OKy8z9ixmpsWKVnp4d7KvDeEk+dUxdCNF199tf0Od9hj/E7hub4G3FKnuTtPWi/r0MFQgXCvVKf/Koe7dcIVzYr8vFNP1fLWyffx4113xGkp0/PoPLBXnfhoZ7LDBRdYjysD3oRgJxJVePNnn0VFKisdS8JqydCdk7HCMU2cvu++riaanim7MEiDKCWPK+65R1Pet69ZkxLefLKROuFeu2SJxrrmRKi9DfeoLiyP1QzqxRu6nnMHCna9/m+8UUDHP1U/8YTmV6BOfFQVxxZhuQbzneTryAHFDAE0MtZdOfLbHhlfeMHIkdq+GMrq88wz1hUW8ZVrUa7bRnfooZr5mFc0ChdNxF260M87AukT7suXa6BoC1Pa23CP6saybYsWhaOQYy4WbZw7yHEp4XI+DiHJkXhC2TkE+PHH7WUxH9KcfzrsOsoqXyeF2dmLI2y+5xbxiv1dKxdlBc90LTKmR5aROabUeYwdNx3GVKKQTQ8CqRPuzjvdWx5xROR4tdhFs2by5MiJ+yTIDtUvHRfB8OXX7WgtEPm+/J57tMoqCzvxOAW23XUPXBrUdo3VZB5ZR3HO0thzlNgRocj3+WedpVW2+be/rcXIY/EhkDrhjrKjKRrMIhETEULPcd7K1BP5ClsgPllbw79Cy4L+i3xPZuauFR30kWVVbesjjjGKc3URdh5PCgtaozjSM0tzeqCzPpHYCb0sn2qXQatbhOKor9BMCQKpE+7gsuE/u93FTIzrSl1oBNuefrqVt+7M1XHjQtOJJCP2X+dxdHXy/fXX1QgUSUExEVn58MMaZdVY6iJs5/1BWpY8PrK1h6WOuBlYcN55zrXNyvvvD7SEzjEG/V5+ORyrmgFNOW6Hoya5CgKBNAr3tf/4h4YdJ+pFpbzzOamt8E7BpJWbzOOiiy92anasNPDxJ8NALqV4Lauiv6sDT1Y6LofLpcRo83IImvMOjWiLqKOWycz+3ve0xVVcpPoFOX6dJRkmRuGcbTTzo8ZJ9PUViilAII3CHWdSbRaJDqv5nIaGrvLee628+G8k4HHsk082R7AdRkvMx6/FpPHRY1lV6e94azid31NSEZxGmCQ5HbTiYA9745zjjtO863Al6uV7Z9PWnSfShNuF1Gh3w+a2OXPiqKPQTBUCaRTuAMQ2Pw0mhEXuhx91v/NOpU4uu+suvjetlDw+zhsxgtPm8shA6KKdZiWWVZVbZOQnhUW4qc1yGklMjcX2PW+XSVChjTLu89QXy9cAYEOstzepqlIlEljzwgv2RwkXJQIpFe5bZ850yvccDz/iijt1EHmOVyWortCoeXMVzj0wd/hwbcqSO03NulrSrFnuNDUKNJZzWRWNmGQ4wjtnJFr2oI8NGzfWsjRyxGgJXB8xHHU4/3xebVu40DWBM7KkZUstsmFZmRZjfmTnqvNkAmalfhSXLbvUbXXTm7ks+1vtCqqgjeKseKPYppXhWtNe2ajC2tQ5Qq0iKg7NdFIq3GGaHWLaKhCRfAasKQVahiIX7jEc0aeOFEdhz/GqhLKuXS1YyysrrUBU/849+WTnrpPQxJXjiqJQ0ratCkcY8Fq9qGvBqO+GrxgwQOM8XKW4QMMa+fxr7o1799aKLg2+fXrJ9dc7l1hQXPAK04hrj2oQYvbZ9frrtbeGR6xP6lBDknHyTFBDmTVU24so7djR/hhh2NmaefEscC7ylffoEWE1EyCVXuFO5RecdZZT0jGN3XPy5IEffcRFkVn3c+JtRkrOclE7oTgXkG17QTu3vSWYFCtqWT9Ie0Y/YWvXiaYI+8nomqblUUdp8fjAxfGpOJdVrXLjOCms1fHHa5VqG/BmVL7bXo89Rkey6Pjfpdzy6KO1olsOHarF+Hl0XWLhfCFtC5hGir6hxqEu113nU77TXfs+/bQihdNOiGOH1b4QRafFYYepcLQBJ6TNsw170TJgUWt55JEaWb6dEAYxjUiSj6VJFhaiLI5BpxPTlbW83NlWufPaNtTwTR98sL26GgtAprraSlbaqVOzb31L3eum8jIbnT9yJB+JigkaQDL2ta18otH0evTRL372s1xoajxAaubQoVzelKMzMvoaawwacR4r//SnHEFw0kQ9R0lXcyMrQRwnhXHwlrNZGWI5OX39q6+6MOaIarLnni2/+1371XRKI3ak3S0Cy7hzLOdCaiRy1lsGdyO084ElFnqOWpkgDiMABwhjjWTO6kxvxbAQqpRoPgo8Z+afe67h6g9WX+kDajjnxFqcdryIe8VjMlL2TJWGpWBcM0OME4qCawCE1aCrEoDS0ttuw/qnYuIOIMS5K81ZCgYxdvxG+LE7i4gwpuGkkhLXibO6Z4CPFg06wiJDkMKugl+g0pdDUGAMWPjzn7se4JeVWp1x9rzzOOSvxaGHNjvwQM0SR3ZcIDa9//6mSZO4OW/7unWGjzNrWSoBH+SAd96xqgzzU3xP//meueAJ27paOlY0VQAH/w0TJ9a5x23fvvT22yPprHwPe8+dq4ogwPkKOd4T+7VyWlpasddezQ89VMkpe0E5hrlDw1U+Mjq23qndoytwWZ11SI5rWQjNdePGbd95cgbKNVdnuCZzRjIw9Hz4Ya1SUFt+//0oIs75pTYeWARJycDGlBSjvJUFuyVG9nZnnGHnmUkwJ9k6aTq5smIYR1sff7xzPLOnp2dumDBhy7Rp4bo9HbVizz0VQXxS2dLs/L5IgOqGIFLaGzGbp00L9zmr4uyB/37jRO38zM3fzvrXXts8ZQppN3344bqwOw/spYcIM/W0XLqZ5XMLoAuFkpLCEO4W63wJXa691qm4uVTMFsU8lGuCsRuEFmF8KhiCbCRNAU/W4QAABI1JREFUQb7tqd27m1L4fkeHGzBxIt9nIOHe97nnUCd9F9KAYQP6/tMbUiqFgDQMeJPbtg2NeV0pJSX7b99uKC6qVx+VlrrqN9j9XNU3c7n0N05UN6exv6WVuZwToaaJeNIg0fDWtTvsInA5V5Lvef2ECRzLYZa8qhRGi6W33OJ/yLEy7j1/vn1sUNRcA+G6fdC+ai+aIY3Zjz0mlzADOXPloBTwE2OTStBckaT3I9zTbpaxA8Hklx8fQ7MDDmi6//5NBw9usscerHJoQz39rPaLLzZ9/PGG11/fOHFi7pJry8yZs3adRWPnxzWcqalxjQ8RiZI147DDmDSgFvnPzjVgK+67z3/6CA8yZVlViZsITgrLZPzD7r++Wsqvtm1zlewkW/vCC1s+/1xLn/Vx+9q1WdPYE9DKCAh+6BCYtvFZLOvcubRNG3saFUZH2fTee9ap4pyeyuJBiyFD2p56KvYZpyDGLFbz0UdrX3wxhNWIEueeempJ06aqaHOgDsbgf4uvuipQX7WXsG3pUvtjjmGwCtHZouUhxyo4sxeS5u7k3opB5UHiE0aO+591elGT+NAIIGuaH3iglV2ZCEJTk4yBEAB81J1G5eWMLvIhBIKuEBMXm+bu1QZ05dzVcy/iEu8fAYwwhXVVjf+qpT8l4EflZJX+ygqHfhBItSuknwpIGkFAEBAEBAEnAiLcnZhIjCAgCAgCBY+ACPeCb0KpgCAgCAgCTgREuDsxkRhBQBAQBAoeARHuBd+EUgFBQBAQBJwIiHB3YiIxgoAgIAgUPAIi3Au+CaUCgoAgIAg4ERDh7sREYgQBQUAQKHgERLgXfBNKBQQBQUAQcCIgwt2JicQIAoKAIFDwCIhwL/gmlAoIAoKAIOBEQIS7ExOJEQQEAUGg4BEQ4V7wTSgVEAQEAUHAiYAIdycmEiMICAKCQMEjIMK94JtQKiAICAKCgBMBEe5OTCRGEBAEBIGCR0CEe8E3oVRAEBAEBAEnAiLcnZhIjCAgCAgCBY+ACPeCb0KpgCAgCAgCTgREuDsxkRhBQBAQBAoeARHuBd+EUgFBQBAQBJwIiHB3YiIxgoAgIAgUPAIi3Au+CaUCgoAgIAg4ERDh7sREYgQBQUAQKHgERLgXfBNKBQQBQUAQcCIgwt2JicQIAoKAIFDwCIhwL/gmlAoIAoKAIOBEQIS7ExOJEQQEAUGg4BEQ4V7wTSgVEAQEAUHAiYAIdycmEiMICAKCQMEjIMK94JtQKiAICAKCgBOBUmeUFtNq2LD+b7yhRcqjICAICAKCQL4QaLLXXlmLzi7cS9u3bz5kSFZCkkAQEAQEAUEgPQiIWSY9bSGcCAKCgCAQGQKemvumjz/eUVsbWTlCSBAQBAQBQSBqBGqmTvUi2XBSSUmDTMbrtcQLAoKAICAIFB4CJSVilim8VhOOBQFBQBDIioAI96wQSQJBQBAQBAoPARHuhddmwrEgIAgIAlkREOGeFSJJIAgIAoJA4SEgwr3w2kw4FgQEAUEgKwIi3LNCJAkEAUFAECg8BES4F16bCceCgCAgCGRF4P8D6j6hmx5U7WYAAAAASUVORK5CYII=" alt="Boston University" />
     </div>
   </div>
@@ -2134,12 +2054,16 @@ const BU_PARKING_CONFIG = {
       },
     ],
   },
-  // Source: Carl Larson (BU Transportation Services) email, 2026.
+  // Source: Carl Larson (BU Transportation Services) email, 2026. BU's own
+  // lots-and-locations page also lists a separate 710 Albany Street Garage
+  // (and a 720 Harrison Avenue DOB lot open to the public) on the Medical
+  // Campus — those aren't modeled here because no rate for them was ever
+  // provided, not because they were deliberately excluded. Add them once a
+  // rate is confirmed.
   medical: {
-    options: [
-      { id: "med-crosstown-daily", label: "Crosstown Garage (daily)", rateType: "daily", rate: 25.00, preTax: false },
-      { id: "med-610albany-monthly", label: "610 Albany Street Garage (monthly permit)", rateType: "monthly", rate: 181.00, preTax: true },
-      { id: "med-crosstown-monthly", label: "Crosstown Garage (monthly permit)", rateType: "monthly", rate: 249.00, preTax: true },
+    locations: [
+      { id: "crosstown", label: "Crosstown Garage", daily: { rate: 25.00, preTax: false }, monthly: { rate: 249.00, preTax: true } },
+      { id: "610-albany", label: "610 Albany Street Garage", monthly: { rate: 181.00, preTax: true } },
     ],
   },
 };
@@ -2349,9 +2273,19 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
-function mbtaPromoDaysLeft(config, today) {
-  const end = new Date(config.promo.endDate + "T23:59:59");
-  const ms = end.getTime() - (today || new Date()).getTime();
+/** Days left until the next Edenred order deadline (the 10th of this
+ * month, or next month's if today is already past the 10th) — the
+ * actionable countdown for the callout, rather than the promo's own
+ * end date, since the 10th is the date that actually forces a decision. */
+function buEdenredDeadlineDaysLeft(today) {
+  const now = today || new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  let target = new Date(year, month, 10, 23, 59, 59);
+  if (now.getTime() > target.getTime()) {
+    target = new Date(year, month + 1, 10, 23, 59, 59);
+  }
+  const ms = target.getTime() - now.getTime();
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
@@ -2501,7 +2435,8 @@ function buInitCalculator(rootEl) {
   let employeeCount = BU_CONFIG.defaultEmployeeCount;
   let campus = "charles-river"; // "charles-river" | "medical", Drive mode only
   let crcZoneId = "crc-zone-1";
-  let medicalOptionId = "med-crosstown-daily";
+  let medicalLocationId = "crosstown";
+  let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
 
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   modeButtons.forEach((btn) => {
@@ -2538,8 +2473,8 @@ function buInitCalculator(rootEl) {
     const applies = promoActive && routeType === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
-      const days = mbtaPromoDaysLeft(BU_CONFIG);
-      rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
+      const days = buEdenredDeadlineDaysLeft();
+      rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left to order`;
     }
   }
 
@@ -2705,7 +2640,9 @@ function buInitCalculator(rootEl) {
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
   const crcZoneButtons = rootEl.querySelectorAll("[data-abc-crc-zone-select]");
-  const medicalSelect = rootEl.querySelector("[data-abc-medical-option-select]");
+  const medicalLocationButtons = rootEl.querySelectorAll("[data-abc-medical-location-select]");
+  const medicalDailyField = rootEl.querySelector("[data-abc-medical-daily-field]");
+  const medicalDailyToggle = rootEl.querySelector("[data-abc-medical-daily-toggle]");
   const crcFields = rootEl.querySelector("[data-abc-crc-fields]");
   const medicalFields = rootEl.querySelector("[data-abc-medical-fields]");
 
@@ -2727,19 +2664,33 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  if (medicalSelect) {
-    BU_PARKING_CONFIG.medical.options.forEach((opt) => {
-      const el = document.createElement("option");
-      el.value = opt.id;
-      el.textContent = opt.label;
-      medicalSelect.appendChild(el);
+  /** Only Crosstown Garage has both a daily and a monthly rate; 610 Albany
+   * only has the monthly permit, so the daily/monthly checkbox only makes
+   * sense (and only shows) when Crosstown is the selected location. */
+  function updateMedicalDailyFieldVisibility() {
+    if (!medicalDailyField) return;
+    const location = BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
+    const hasDailyOption = !!(location && location.daily);
+    medicalDailyField.style.display = hasDailyOption ? "flex" : "none";
+    if (!hasDailyOption) medicalDaily = false;
+  }
+
+  medicalLocationButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      medicalLocationId = btn.dataset.abcMedicalLocationSelect;
+      medicalLocationButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateMedicalDailyFieldVisibility();
+      render();
     });
-    medicalSelect.value = medicalOptionId;
-    medicalSelect.addEventListener("change", () => {
-      medicalOptionId = medicalSelect.value;
+  });
+
+  if (medicalDailyToggle) {
+    medicalDailyToggle.addEventListener("change", () => {
+      medicalDaily = medicalDailyToggle.checked;
       render();
     });
   }
+  updateMedicalDailyFieldVisibility();
 
   function updateRouteVisibility() {
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "flex" : "none";
@@ -2753,8 +2704,8 @@ function buInitCalculator(rootEl) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
         label.textContent = routeType === "drive"
-          ? "How many days a week do you drive to campus?"
-          : "How many one-way trips do you take to campus per week?";
+          ? "How many days a week do you drive?"
+          : "How many one-way trips do you take per week?";
       }
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
@@ -2828,6 +2779,24 @@ function buInitCalculator(rootEl) {
     paintCard("ride", result.rideBreakdown);
     paintCard("pass", result.passBreakdown);
 
+    // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
+    // "Monthly LinkPass (Subway & Bus)" — the latter skips the trailing
+    // "Pass" since LinkPass already has one in its own name.
+    const titleEl = rootEl.querySelector("[data-abc-pass-title]");
+    if (titleEl) {
+      titleEl.textContent = result.pass
+        ? (result.pass.label.toLowerCase().includes("pass") ? `Monthly ${result.pass.label}` : `Monthly ${result.pass.label} Pass`)
+        : "Monthly Pass";
+    }
+
+    // "Total monthly cost" line spells out the zone in parentheses once a
+    // Commuter Rail station resolves to one, so someone who picked "Four
+    // Corners/Geneva" can still see it's billed as Zone 1A.
+    const totalLabelEl = rootEl.querySelector("[data-abc-pass-total-label]");
+    if (totalLabelEl) {
+      totalLabelEl.textContent = (routeType === "rail" && result.pass) ? `Total monthly cost (${result.pass.label})` : "Total monthly cost";
+    }
+
     const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
       const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
@@ -2871,28 +2840,39 @@ function buInitCalculator(rootEl) {
   function currentCrcZone() {
     return BU_PARKING_CONFIG.charlesRiver.zones.find((z) => z.id === crcZoneId);
   }
-  function currentMedicalOption() {
-    return BU_PARKING_CONFIG.medical.options.find((o) => o.id === medicalOptionId);
+  function currentMedicalLocation() {
+    return BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
   }
 
   function renderDrive() {
     let selection;
     if (campus === "charles-river") {
       const zone = currentCrcZone();
-      selection = zone ? { label: `Charles River Campus, ${zone.label}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
+      selection = zone ? { label: `Charles River Campus, ${zone.label.replace(/ \(.*\)$/, "")}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
     } else {
-      const opt = currentMedicalOption();
-      selection = opt ? { label: `Medical Campus, ${opt.label}`, rateType: opt.rateType, rate: opt.rate, preTax: opt.preTax } : null;
+      const location = currentMedicalLocation();
+      if (location) {
+        const useDaily = medicalDaily && location.daily;
+        const rateInfo = useDaily ? location.daily : location.monthly;
+        selection = { label: `Medical Campus, ${location.label}`, rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
+      }
     }
 
     const parking = buCalcParking(selection, tripsPerWeek);
+
+    // Reference card: what Subway & Bus (LinkPass) would cost at the same
+    // frequency, so driving and transit sit side by side as asked.
+    const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
+    const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
+    const compareCost = compareResult.passBreakdown.finalCost;
+    const parkingCost = parking ? parking.monthlyCost : 0;
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
     const labelEl = rootEl.querySelector("[data-abc-drive-label]");
     const taxNoteEl = rootEl.querySelector("[data-abc-drive-tax-note]");
     const weekendNoteEl = rootEl.querySelector("[data-abc-drive-weekend-note]");
-    if (totalEl) totalEl.textContent = parking ? abcFormatCurrency(parking.monthlyCost) : "$0.00";
-    if (labelEl) labelEl.textContent = parking ? parking.label : "";
+    if (totalEl) totalEl.textContent = abcFormatCurrency(parkingCost);
+    if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
     if (taxNoteEl) taxNoteEl.textContent = parking ? (parking.preTax ? "Pre-tax" : "Post-tax") : "";
     if (weekendNoteEl) {
       const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
@@ -2900,12 +2880,29 @@ function buInitCalculator(rootEl) {
       if (showWeekend) weekendNoteEl.textContent = `Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day). This estimate uses the weekday rate.`;
     }
 
-    // Reference card: what Subway & Bus (LinkPass) would cost at the same
-    // frequency, so driving and transit sit side by side as asked.
-    const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
-    const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
     const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
-    if (compareEl) compareEl.textContent = abcFormatCurrency(compareResult.passBreakdown.finalCost);
+    if (compareEl) compareEl.textContent = abcFormatCurrency(compareCost);
+
+    // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
+    // driven by whichever option is actually cheaper at the chosen
+    // frequency.
+    const driveModeCards = rootEl.querySelectorAll('[data-abc-mode-card="drive"]');
+    const driveCard = driveModeCards[0];
+    const compareCard = driveModeCards[1];
+    if (driveCard && compareCard) {
+      const driveWins = parkingCost <= compareCost;
+      driveCard.classList.toggle("abc-card-winner", driveWins);
+      compareCard.classList.toggle("abc-card-winner", !driveWins);
+      driveCard.querySelector("[data-abc-badge]").style.visibility = driveWins ? "visible" : "hidden";
+      compareCard.querySelector("[data-abc-badge]").style.visibility = !driveWins ? "visible" : "hidden";
+
+      const winnerCard = driveWins ? driveCard : compareCard;
+      const loserCard = driveWins ? compareCard : driveCard;
+      const diff = Math.abs(parkingCost - compareCost);
+      winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
+      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(diff * 12);
+      loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+    }
   }
 
   function currentEmployeeCount() {
@@ -2970,70 +2967,6 @@ function buInitCalculator(rootEl) {
     }
   }
 
-  // ---- Embed button ----
-  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
-  if (embedBtn) {
-    const originalLabel = embedBtn.textContent;
-    let revertTimer = null;
-
-    async function getEmbedHtml() {
-      try {
-        const res = await fetch(window.location.href);
-        if (!res.ok) throw new Error("fetch failed");
-        return await res.text();
-      } catch (err) {
-        const styleTag = document.querySelector("style");
-        const scriptTag = document.querySelector("script:not([src])");
-        const parts = [];
-        if (styleTag) parts.push(`<style>${styleTag.textContent}<\/style>`);
-        parts.push(rootEl.outerHTML);
-        if (scriptTag) parts.push(`<script>${scriptTag.textContent}<\/script>`);
-        return parts.join("\n");
-      }
-    }
-
-    function copyWithExecCommand(text) {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
-      document.body.removeChild(ta);
-      return ok;
-    }
-
-    async function copyToClipboard(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        return copyWithExecCommand(text);
-      }
-    }
-
-    embedBtn.addEventListener("click", async () => {
-      clearTimeout(revertTimer);
-      try {
-        const html = await getEmbedHtml();
-        const copied = await copyToClipboard(html);
-        if (!copied) throw new Error("copy failed");
-        embedBtn.textContent = "Embed code copied";
-        embedBtn.classList.add("abc-farecalc-copied");
-        return;
-      } catch (err) {
-        embedBtn.textContent = "Couldn't copy, try again";
-      }
-      revertTimer = setTimeout(() => {
-        embedBtn.classList.remove("abc-farecalc-copied");
-        embedBtn.textContent = originalLabel;
-      }, 2500);
-    });
-  }
-
   // ---- Analytics: hardcoded to Boston University, no visible org field.
   // Session starts on first render (debounced) rather than on typing an
   // org name, since there's nothing to type here. ----
@@ -3048,7 +2981,7 @@ function buInitCalculator(rootEl) {
       return opt ? opt.label : "Subway & Bus";
     }
     if (routeType === "drive") {
-      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalOptionId}`;
+      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalLocationId}${medicalDaily ? " (daily)" : ""}`;
     }
     const opt = buGetPassOption(mode === "employee" ? employeeRailPassId() : railZoneSelect.value);
     return "Commuter Rail: " + (opt ? opt.label : "");

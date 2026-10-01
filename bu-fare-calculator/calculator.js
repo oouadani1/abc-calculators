@@ -124,12 +124,16 @@ const BU_PARKING_CONFIG = {
       },
     ],
   },
-  // Source: Carl Larson (BU Transportation Services) email, 2026.
+  // Source: Carl Larson (BU Transportation Services) email, 2026. BU's own
+  // lots-and-locations page also lists a separate 710 Albany Street Garage
+  // (and a 720 Harrison Avenue DOB lot open to the public) on the Medical
+  // Campus — those aren't modeled here because no rate for them was ever
+  // provided, not because they were deliberately excluded. Add them once a
+  // rate is confirmed.
   medical: {
-    options: [
-      { id: "med-crosstown-daily", label: "Crosstown Garage (daily)", rateType: "daily", rate: 25.00, preTax: false },
-      { id: "med-610albany-monthly", label: "610 Albany Street Garage (monthly permit)", rateType: "monthly", rate: 181.00, preTax: true },
-      { id: "med-crosstown-monthly", label: "Crosstown Garage (monthly permit)", rateType: "monthly", rate: 249.00, preTax: true },
+    locations: [
+      { id: "crosstown", label: "Crosstown Garage", daily: { rate: 25.00, preTax: false }, monthly: { rate: 249.00, preTax: true } },
+      { id: "610-albany", label: "610 Albany Street Garage", monthly: { rate: 181.00, preTax: true } },
     ],
   },
 };
@@ -339,9 +343,19 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
-function mbtaPromoDaysLeft(config, today) {
-  const end = new Date(config.promo.endDate + "T23:59:59");
-  const ms = end.getTime() - (today || new Date()).getTime();
+/** Days left until the next Edenred order deadline (the 10th of this
+ * month, or next month's if today is already past the 10th) — the
+ * actionable countdown for the callout, rather than the promo's own
+ * end date, since the 10th is the date that actually forces a decision. */
+function buEdenredDeadlineDaysLeft(today) {
+  const now = today || new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  let target = new Date(year, month, 10, 23, 59, 59);
+  if (now.getTime() > target.getTime()) {
+    target = new Date(year, month + 1, 10, 23, 59, 59);
+  }
+  const ms = target.getTime() - now.getTime();
   return Math.max(0, Math.ceil(ms / 86400000));
 }
 
@@ -491,7 +505,8 @@ function buInitCalculator(rootEl) {
   let employeeCount = BU_CONFIG.defaultEmployeeCount;
   let campus = "charles-river"; // "charles-river" | "medical", Drive mode only
   let crcZoneId = "crc-zone-1";
-  let medicalOptionId = "med-crosstown-daily";
+  let medicalLocationId = "crosstown";
+  let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
 
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   modeButtons.forEach((btn) => {
@@ -528,8 +543,8 @@ function buInitCalculator(rootEl) {
     const applies = promoActive && routeType === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
-      const days = mbtaPromoDaysLeft(BU_CONFIG);
-      rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
+      const days = buEdenredDeadlineDaysLeft();
+      rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left to order`;
     }
   }
 
@@ -695,7 +710,9 @@ function buInitCalculator(rootEl) {
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
   const crcZoneButtons = rootEl.querySelectorAll("[data-abc-crc-zone-select]");
-  const medicalSelect = rootEl.querySelector("[data-abc-medical-option-select]");
+  const medicalLocationButtons = rootEl.querySelectorAll("[data-abc-medical-location-select]");
+  const medicalDailyField = rootEl.querySelector("[data-abc-medical-daily-field]");
+  const medicalDailyToggle = rootEl.querySelector("[data-abc-medical-daily-toggle]");
   const crcFields = rootEl.querySelector("[data-abc-crc-fields]");
   const medicalFields = rootEl.querySelector("[data-abc-medical-fields]");
 
@@ -717,19 +734,33 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  if (medicalSelect) {
-    BU_PARKING_CONFIG.medical.options.forEach((opt) => {
-      const el = document.createElement("option");
-      el.value = opt.id;
-      el.textContent = opt.label;
-      medicalSelect.appendChild(el);
+  /** Only Crosstown Garage has both a daily and a monthly rate; 610 Albany
+   * only has the monthly permit, so the daily/monthly checkbox only makes
+   * sense (and only shows) when Crosstown is the selected location. */
+  function updateMedicalDailyFieldVisibility() {
+    if (!medicalDailyField) return;
+    const location = BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
+    const hasDailyOption = !!(location && location.daily);
+    medicalDailyField.style.display = hasDailyOption ? "flex" : "none";
+    if (!hasDailyOption) medicalDaily = false;
+  }
+
+  medicalLocationButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      medicalLocationId = btn.dataset.abcMedicalLocationSelect;
+      medicalLocationButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateMedicalDailyFieldVisibility();
+      render();
     });
-    medicalSelect.value = medicalOptionId;
-    medicalSelect.addEventListener("change", () => {
-      medicalOptionId = medicalSelect.value;
+  });
+
+  if (medicalDailyToggle) {
+    medicalDailyToggle.addEventListener("change", () => {
+      medicalDaily = medicalDailyToggle.checked;
       render();
     });
   }
+  updateMedicalDailyFieldVisibility();
 
   function updateRouteVisibility() {
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "flex" : "none";
@@ -743,8 +774,8 @@ function buInitCalculator(rootEl) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
         label.textContent = routeType === "drive"
-          ? "How many days a week do you drive to campus?"
-          : "How many one-way trips do you take to campus per week?";
+          ? "How many days a week do you drive?"
+          : "How many one-way trips do you take per week?";
       }
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
@@ -818,6 +849,24 @@ function buInitCalculator(rootEl) {
     paintCard("ride", result.rideBreakdown);
     paintCard("pass", result.passBreakdown);
 
+    // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
+    // "Monthly LinkPass (Subway & Bus)" — the latter skips the trailing
+    // "Pass" since LinkPass already has one in its own name.
+    const titleEl = rootEl.querySelector("[data-abc-pass-title]");
+    if (titleEl) {
+      titleEl.textContent = result.pass
+        ? (result.pass.label.toLowerCase().includes("pass") ? `Monthly ${result.pass.label}` : `Monthly ${result.pass.label} Pass`)
+        : "Monthly Pass";
+    }
+
+    // "Total monthly cost" line spells out the zone in parentheses once a
+    // Commuter Rail station resolves to one, so someone who picked "Four
+    // Corners/Geneva" can still see it's billed as Zone 1A.
+    const totalLabelEl = rootEl.querySelector("[data-abc-pass-total-label]");
+    if (totalLabelEl) {
+      totalLabelEl.textContent = (routeType === "rail" && result.pass) ? `Total monthly cost (${result.pass.label})` : "Total monthly cost";
+    }
+
     const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
       const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
@@ -861,28 +910,39 @@ function buInitCalculator(rootEl) {
   function currentCrcZone() {
     return BU_PARKING_CONFIG.charlesRiver.zones.find((z) => z.id === crcZoneId);
   }
-  function currentMedicalOption() {
-    return BU_PARKING_CONFIG.medical.options.find((o) => o.id === medicalOptionId);
+  function currentMedicalLocation() {
+    return BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
   }
 
   function renderDrive() {
     let selection;
     if (campus === "charles-river") {
       const zone = currentCrcZone();
-      selection = zone ? { label: `Charles River Campus, ${zone.label}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
+      selection = zone ? { label: `Charles River Campus, ${zone.label.replace(/ \(.*\)$/, "")}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
     } else {
-      const opt = currentMedicalOption();
-      selection = opt ? { label: `Medical Campus, ${opt.label}`, rateType: opt.rateType, rate: opt.rate, preTax: opt.preTax } : null;
+      const location = currentMedicalLocation();
+      if (location) {
+        const useDaily = medicalDaily && location.daily;
+        const rateInfo = useDaily ? location.daily : location.monthly;
+        selection = { label: `Medical Campus, ${location.label}`, rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
+      }
     }
 
     const parking = buCalcParking(selection, tripsPerWeek);
+
+    // Reference card: what Subway & Bus (LinkPass) would cost at the same
+    // frequency, so driving and transit sit side by side as asked.
+    const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
+    const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
+    const compareCost = compareResult.passBreakdown.finalCost;
+    const parkingCost = parking ? parking.monthlyCost : 0;
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
     const labelEl = rootEl.querySelector("[data-abc-drive-label]");
     const taxNoteEl = rootEl.querySelector("[data-abc-drive-tax-note]");
     const weekendNoteEl = rootEl.querySelector("[data-abc-drive-weekend-note]");
-    if (totalEl) totalEl.textContent = parking ? abcFormatCurrency(parking.monthlyCost) : "$0.00";
-    if (labelEl) labelEl.textContent = parking ? parking.label : "";
+    if (totalEl) totalEl.textContent = abcFormatCurrency(parkingCost);
+    if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
     if (taxNoteEl) taxNoteEl.textContent = parking ? (parking.preTax ? "Pre-tax" : "Post-tax") : "";
     if (weekendNoteEl) {
       const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
@@ -890,12 +950,29 @@ function buInitCalculator(rootEl) {
       if (showWeekend) weekendNoteEl.textContent = `Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day). This estimate uses the weekday rate.`;
     }
 
-    // Reference card: what Subway & Bus (LinkPass) would cost at the same
-    // frequency, so driving and transit sit side by side as asked.
-    const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
-    const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
     const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
-    if (compareEl) compareEl.textContent = abcFormatCurrency(compareResult.passBreakdown.finalCost);
+    if (compareEl) compareEl.textContent = abcFormatCurrency(compareCost);
+
+    // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
+    // driven by whichever option is actually cheaper at the chosen
+    // frequency.
+    const driveModeCards = rootEl.querySelectorAll('[data-abc-mode-card="drive"]');
+    const driveCard = driveModeCards[0];
+    const compareCard = driveModeCards[1];
+    if (driveCard && compareCard) {
+      const driveWins = parkingCost <= compareCost;
+      driveCard.classList.toggle("abc-card-winner", driveWins);
+      compareCard.classList.toggle("abc-card-winner", !driveWins);
+      driveCard.querySelector("[data-abc-badge]").style.visibility = driveWins ? "visible" : "hidden";
+      compareCard.querySelector("[data-abc-badge]").style.visibility = !driveWins ? "visible" : "hidden";
+
+      const winnerCard = driveWins ? driveCard : compareCard;
+      const loserCard = driveWins ? compareCard : driveCard;
+      const diff = Math.abs(parkingCost - compareCost);
+      winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
+      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(diff * 12);
+      loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+    }
   }
 
   function currentEmployeeCount() {
@@ -960,70 +1037,6 @@ function buInitCalculator(rootEl) {
     }
   }
 
-  // ---- Embed button ----
-  const embedBtn = rootEl.querySelector("[data-abc-embed-btn]");
-  if (embedBtn) {
-    const originalLabel = embedBtn.textContent;
-    let revertTimer = null;
-
-    async function getEmbedHtml() {
-      try {
-        const res = await fetch(window.location.href);
-        if (!res.ok) throw new Error("fetch failed");
-        return await res.text();
-      } catch (err) {
-        const styleTag = document.querySelector("style");
-        const scriptTag = document.querySelector("script:not([src])");
-        const parts = [];
-        if (styleTag) parts.push(`<style>${styleTag.textContent}<\/style>`);
-        parts.push(rootEl.outerHTML);
-        if (scriptTag) parts.push(`<script>${scriptTag.textContent}<\/script>`);
-        return parts.join("\n");
-      }
-    }
-
-    function copyWithExecCommand(text) {
-      const ta = document.createElement("textarea");
-      ta.value = text;
-      ta.style.position = "fixed";
-      ta.style.left = "-9999px";
-      document.body.appendChild(ta);
-      ta.focus();
-      ta.select();
-      let ok = false;
-      try { ok = document.execCommand("copy"); } catch (err) { ok = false; }
-      document.body.removeChild(ta);
-      return ok;
-    }
-
-    async function copyToClipboard(text) {
-      try {
-        await navigator.clipboard.writeText(text);
-        return true;
-      } catch (err) {
-        return copyWithExecCommand(text);
-      }
-    }
-
-    embedBtn.addEventListener("click", async () => {
-      clearTimeout(revertTimer);
-      try {
-        const html = await getEmbedHtml();
-        const copied = await copyToClipboard(html);
-        if (!copied) throw new Error("copy failed");
-        embedBtn.textContent = "Embed code copied";
-        embedBtn.classList.add("abc-farecalc-copied");
-        return;
-      } catch (err) {
-        embedBtn.textContent = "Couldn't copy, try again";
-      }
-      revertTimer = setTimeout(() => {
-        embedBtn.classList.remove("abc-farecalc-copied");
-        embedBtn.textContent = originalLabel;
-      }, 2500);
-    });
-  }
-
   // ---- Analytics: hardcoded to Boston University, no visible org field.
   // Session starts on first render (debounced) rather than on typing an
   // org name, since there's nothing to type here. ----
@@ -1038,7 +1051,7 @@ function buInitCalculator(rootEl) {
       return opt ? opt.label : "Subway & Bus";
     }
     if (routeType === "drive") {
-      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalOptionId}`;
+      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalLocationId}${medicalDaily ? " (daily)" : ""}`;
     }
     const opt = buGetPassOption(mode === "employee" ? employeeRailPassId() : railZoneSelect.value);
     return "Commuter Rail: " + (opt ? opt.label : "");

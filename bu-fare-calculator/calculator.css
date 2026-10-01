@@ -323,32 +323,68 @@
    it reads as a native part of the design system, not a bolted-on banner,
    but recolored to blue instead of the shared component's default orange
    (orange stays reserved for the "Next steps" / caution meaning elsewhere;
-   this scoped override doesn't touch .abc-callout itself). Only shown when
-   the currently-selected pass actually qualifies (Commuter Rail, not Zone
-   1A, promo not expired) — see updatePromoUI(). ---- */
+   this scoped override doesn't touch .abc-callout itself). A small pill in
+   the header carries the live day countdown, instead of its own line.
+   Only shown when the currently-selected pass actually qualifies
+   (Commuter Rail, not Zone 1A, promo not expired) — see updatePromoUI().
+   Lives inside the route field-group itself now (see index.html), right
+   under the route pills, rather than after every other question. ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
   background: var(--mbta-blue-tint);
   border-color: var(--mbta-blue);
 }
 
+.abc-farecalc-promo-callout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-sm);
+  margin-bottom: 6px;
+}
+
 .abc-farecalc-promo-callout h4 {
+  margin: 0;
   color: var(--mbta-blue);
 }
 
-/* Second paragraph (the Perq-vs-retail deadline note) needs its own gap —
-   the shared .abc-callout p rule is margin:0, meant for a single paragraph. */
-.abc-farecalc-promo-callout p + p {
-  margin-top: var(--abc-space-sm);
+.abc-farecalc-promo-days {
+  flex-shrink: 0;
+  background: var(--mbta-blue);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--abc-radius-pill);
+  white-space: nowrap;
 }
 
 /* Promo discount as its own emphasized line item on the Monthly Pass
-   card, matching the blue used elsewhere for this promo rather than a
-   discreet strikethrough — sits between the full "Total monthly cost"
-   and the employer subsidy / Perq deduction rows below it. */
-.abc-farecalc-line-promo,
-.abc-farecalc-line-promo span {
-  color: var(--mbta-blue);
+   card: purple, matching Commuter Rail's own route color, since this is
+   an MBTA discount rather than BU's own subsidy (which gets BU's mint
+   treatment instead — see .abc-farecalc-line-subsidy below). Sits between
+   the full "Total monthly cost" and the BU subsidy deduction row below it. */
+/* Compound selector (.abc-farecalc-line.abc-farecalc-line-promo) rather
+   than a bare class, so this reliably beats the plain .abc-farecalc-line
+   rule on specificity regardless of which one happens to come first in
+   the file — two single-class selectors tie on specificity and whichever
+   is declared later in source order wins, which silently broke this
+   exact override once before. */
+.abc-farecalc-line.abc-farecalc-line-promo,
+.abc-farecalc-line.abc-farecalc-line-promo span {
+  color: var(--mbta-purple);
+  font-weight: 700;
+}
+
+/* ---- BU subsidy line, highlighted the same way across every card it
+   appears on (Pay-Per-Ride, Monthly Pass, regardless of pass/zone/Reduced
+   Fare selected) — BU's own mint, bold, the same visual treatment the
+   Commuter Rail promo line gets in its own color. Compound selector for
+   the same specificity-tie reason as .abc-farecalc-line-promo above. ---- */
+.abc-farecalc-line.abc-farecalc-line-subsidy,
+.abc-farecalc-line.abc-farecalc-line-subsidy span {
+  color: var(--bu-mint);
   font-weight: 700;
 }
 
@@ -359,19 +395,6 @@
   color: #fff;
 }
 
-.abc-farecalc-btn-subway.abc-active {
-  background: var(--mbta-blue);
-  border-color: var(--mbta-blue);
-  color: #fff;
-}
-
-/* Swipe flourish: a wide hard-stop gradient strip slides across the
-   button on hover (not a color crossfade) and the animation is only
-   ever a hover preview — the persistent "selected" look is the solid
-   blue above, not whatever frame the swipe happens to end on. Guarded
-   behind (hover: hover) — on touch devices, :hover fires on tap and
-   has no "mouse leave" to end it, so this animation (and the color
-   change) could otherwise fire and hang on a tap meant for scrolling. */
 .abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
@@ -383,72 +406,6 @@
     border-color: var(--mbta-purple);
     color: #fff;
   }
-
-  .abc-farecalc-btn-subway:hover {
-    border-color: transparent;
-    color: #fff;
-    animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-}
-
-@keyframes abc-farecalc-line-swipe {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
-  }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-green) 40%, var(--mbta-green) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-blue) 80%, var(--mbta-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
-  }
-}
-
-@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
-  .abc-farecalc-btn-subway:hover {
-    animation: none;
-    background: var(--mbta-blue);
-    color: #fff;
-  }
-}
-
-/* ---- Day-per-week picker: bold chips ---- */
-.abc-farecalc-day-grid {
-  gap: 10px;
-}
-
-.abc-farecalc-day-btn {
-  font-family: var(--abc-font-mono);
-  font-size: 1.1rem;
-  font-weight: 600;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--abc-navy-deep);
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-day-btn:hover {
-    transform: translateY(-2px);
-  }
-}
-
-.abc-farecalc-day-btn.abc-active {
-  background: var(--abc-farecalc-accent);
 }
 
 /* ---- Stepper (subsidy / pre-tax): +/- buttons flank a real
@@ -721,29 +678,6 @@
   color: var(--mbta-green);
 }
 
-/* ---- Perq yes/no: "Yes" follows the route theme, "No" is a fixed
-   red — a consistent "you opted out" signal, not a route color. ---- */
-.abc-farecalc [data-abc-perq-select].abc-active {
-  background: var(--abc-farecalc-accent);
-  border-color: var(--abc-farecalc-accent);
-  color: #fff;
-}
-
-.abc-farecalc [data-abc-perq-select="no"].abc-active {
-  background: var(--mbta-red);
-  border-color: var(--mbta-red);
-}
-
-/* ---- Perq advocacy line: only shown once "No" is explicitly picked ---- */
-.abc-farecalc-perq-advocacy a {
-  color: var(--abc-farecalc-accent);
-  font-weight: 600;
-}
-
-.abc-farecalc-perq-advocacy {
-  margin-top: var(--abc-space-md);
-}
-
 /* ---- Cross-link to the Bluebikes calculator ---- */
 .abc-farecalc-crosslink {
   margin-top: var(--abc-space-lg);
@@ -759,17 +693,6 @@
   text-underline-offset: 2px;
 }
 
-/* ---- Credit line under the sourcing accordion: a blank line's worth
-   of separation (margin) plus a hairline rule, not run straight into
-   the sourcing paragraph above it. ---- */
-.abc-farecalc-credit {
-  margin: var(--abc-space-md) 0 0;
-  padding-top: var(--abc-space-sm);
-  border-top: 1px solid var(--abc-border);
-  font-size: 0.75rem;
-  color: var(--abc-ink-faint);
-}
-
 /* ---- Assumptions list inside the sourcing accordion ---- */
 .abc-farecalc-assumptions {
   margin: 0;
@@ -783,55 +706,6 @@
 
 .abc-farecalc-assumptions li:last-child {
   margin-bottom: 0;
-}
-
-/* ---- Embed button: same plain gray/white look as an unselected
-   choice button (Yes/No, Commuter Rail when not picked) — .abc-choice-
-   button already provides that, this just adds the "copied" state. On
-   click, the same color-swipe pattern as the Subway & Bus hover plays
-   once, landing on green instead of blue (a distinct "success" cue vs.
-   that button's route-identity blue), then holds until it reverts. ---- */
-.abc-farecalc-embed {
-  margin-top: var(--abc-space-lg);
-  text-align: center;
-}
-
-.abc-farecalc-embed-btn.abc-farecalc-copied {
-  border-color: transparent;
-  color: #fff;
-  animation: abc-farecalc-embed-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes abc-farecalc-embed-swipe {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
-  }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-red) 0%, var(--mbta-red) 20%,
-      var(--mbta-orange) 20%, var(--mbta-orange) 40%,
-      var(--mbta-blue) 40%, var(--mbta-blue) 60%,
-      var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--mbta-green) 80%, var(--mbta-green) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .abc-farecalc-embed-btn.abc-farecalc-copied {
-    animation: none;
-    background: var(--mbta-green);
-    border-color: transparent;
-    color: #fff;
-  }
 }
 
 /* Recommended card: fixed green, regardless of route theme */
@@ -948,32 +822,27 @@
    None of this exists in the other fare calculators.
    ============================================================ */
 
-/* ---- Subway & Bus / Drive active states recolored to BU's own mint,
-   leaving Commuter Rail on MBTA's official purple (real line identity,
-   not institution branding). The hover swipe keeps its MBTA-line-colors
-   flourish but now culminates in mint instead of MBTA blue, so there's
-   no color mismatch when the animation ends and the persistent active
-   state takes over. ---- */
-.abc-farecalc-btn-subway.abc-active {
-  background: var(--bu-mint);
-  border-color: var(--bu-mint);
-  color: #fff;
-}
-
-.abc-farecalc-btn-drive.abc-active {
-  background: var(--bu-mint);
-  border-color: var(--bu-mint);
-  color: #fff;
+/* ---- Selected pills use BU's exact sampled accent (#70FFC8), not a
+   darkened version — dark ink text instead of white, since that bright a
+   green fails contrast badly with white-on-top. Covers every pill in the
+   tool except Commuter Rail's own route button, which keeps MBTA's
+   official purple (real line identity, not institution branding) via its
+   own rule above. One rule covers Subway & Bus / Drive route pills, the
+   pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
+   there's a single color to change later rather than five. ---- */
+.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail) {
+  background: var(--bu-mint-bright);
+  border-color: var(--bu-mint-bright);
+  color: var(--bu-ink);
 }
 
 @media (hover: hover) and (pointer: fine) {
   .abc-farecalc-btn-subway:hover {
     animation: abc-farecalc-line-swipe-bu 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    color: var(--bu-ink);
   }
-  .abc-farecalc-btn-drive:hover {
-    border-color: var(--bu-mint);
-    background: var(--bu-mint);
-    color: #fff;
+  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):hover {
+    border-color: var(--bu-mint-bright);
   }
 }
 
@@ -984,7 +853,7 @@
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
       var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--bu-mint) 80%, var(--bu-mint) 100%);
+      var(--bu-mint-bright) 80%, var(--bu-mint-bright) 100%);
     background-size: 500% 100%;
     background-position: 0% 0%;
   }
@@ -994,7 +863,7 @@
       var(--mbta-orange) 20%, var(--mbta-orange) 40%,
       var(--mbta-green) 40%, var(--mbta-green) 60%,
       var(--mbta-silver) 60%, var(--mbta-silver) 80%,
-      var(--bu-mint) 80%, var(--bu-mint) 100%);
+      var(--bu-mint-bright) 80%, var(--bu-mint-bright) 100%);
     background-size: 500% 100%;
     background-position: 100% 0%;
   }
@@ -1032,7 +901,8 @@
   box-sizing: border-box;
 }
 
-/* ---- Reduced Fare checkbox ---- */
+/* ---- Checkboxes (Reduced Fare, Medical Campus daily-rate toggle): same
+   look wherever this pattern shows up. ---- */
 .abc-farecalc-checkbox-field {
   display: flex;
   align-items: center;
@@ -1054,20 +924,47 @@
   cursor: pointer;
 }
 
-/* ---- Drive mode: campus/zone sub-pickers reuse .abc-choice-grid and
-   .abc-choice-button as-is; the medical select reuses .abc-select. Only
-   the two result cards below need their own rules. ---- */
-.abc-farecalc-drive-card h3 {
-  margin: 0 0 var(--abc-space-md);
-  font-size: var(--abc-font-size-base);
+.abc-farecalc-checkbox-label a {
+  color: var(--bu-mint);
   font-weight: 600;
+}
+
+/* Reduced Fare always lands in the grid's right column (row 2 once the
+   trips/employee-count field already fills row 1 there, row 1 on its own
+   when neither does — e.g. employer + Commuter Rail), so it reads as
+   "beside the route pills, under whatever else is in that column"
+   regardless of which other fields are visible for the current mode/route. */
+@container abc-calc (min-width: 520px) {
+  .abc-farecalc-field-group[data-abc-reduced-fare-field] {
+    grid-column: 2;
+  }
+}
+
+/* ---- CRC zone pills: only the zone name is bold, the price in
+   parentheses is a lighter secondary detail. ---- */
+.abc-farecalc-pill-detail {
+  margin-left: 4px;
+  font-weight: 400;
+  opacity: 0.85;
+}
+
+/* ---- Drive mode: campus/zone/garage sub-pickers reuse .abc-choice-grid
+   and .abc-choice-button as-is. The two result cards' h3 picks up the
+   shared small/muted .abc-card h3 style for free, same as every other
+   card header in this tool — no override needed. A context line (pre-tax/
+   post-tax, the weekend-rate note, the comparison card's basis note) can
+   sit between the header and the total line, styled exactly like the
+   itemized line-item rows elsewhere so it doesn't read as a mismatched
+   footnote; nothing is ever placed below the final total line, matching
+   every other card in the tool. ---- */
+.abc-farecalc-line-note {
+  margin: 0 0 var(--abc-space-sm);
+  font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
 }
 
-.abc-farecalc-drive-card .abc-farecalc-line-final span:first-child {
-  font-size: var(--abc-font-size-base);
-  font-weight: 600;
-  color: var(--abc-navy-deep);
+.abc-farecalc-line-note:empty {
+  display: none;
 }
 
 /* ---- BU logo: a trust/attribution mark at the bottom of the tool,
@@ -1076,15 +973,31 @@
    width so it reads as a credit line, not a banner. ---- */
 .abc-farecalc-bu-logo {
   display: flex;
-  justify-content: center;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-md);
   margin-top: var(--abc-space-lg);
   padding-top: var(--abc-space-md);
   border-top: 1px solid var(--abc-border);
 }
 
+.abc-farecalc-credit-line {
+  margin: 0;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
 .abc-farecalc-bu-logo img {
+  flex-shrink: 0;
   width: 140px;
   height: auto;
+}
+
+@container abc-calc (max-width: 480px) {
+  .abc-farecalc-bu-logo {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 @container abc-calc (max-width: 480px) {
