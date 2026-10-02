@@ -264,6 +264,19 @@
       "promo promo"
       "subquestion reduced";
   }
+
+  /* Employer mode never fills the "reduced" slot (Reduced Fare is
+     individual-only), so route/freq/subquestion would each sit at half
+     width with an empty column next to them. Every area spans the full
+     row instead, matching the number-of-employees and zone questions to
+     the rest of the tool's width. */
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
+    grid-template-areas:
+      "route route"
+      "freq freq"
+      "promo promo"
+      "subquestion subquestion";
+  }
 }
 
 [data-abc-route-field] { grid-area: route; }
@@ -409,7 +422,7 @@
    the same specificity-tie reason as .abc-farecalc-line-promo above. ---- */
 .abc-farecalc-line.abc-farecalc-line-subsidy,
 .abc-farecalc-line.abc-farecalc-line-subsidy span {
-  color: var(--bu-mint-bright);
+  color: var(--bu-mint);
   font-weight: 700;
 }
 
@@ -938,8 +951,20 @@
   align-items: center;
 }
 
-.abc-farecalc-toggle-field-right {
-  justify-content: flex-end;
+/* Subway & Bus: Reduced Fare slots in directly under the Local Bus /
+   LinkPass pills, same spacing as the "Choose Daily Parking" checkbox
+   under the Medical Campus garage pills (margin-top: var(--abc-space-md)
+   there too) — reparented into [data-abc-subway-tier-field] by JS. */
+.abc-farecalc-toggle-field-nested {
+  margin-top: var(--abc-space-md);
+}
+
+/* Commuter Rail: Reduced Fare stays beside the station question but
+   left-aligned so its left edge lines up with the trips stepper above it
+   (same grid column), nudged down slightly so its own "eyebrow" isn't
+   flush with the station question's baseline. */
+.abc-farecalc-toggle-field-rail {
+  margin-top: var(--abc-space-sm);
 }
 
 /* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
@@ -1009,6 +1034,25 @@ label.abc-farecalc-toggle-label {
 .abc-farecalc-toggle-label a {
   color: var(--bu-mint);
   font-weight: 700;
+}
+
+/* ---- Drive card's in-card "compare against" toggle: a small pill pair
+   so the comparison card can swap between Subway & Bus and Commuter Rail
+   without adding a third card or moving anything else on the page. ---- */
+.abc-farecalc-drive-compare-toggle {
+  margin: var(--abc-space-sm) 0 var(--abc-space-md);
+}
+
+.abc-farecalc-drive-compare-station {
+  margin-bottom: var(--abc-space-md);
+}
+
+.abc-farecalc-drive-compare-station-label {
+  display: block;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  margin-bottom: var(--abc-space-xs);
 }
 
 /* ---- CRC zone pills: only the zone name is bold, the price in

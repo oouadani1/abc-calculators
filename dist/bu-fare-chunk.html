@@ -833,6 +833,19 @@
       "promo promo"
       "subquestion reduced";
   }
+
+  /* Employer mode never fills the "reduced" slot (Reduced Fare is
+     individual-only), so route/freq/subquestion would each sit at half
+     width with an empty column next to them. Every area spans the full
+     row instead, matching the number-of-employees and zone questions to
+     the rest of the tool's width. */
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
+    grid-template-areas:
+      "route route"
+      "freq freq"
+      "promo promo"
+      "subquestion subquestion";
+  }
 }
 
 [data-abc-route-field] { grid-area: route; }
@@ -978,7 +991,7 @@
    the same specificity-tie reason as .abc-farecalc-line-promo above. ---- */
 .abc-farecalc-line.abc-farecalc-line-subsidy,
 .abc-farecalc-line.abc-farecalc-line-subsidy span {
-  color: var(--bu-mint-bright);
+  color: var(--bu-mint);
   font-weight: 700;
 }
 
@@ -1507,8 +1520,20 @@
   align-items: center;
 }
 
-.abc-farecalc-toggle-field-right {
-  justify-content: flex-end;
+/* Subway & Bus: Reduced Fare slots in directly under the Local Bus /
+   LinkPass pills, same spacing as the "Choose Daily Parking" checkbox
+   under the Medical Campus garage pills (margin-top: var(--abc-space-md)
+   there too) — reparented into [data-abc-subway-tier-field] by JS. */
+.abc-farecalc-toggle-field-nested {
+  margin-top: var(--abc-space-md);
+}
+
+/* Commuter Rail: Reduced Fare stays beside the station question but
+   left-aligned so its left edge lines up with the trips stepper above it
+   (same grid column), nudged down slightly so its own "eyebrow" isn't
+   flush with the station question's baseline. */
+.abc-farecalc-toggle-field-rail {
+  margin-top: var(--abc-space-sm);
 }
 
 /* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
@@ -1578,6 +1603,25 @@ label.abc-farecalc-toggle-label {
 .abc-farecalc-toggle-label a {
   color: var(--bu-mint);
   font-weight: 700;
+}
+
+/* ---- Drive card's in-card "compare against" toggle: a small pill pair
+   so the comparison card can swap between Subway & Bus and Commuter Rail
+   without adding a third card or moving anything else on the page. ---- */
+.abc-farecalc-drive-compare-toggle {
+  margin: var(--abc-space-sm) 0 var(--abc-space-md);
+}
+
+.abc-farecalc-drive-compare-station {
+  margin-bottom: var(--abc-space-md);
+}
+
+.abc-farecalc-drive-compare-station-label {
+  display: block;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  margin-bottom: var(--abc-space-xs);
 }
 
 /* ---- CRC zone pills: only the zone name is bold, the price in
@@ -1721,7 +1765,7 @@ label.abc-farecalc-toggle-label {
           <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
         </div>
         <p>
-          Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded, <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>), and BU's 50% subsidy applies on top of that through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>.
+          Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded, <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>), and BU's 50% subsidy applies on top of that through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>; place your order by the 10th of the month so your pass is ready in time for the 1st.
         </p>
       </div>
 
@@ -1745,6 +1789,14 @@ label.abc-farecalc-toggle-label {
             <div class="abc-field-hint-wrap" data-mode-only="employee">
               <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" list="abc-farecalc-station-list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
               <datalist id="abc-farecalc-station-list" data-abc-station-list></datalist>
+            </div>
+
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-mode-only="employee" data-abc-station-parking-field style="display: none;">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-station-parking-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Will you drive and park at this station?</span>
+              </label>
             </div>
 
             <div class="abc-farecalc-zonerow" data-abc-zonerow data-mode-only="employer">
@@ -1814,7 +1866,7 @@ label.abc-farecalc-toggle-label {
       <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-right">
+            <div class="abc-farecalc-toggle-field" data-mode-only="employee">
               <label class="abc-farecalc-toggle-label">
                 <input type="checkbox" data-abc-reduced-fare-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
@@ -1843,9 +1895,13 @@ label.abc-farecalc-toggle-label {
           <span>BU subsidy (50%)</span>
           <span data-abc-ride-subsidy-amt>$0.00</span>
         </div>
-        <div class="abc-farecalc-line" data-abc-station-parking-row style="display: none;">
-          <span>MBTA station parking (50% BU subsidy)</span>
-          <span data-abc-station-parking-amt>$0.00</span>
+        <div class="abc-farecalc-line" data-abc-ride-station-parking-row style="display: none;">
+          <span data-abc-ride-station-parking-label>MBTA station parking</span>
+          <span data-abc-ride-station-parking-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-ride-station-parking-subsidy-row style="display: none;">
+          <span>BU subsidy on parking (50%)</span>
+          <span data-abc-ride-station-parking-subsidy-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
@@ -1876,6 +1932,14 @@ label.abc-farecalc-toggle-label {
           <span>BU subsidy (50%)</span>
           <span data-abc-pass-subsidy-amt>$0.00</span>
         </div>
+        <div class="abc-farecalc-line" data-abc-pass-station-parking-row style="display: none;">
+          <span data-abc-pass-station-parking-label>MBTA station parking</span>
+          <span data-abc-pass-station-parking-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pass-station-parking-subsidy-row style="display: none;">
+          <span>BU subsidy on parking (50%)</span>
+          <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
+        </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
@@ -1904,8 +1968,19 @@ label.abc-farecalc-toggle-label {
 
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3>Subway &amp; Bus Instead</h3>
-        <p class="abc-farecalc-line-note">LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
+        <h3 data-abc-drive-compare-title>Subway &amp; Bus Instead</h3>
+
+        <div class="abc-choice-grid abc-farecalc-drive-compare-toggle">
+          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="subway">Subway & Bus</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
+        </div>
+
+        <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
+          <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-station">Where would you commute from?</label>
+          <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-station" list="abc-farecalc-station-list" data-abc-drive-compare-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Where would you commute from?" />
+        </div>
+
+        <p class="abc-farecalc-line-note" data-abc-drive-compare-note>LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-drive-compare-total>$0.00</span>
@@ -1961,6 +2036,7 @@ label.abc-farecalc-toggle-label {
           <li>Reduced Fare uses MBTA's own Reduced Fare price schedule, not a 50%-off calculation; it's a separate, lower set of MBTA prices, broken out as its own discount line so you can see how much it's worth before BU's 50% subsidy is applied on top.</li>
           <li>Driving-to-campus estimates use BU Transportation Services' published Charles River Campus Employee FLEX Permit rates and Medical Campus garage rates, itemized the same way as the transit cards (rate &times; frequency, or the flat permit price, stated directly). Charles River Zone 1 has a lower weekend rate ($10/day instead of $14); this tool uses the weekday rate for simplicity. Crosstown Garage's daily rate is post-tax; the two monthly permit options and both Charles River zones are pre-tax. These are shown as raw dollar figures without adjusting for individual tax rates.</li>
           <li>If you're subsidizing more than one Commuter Rail zone, each row above lists that zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA-published weekday parking rate (the largest lot when a station has more than one), assumes one parking day per round trip (your one-way trips per week &divide; 2, rounded up), and adds the result on top of your pass or ride cost; BU's 50% subsidy applies to this parking cost the same way it applies to the pass itself. Not every Commuter Rail station has MBTA parking, so this checkbox only appears for the ones that do.</li>
         </ul>
       </div>
     </details>
@@ -2170,154 +2246,160 @@ const BU_PARKING_CONFIG = {
    folder (Stations_April_2025). Only the station name -> zone mapping is
    used; that file's own per-station price columns are NOT used here, see
    README note in the project memory for why.
-   parkingRate is a hook for a future per-station MBTA park-and-ride
-   subsidy pilot (BU separately subsidizes 50% of MBTA's own station
-   parking fee) — null for every station until that dataset exists; see
-   buCalcStationParkingSubsidy() below.
+   parkingRate is each station's MBTA-published daily park-and-ride fee
+   (BU separately subsidizes 50% of this, a different benefit than the
+   on-campus parking modeled in Drive mode) — see buCalcStationParkingSubsidy()
+   below. Sourced from the user's mbta-CR-parking-lot-rates.csv, joined to
+   this station list by name (the CSV doesn't use these common names, e.g.
+   "Abington Parking Lot" / stop_id place-PB-0194 -> "Abington"). Where a
+   station has more than one MBTA-affiliated lot, the largest by capacity
+   is used as the representative rate. Stations with no MBTA parking
+   facility in that dataset keep parkingRate: null and simply never show
+   the "Will you drive and park at this station?" checkbox.
    ------------------------------------------------------------ */
 const BU_STATIONS = [
-  { label: "Abington", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Anderson/Woburn", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Andover", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Ashland", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Attleboro", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Auburndale", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Ayer", zoneId: "cr-zone-8", parkingRate: null },
+  { label: "Abington", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Anderson/Woburn", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "Andover", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "Ashland", zoneId: "cr-zone-6", parkingRate: 4.00 },
+  { label: "Attleboro", zoneId: "cr-zone-7", parkingRate: 5.00 },
+  { label: "Auburndale", zoneId: "cr-zone-2", parkingRate: 6.00 },
+  { label: "Ayer", zoneId: "cr-zone-8", parkingRate: 4.00 },
   { label: "Back Bay", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Ballardvale", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Bellevue", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Belmont", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Beverly", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Beverly Farms", zoneId: "cr-zone-5", parkingRate: null },
+  { label: "Ballardvale", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Bellevue", zoneId: "cr-zone-1", parkingRate: 4.00 },
+  { label: "Belmont", zoneId: "cr-zone-1", parkingRate: 5.00 },
+  { label: "Beverly", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Beverly Farms", zoneId: "cr-zone-5", parkingRate: 0.00 },
   { label: "Blue Hill Avenue", zoneId: "cr-zone-1a", parkingRate: null },
   { label: "Boston Landing", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Bradford", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Braintree", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Brandeis/Roberts", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Bridgewater", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Brockton", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Campello", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Canton Center", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Canton Junction", zoneId: "cr-zone-3", parkingRate: null },
+  { label: "Bradford", zoneId: "cr-zone-7", parkingRate: 2.00 },
+  { label: "Braintree", zoneId: "cr-zone-2", parkingRate: 9.00 },
+  { label: "Brandeis/Roberts", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "Bridgewater", zoneId: "cr-zone-6", parkingRate: 4.00 },
+  { label: "Brockton", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Campello", zoneId: "cr-zone-5", parkingRate: 2.00 },
+  { label: "Canton Center", zoneId: "cr-zone-3", parkingRate: 4.00 },
+  { label: "Canton Junction", zoneId: "cr-zone-3", parkingRate: 4.00 },
   { label: "Chelsea", zoneId: "cr-zone-1a", parkingRate: null },
   { label: "Church Street", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Cohasset", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Concord", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Dedham Corporate Center", zoneId: "cr-zone-2", parkingRate: null },
+  { label: "Cohasset", zoneId: "cr-zone-4", parkingRate: 2.00 },
+  { label: "Concord", zoneId: "cr-zone-5", parkingRate: 0.00 },
+  { label: "Dedham Corporate Center", zoneId: "cr-zone-2", parkingRate: 2.00 },
   { label: "East Taunton", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "East Weymouth", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Endicott", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Fairmount", zoneId: "cr-zone-1a", parkingRate: null },
+  { label: "East Weymouth", zoneId: "cr-zone-2", parkingRate: 6.00 },
+  { label: "Endicott", zoneId: "cr-zone-2", parkingRate: 0.00 },
+  { label: "Fairmount", zoneId: "cr-zone-1a", parkingRate: 4.00 },
   { label: "Fall River Depot", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Fitchburg", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Forest Hills", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Forge Park/495", zoneId: "cr-zone-6", parkingRate: null },
+  { label: "Fitchburg", zoneId: "cr-zone-8", parkingRate: 4.00 },
+  { label: "Forest Hills", zoneId: "cr-zone-1a", parkingRate: 9.00 },
+  { label: "Forge Park/495", zoneId: "cr-zone-6", parkingRate: 4.00 },
   { label: "Four Corners/Geneva", zoneId: "cr-zone-1a", parkingRate: null },
   { label: "Foxboro", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Framingham", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Franklin", zoneId: "cr-zone-6", parkingRate: null },
+  { label: "Framingham", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "Franklin", zoneId: "cr-zone-6", parkingRate: 6.00 },
   { label: "Freetown", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Gloucester", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Grafton", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Greenbush", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Greenwood", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Halifax", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Hamilton/Wenham", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Hanson", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Haverhill", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Hersey", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Highland", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Holbrook/Randolph", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Hyde Park", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Ipswich", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Islington", zoneId: "cr-zone-3", parkingRate: null },
+  { label: "Gloucester", zoneId: "cr-zone-7", parkingRate: 2.00 },
+  { label: "Grafton", zoneId: "cr-zone-8", parkingRate: 4.00 },
+  { label: "Greenbush", zoneId: "cr-zone-6", parkingRate: 2.00 },
+  { label: "Greenwood", zoneId: "cr-zone-2", parkingRate: 2.00 },
+  { label: "Halifax", zoneId: "cr-zone-7", parkingRate: 2.00 },
+  { label: "Hamilton/Wenham", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "Hanson", zoneId: "cr-zone-6", parkingRate: 4.00 },
+  { label: "Haverhill", zoneId: "cr-zone-7", parkingRate: 2.00 },
+  { label: "Hersey", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "Highland", zoneId: "cr-zone-1", parkingRate: 4.00 },
+  { label: "Holbrook/Randolph", zoneId: "cr-zone-3", parkingRate: 4.00 },
+  { label: "Hyde Park", zoneId: "cr-zone-1", parkingRate: 4.00 },
+  { label: "Ipswich", zoneId: "cr-zone-6", parkingRate: 0.00 },
+  { label: "Islington", zoneId: "cr-zone-3", parkingRate: 4.00 },
   { label: "JFK/UMass", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Kendal Green", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Kingston", zoneId: "cr-zone-8", parkingRate: null },
+  { label: "Kendal Green", zoneId: "cr-zone-3", parkingRate: 0.00 },
+  { label: "Kingston", zoneId: "cr-zone-8", parkingRate: 4.00 },
   { label: "Lansdowne", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Lawrence", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Lincoln", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Littleton/Route 495", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Lowell", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Lynn", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Malden Center", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Manchester", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Mansfield", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Melrose Highlands", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Melrose/Cedar Park", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Middleborough", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Montello", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Montserrat", zoneId: "cr-zone-4", parkingRate: null },
+  { label: "Lawrence", zoneId: "cr-zone-6", parkingRate: 4.00 },
+  { label: "Lincoln", zoneId: "cr-zone-4", parkingRate: 5.00 },
+  { label: "Littleton/Route 495", zoneId: "cr-zone-7", parkingRate: 6.00 },
+  { label: "Lowell", zoneId: "cr-zone-6", parkingRate: 8.00 },
+  { label: "Lynn", zoneId: "cr-zone-2", parkingRate: 2.00 },
+  { label: "Malden Center", zoneId: "cr-zone-1a", parkingRate: 7.50 },
+  { label: "Manchester", zoneId: "cr-zone-6", parkingRate: 0.00 },
+  { label: "Mansfield", zoneId: "cr-zone-6", parkingRate: 3.00 },
+  { label: "Melrose Highlands", zoneId: "cr-zone-1", parkingRate: 5.00 },
+  { label: "Melrose/Cedar Park", zoneId: "cr-zone-1", parkingRate: 5.00 },
+  { label: "Middleborough", zoneId: "cr-zone-8", parkingRate: 4.00 },
+  { label: "Montello", zoneId: "cr-zone-4", parkingRate: 2.00 },
+  { label: "Montserrat", zoneId: "cr-zone-4", parkingRate: 4.00 },
   { label: "Morton Street", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Nantasket Junction", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Natick Center", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Needham Center", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Needham Heights", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Needham Junction", zoneId: "cr-zone-2", parkingRate: null },
+  { label: "Nantasket Junction", zoneId: "cr-zone-4", parkingRate: 2.00 },
+  { label: "Natick Center", zoneId: "cr-zone-4", parkingRate: 0.00 },
+  { label: "Needham Center", zoneId: "cr-zone-2", parkingRate: 0.00 },
+  { label: "Needham Heights", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "Needham Junction", zoneId: "cr-zone-2", parkingRate: 6.00 },
   { label: "New Bedford", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Newburyport", zoneId: "cr-zone-8", parkingRate: null },
+  { label: "Newburyport", zoneId: "cr-zone-8", parkingRate: 4.00 },
   { label: "Newmarket", zoneId: "cr-zone-1a", parkingRate: null },
   { label: "Newtonville", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Norfolk", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "North Beverly", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "North Billerica", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "North Leominster", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "North Scituate", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "North Station", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "North Wilmington", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Norwood Central", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Norwood Depot", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Oak Grove", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Pawtucket/Central Falls", zoneId: "cr-zone-8", parkingRate: null },
+  { label: "Norfolk", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "North Beverly", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "North Billerica", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "North Leominster", zoneId: "cr-zone-8", parkingRate: 4.00 },
+  { label: "North Scituate", zoneId: "cr-zone-5", parkingRate: 4.00 },
+  { label: "North Station", zoneId: "cr-zone-1a", parkingRate: 30.00 },
+  { label: "North Wilmington", zoneId: "cr-zone-3", parkingRate: 0.00 },
+  { label: "Norwood Central", zoneId: "cr-zone-3", parkingRate: 4.00 },
+  { label: "Norwood Depot", zoneId: "cr-zone-3", parkingRate: 2.00 },
+  { label: "Oak Grove", zoneId: "cr-zone-1a", parkingRate: 8.00 },
+  { label: "Pawtucket/Central Falls", zoneId: "cr-zone-8", parkingRate: 0.00 },
   { label: "Porter", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Providence", zoneId: "cr-zone-8", parkingRate: null },
+  { label: "Providence", zoneId: "cr-zone-8", parkingRate: 0.00 },
   { label: "Quincy Center", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Reading", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Readville", zoneId: "cr-zone-2", parkingRate: null },
+  { label: "Reading", zoneId: "cr-zone-2", parkingRate: 6.00 },
+  { label: "Readville", zoneId: "cr-zone-2", parkingRate: 2.00 },
   { label: "River Works", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Rockport", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Roslindale Village", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Route 128", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Rowley", zoneId: "cr-zone-7", parkingRate: null },
+  { label: "Rockport", zoneId: "cr-zone-8", parkingRate: 0.00 },
+  { label: "Roslindale Village", zoneId: "cr-zone-1", parkingRate: 4.00 },
+  { label: "Route 128", zoneId: "cr-zone-2", parkingRate: 7.00 },
+  { label: "Rowley", zoneId: "cr-zone-7", parkingRate: 2.00 },
   { label: "Ruggles", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Salem", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Sharon", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Shirley", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "South Acton", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "South Attleboro", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "South Station", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "South Weymouth", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Southborough", zoneId: "cr-zone-6", parkingRate: null },
-  { label: "Stoughton", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Swampscott", zoneId: "cr-zone-3", parkingRate: null },
+  { label: "Salem", zoneId: "cr-zone-3", parkingRate: 5.00 },
+  { label: "Sharon", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Shirley", zoneId: "cr-zone-8", parkingRate: 0.00 },
+  { label: "South Acton", zoneId: "cr-zone-6", parkingRate: 5.00 },
+  { label: "South Attleboro", zoneId: "cr-zone-7", parkingRate: 6.00 },
+  { label: "South Station", zoneId: "cr-zone-1a", parkingRate: 30.00 },
+  { label: "South Weymouth", zoneId: "cr-zone-3", parkingRate: 2.00 },
+  { label: "Southborough", zoneId: "cr-zone-6", parkingRate: 6.00 },
+  { label: "Stoughton", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Swampscott", zoneId: "cr-zone-3", parkingRate: 6.00 },
   { label: "Talbot Avenue", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "TF Green Airport", zoneId: "cr-zone-9", parkingRate: null },
-  { label: "Uphams Corner", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "Wachusett", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Wakefield", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Walpole", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Waltham", zoneId: "cr-zone-2", parkingRate: null },
+  { label: "TF Green Airport", zoneId: "cr-zone-9", parkingRate: 5.00 },
+  { label: "Uphams Corner", zoneId: "cr-zone-1a", parkingRate: 0.00 },
+  { label: "Wachusett", zoneId: "cr-zone-8", parkingRate: 4.00 },
+  { label: "Wakefield", zoneId: "cr-zone-2", parkingRate: 6.00 },
+  { label: "Walpole", zoneId: "cr-zone-4", parkingRate: 4.00 },
+  { label: "Waltham", zoneId: "cr-zone-2", parkingRate: 6.00 },
   { label: "Waverley", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Wedgemere", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Wellesley Farms", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Wellesley Hills", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "Wellesley Square", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "West Concord", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "West Gloucester", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "West Hingham", zoneId: "cr-zone-3", parkingRate: null },
-  { label: "West Medford", zoneId: "cr-zone-1a", parkingRate: null },
-  { label: "West Natick", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "West Newton", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "West Roxbury", zoneId: "cr-zone-1", parkingRate: null },
-  { label: "Westborough", zoneId: "cr-zone-7", parkingRate: null },
-  { label: "Weymouth Landing/East Braintree", zoneId: "cr-zone-2", parkingRate: null },
-  { label: "Whitman", zoneId: "cr-zone-5", parkingRate: null },
-  { label: "Wickford Junction", zoneId: "cr-zone-10", parkingRate: null },
-  { label: "Wilmington", zoneId: "cr-zone-3", parkingRate: null },
+  { label: "Wedgemere", zoneId: "cr-zone-1", parkingRate: 5.00 },
+  { label: "Wellesley Farms", zoneId: "cr-zone-3", parkingRate: 6.00 },
+  { label: "Wellesley Hills", zoneId: "cr-zone-3", parkingRate: 6.00 },
+  { label: "Wellesley Square", zoneId: "cr-zone-3", parkingRate: 6.00 },
+  { label: "West Concord", zoneId: "cr-zone-5", parkingRate: 5.00 },
+  { label: "West Gloucester", zoneId: "cr-zone-7", parkingRate: 2.00 },
+  { label: "West Hingham", zoneId: "cr-zone-3", parkingRate: 4.00 },
+  { label: "West Medford", zoneId: "cr-zone-1a", parkingRate: 5.00 },
+  { label: "West Natick", zoneId: "cr-zone-4", parkingRate: 6.00 },
+  { label: "West Newton", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "West Roxbury", zoneId: "cr-zone-1", parkingRate: 6.00 },
+  { label: "Westborough", zoneId: "cr-zone-7", parkingRate: 6.00 },
+  { label: "Weymouth Landing/East Braintree", zoneId: "cr-zone-2", parkingRate: 4.00 },
+  { label: "Whitman", zoneId: "cr-zone-5", parkingRate: 6.00 },
+  { label: "Wickford Junction", zoneId: "cr-zone-10", parkingRate: 0.00 },
+  { label: "Wilmington", zoneId: "cr-zone-3", parkingRate: 6.00 },
   { label: "Winchester Center", zoneId: "cr-zone-1", parkingRate: null },
   { label: "Windsor Gardens", zoneId: "cr-zone-4", parkingRate: null },
-  { label: "Worcester", zoneId: "cr-zone-8", parkingRate: null },
-  { label: "Wyoming Hill", zoneId: "cr-zone-1", parkingRate: null },
+  { label: "Worcester", zoneId: "cr-zone-8", parkingRate: 15.00 },
+  { label: "Wyoming Hill", zoneId: "cr-zone-1", parkingRate: 5.00 },
 ];
 
 /* ------------------------------------------------------------
@@ -2392,11 +2474,21 @@ function mbtaPromoApplies(config, passId, today) {
  * subsidizes 50% of the MBTA's own station parking fee for CR commuters
  * who drive to their station. Dormant until BU_STATIONS entries get real
  * parkingRate values — returns null (no line item) until then. */
-function buCalcStationParkingSubsidy(stationLabel) {
+/** MBTA park-and-ride cost at the selected Commuter Rail station, for
+ * someone who drives and parks there instead of walking/biking/getting
+ * dropped off. This is an ADD-ON to the pass/ride cost, not a discount on
+ * it — BU's 50% subsidy applies to it the same way it applies to the pass
+ * itself, itemized the same two-line way (full cost, then the subsidy
+ * deducted from it). One parking day is assumed per round trip
+ * (tripsPerWeek / 2), the same round-trip assumption Drive mode uses in
+ * the other direction when building its own transit comparison. */
+function buCalcStationParkingSubsidy(stationLabel, tripsPerWeek) {
   const station = buGetStation(stationLabel);
   if (!station || station.parkingRate == null) return null;
-  const subsidyAmt = station.parkingRate * 0.5;
-  return { fullRate: station.parkingRate, subsidyAmt, finalCost: station.parkingRate - subsidyAmt };
+  const daysPerWeek = abcRoundUp(tripsPerWeek / 2);
+  const fullMonthlyCost = station.parkingRate * daysPerWeek * BU_CONFIG.weeksPerMonth;
+  const subsidyAmt = fullMonthlyCost * 0.5;
+  return { rate: station.parkingRate, daysPerWeek, fullMonthlyCost, subsidyAmt, netCost: fullMonthlyCost - subsidyAmt };
 }
 
 /** Employer view, single pass (Subway & Bus): cost of subsidizing a
@@ -2547,6 +2639,8 @@ function buInitCalculator(rootEl) {
   let crcZoneId = "crc-zone-1";
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
+  let driveCompareMode = "subway"; // "subway" | "rail" — Drive mode's comparison card
+  let stationParking = false; // Commuter Rail employee mode only — "Will you drive and park at this station?"
 
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   modeButtons.forEach((btn) => {
@@ -2561,6 +2655,15 @@ function buInitCalculator(rootEl) {
         routeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRouteSelect === "subway"));
         updateRouteVisibility();
       }
+      // Reduced Fare's checkbox is hidden entirely in employer mode, but
+      // the underlying state isn't — reset it here too, so a box checked
+      // while in employee mode can never silently keep discounting an
+      // employer calculation with no visible control left to undo it.
+      if (mode === "employer" && reducedFare) {
+        reducedFare = false;
+        if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
+      }
+      updateStationParkingFieldVisibility();
       render();
     });
   });
@@ -2572,6 +2675,9 @@ function buInitCalculator(rootEl) {
   const countField = rootEl.querySelector("[data-abc-count-field]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
+  const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
+  const reducedFareHomeMount = reducedFareField ? reducedFareField.querySelector(".abc-field") : null;
+  const subwayTierMount = rootEl.querySelector("[data-abc-subway-tier-field] .abc-field");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -2632,6 +2738,33 @@ function buInitCalculator(rootEl) {
   function employeeRailPassId() {
     const station = buGetStation(currentStationLabel());
     return station ? station.zoneId : "";
+  }
+
+  // ---- Station parking checkbox: only shown for a station that actually
+  // has an MBTA park-and-ride lot. Hidden whenever that's not true (wrong
+  // route/mode, no station picked, or a station with no lot in the
+  // dataset) — and reset to unchecked whenever it's hidden, the same
+  // "don't let a hidden control silently keep affecting the price" rule
+  // the rest of this tool follows. ----
+  const stationParkingField = rootEl.querySelector("[data-abc-station-parking-field]");
+  const stationParkingToggle = rootEl.querySelector("[data-abc-station-parking-toggle]");
+
+  function updateStationParkingFieldVisibility() {
+    if (!stationParkingField) return;
+    const station = routeType === "rail" && mode === "employee" ? buGetStation(currentStationLabel()) : null;
+    const hasParking = !!(station && station.parkingRate != null);
+    stationParkingField.style.display = hasParking ? "flex" : "none";
+    if (!hasParking && stationParking) {
+      stationParking = false;
+      if (stationParkingToggle) stationParkingToggle.checked = false;
+    }
+  }
+
+  if (stationParkingToggle) {
+    stationParkingToggle.addEventListener("change", () => {
+      stationParking = stationParkingToggle.checked;
+      render();
+    });
   }
 
   function currentPassId() {
@@ -2800,11 +2933,57 @@ function buInitCalculator(rootEl) {
   }
   updateMedicalDailyFieldVisibility();
 
+  // ---- Drive card's "compare against" toggle (Subway & Bus vs Commuter
+  // Rail) — swaps the comparison card's numbers in place rather than
+  // adding a third card, with an inline station field for Commuter Rail
+  // that reuses the same station datalist the main CR picker uses. ----
+  const driveCompareButtons = rootEl.querySelectorAll("[data-abc-drive-compare-select]");
+  const driveCompareStationField = rootEl.querySelector("[data-abc-drive-compare-station-field]");
+  const driveCompareStationInput = rootEl.querySelector("[data-abc-drive-compare-station-input]");
+
+  driveCompareButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      driveCompareMode = btn.dataset.abcDriveCompareSelect;
+      driveCompareButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
+      render();
+    });
+  });
+
+  if (driveCompareStationInput) driveCompareStationInput.addEventListener("input", render);
+
+  /** Reduced Fare's checkbox physically moves depending on route: nested
+   * under the Local Bus/LinkPass pills for Subway & Bus (same slot/spacing
+   * as "Choose Daily Parking" under the Medical Campus pills), or back in
+   * its own grid slot beside the Commuter Rail station question, left-
+   * aligned under the trips stepper above it. Grid placement is by named
+   * area regardless of DOM order, so moving it around the tree doesn't
+   * affect anything else's layout. */
+  function updateReducedFarePlacement() {
+    if (!reducedFareToggleField) return;
+    if (routeType === "subway") {
+      if (reducedFareField) reducedFareField.style.display = "none";
+      if (subwayTierMount && reducedFareToggleField.parentElement !== subwayTierMount) {
+        subwayTierMount.appendChild(reducedFareToggleField);
+      }
+      reducedFareToggleField.classList.remove("abc-farecalc-toggle-field-rail");
+      reducedFareToggleField.classList.add("abc-farecalc-toggle-field-nested");
+    } else {
+      if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
+      if (reducedFareHomeMount && reducedFareToggleField.parentElement !== reducedFareHomeMount) {
+        reducedFareHomeMount.appendChild(reducedFareToggleField);
+      }
+      reducedFareToggleField.classList.remove("abc-farecalc-toggle-field-nested");
+      reducedFareToggleField.classList.toggle("abc-farecalc-toggle-field-rail", routeType === "rail");
+    }
+  }
+
   function updateRouteVisibility() {
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
     if (railZoneField) railZoneField.style.display = routeType === "rail" ? "" : "none";
     if (driveFields) driveFields.style.display = routeType === "drive" ? "" : "none";
-    if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
+    updateReducedFarePlacement();
+    updateStationParkingFieldVisibility();
     // Flat headcount only makes sense for Subway & Bus employer mode;
     // Commuter Rail uses the per-zone breakdown, Drive has no employer view.
     if (countField) countField.style.display = (mode === "employer" && routeType === "subway") ? "" : "none";
@@ -2842,7 +3021,7 @@ function buInitCalculator(rootEl) {
   });
   updateRouteVisibility();
 
-  if (stationInput) stationInput.addEventListener("input", render);
+  if (stationInput) stationInput.addEventListener("input", () => { updateStationParkingFieldVisibility(); render(); });
   railZoneSelect.addEventListener("change", render);
 
   // ---- Generic stepper (trips/week, employee count): typed or +/- ----
@@ -2938,18 +3117,33 @@ function buInitCalculator(rootEl) {
       promoRow.style.display = "none";
     }
 
-    // Dormant MBTA station parking subsidy hook: only shows once a
-    // selected station has a real parkingRate (none do yet).
-    const stationParkingRow = rootEl.querySelector("[data-abc-station-parking-row]");
-    if (stationParkingRow) {
-      const subsidy = routeType === "rail" ? buCalcStationParkingSubsidy(currentStationLabel()) : null;
-      if (subsidy) {
-        rootEl.querySelector("[data-abc-station-parking-amt]").textContent = `-${abcFormatCurrency(subsidy.subsidyAmt)}`;
-        stationParkingRow.style.display = "flex";
+    // MBTA station parking: an ADD-ON to the pass/ride cost (not a
+    // discount on it), only applied when the checkbox is on. Itemized the
+    // same two-line way as everything else (full cost, then BU's subsidy
+    // deducted from it), and added into both cards' final totals since
+    // whichever option someone picks, the same parking cost applies.
+    const parkingSubsidy = (routeType === "rail" && stationParking)
+      ? buCalcStationParkingSubsidy(currentStationLabel(), tripsPerWeek)
+      : null;
+    ["ride", "pass"].forEach((prefix) => {
+      const row = rootEl.querySelector(`[data-abc-${prefix}-station-parking-row]`);
+      const subsidyRow = rootEl.querySelector(`[data-abc-${prefix}-station-parking-subsidy-row]`);
+      if (!row || !subsidyRow) return;
+      if (parkingSubsidy) {
+        rootEl.querySelector(`[data-abc-${prefix}-station-parking-label]`).textContent =
+          `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week)`;
+        rootEl.querySelector(`[data-abc-${prefix}-station-parking-amt]`).textContent = abcFormatCurrency(parkingSubsidy.fullMonthlyCost);
+        rootEl.querySelector(`[data-abc-${prefix}-station-parking-subsidy-amt]`).textContent = `-${abcFormatCurrency(parkingSubsidy.subsidyAmt)}`;
+        row.style.display = "flex";
+        subsidyRow.style.display = "flex";
+        const finalEl = rootEl.querySelector(`[data-abc-${prefix}-final]`);
+        const baseFinal = prefix === "ride" ? result.rideBreakdown.finalCost : result.passBreakdown.finalCost;
+        finalEl.textContent = abcFormatCurrency(baseFinal + parkingSubsidy.netCost);
       } else {
-        stationParkingRow.style.display = "none";
+        row.style.display = "none";
+        subsidyRow.style.display = "none";
       }
-    }
+    });
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -2990,11 +3184,30 @@ function buInitCalculator(rootEl) {
 
     const parking = buCalcParking(selection, tripsPerWeek);
 
-    // Reference card: what Subway & Bus (LinkPass) would cost at the same
-    // frequency, so driving and transit sit side by side as asked.
-    const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
-    const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
-    const compareCost = compareResult.passBreakdown.finalCost;
+    // Reference card: what transit would cost at the same frequency, so
+    // driving and transit sit side by side as asked. Defaults to Subway &
+    // Bus (LinkPass); the in-card toggle swaps this to a real Commuter
+    // Rail monthly pass priced from whichever station the user enters,
+    // same BU subsidy and promo logic as the main Commuter Rail cards.
+    let compareCost, compareTitle, compareNote;
+    if (driveCompareMode === "rail") {
+      const compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
+      compareTitle = "Commuter Rail Instead";
+      if (compareStation) {
+        const compareResult = buCalcAll(compareStation.zoneId, tripsPerWeek, reducedFare);
+        compareCost = compareResult.passBreakdown.finalCost;
+        compareNote = `Monthly Pass from ${compareStation.label}, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
+      } else {
+        compareCost = 0;
+        compareNote = "Enter a station above to see a Commuter Rail comparison.";
+      }
+    } else {
+      const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
+      const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
+      compareCost = compareResult.passBreakdown.finalCost;
+      compareTitle = "Subway & Bus Instead";
+      compareNote = "LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.";
+    }
     const parkingCost = parking ? parking.monthlyCost : 0;
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
@@ -3010,8 +3223,8 @@ function buInitCalculator(rootEl) {
     // paragraph) when it applies.
     if (contextNoteEl && parking) {
       let note = parking.preTax
-        ? "Pre-tax: deducted from your paycheck before taxes are withheld, same as your MBTA pass contribution."
-        : "Post-tax: paid after taxes are withheld, unlike your MBTA pass contribution.";
+        ? "Pre-tax: deducted from your paycheck before taxes are withheld."
+        : "Post-tax: paid after taxes are withheld.";
       const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
       if (showWeekend) note += ` Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`;
       contextNoteEl.textContent = note;
@@ -3031,6 +3244,10 @@ function buInitCalculator(rootEl) {
 
     const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
     if (compareEl) compareEl.textContent = abcFormatCurrency(compareCost);
+    const compareTitleEl = rootEl.querySelector("[data-abc-drive-compare-title]");
+    if (compareTitleEl) compareTitleEl.textContent = compareTitle;
+    const compareNoteEl = rootEl.querySelector("[data-abc-drive-compare-note]");
+    if (compareNoteEl) compareNoteEl.textContent = compareNote;
 
     // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
     // driven by whichever option is actually cheaper at the chosen
@@ -3051,6 +3268,9 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(diff * 12);
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+
+      const driveSavingsVsEl = driveCard.querySelector("[data-abc-savings-vs]");
+      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareMode === "rail" ? "taking Commuter Rail" : "taking Subway & Bus";
     }
   }
 
