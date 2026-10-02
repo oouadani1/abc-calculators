@@ -41,25 +41,32 @@
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
 
-  --bu-mint: #0B8A5C; /* darkened from BU's #70FFC8 for AA text/button contrast on white */
-  --bu-mint-bright: #70FFC8; /* the actual sampled brand color, used for light fills/badges only */
+  /* --bu-mint is kept only as a legible-on-white fallback; every actual
+     fill (pills, steppers, badges) uses --bu-mint-bright, the literal
+     sampled brand color, paired with --bu-mint-text (dark ink) wherever
+     it's used as a background. */
+  --bu-mint: #0B8A5C;
+  --bu-mint-bright: #70FFC8; /* BU's actual sampled accent color */
   --bu-mint-tint: #E3FBF2;
   --bu-ink: #212121; /* sampled from the same stylesheet */
 }
 
 .abc-farecalc {
-  --abc-farecalc-accent: var(--bu-mint);
+  --abc-farecalc-accent: var(--bu-mint-bright);
   --abc-farecalc-accent-tint: var(--bu-mint-tint);
+  --abc-farecalc-accent-text: var(--bu-ink);
 }
 
 .abc-farecalc.abc-theme-rail {
   --abc-farecalc-accent: var(--mbta-purple);
   --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+  --abc-farecalc-accent-text: #fff;
 }
 
 .abc-farecalc.abc-theme-drive {
-  --abc-farecalc-accent: var(--bu-mint);
+  --abc-farecalc-accent: var(--bu-mint-bright);
   --abc-farecalc-accent-tint: var(--bu-mint-tint);
+  --abc-farecalc-accent-text: var(--bu-ink);
 }
 
 /* ---- Wider container for this tool: the extra room is what makes the
@@ -221,19 +228,52 @@
    single column automatically (via the container query) once the
    widget is rendered narrow, same mechanism as the narrow-layout rules
    further down this file. ---- */
+/* ---- Stable quadrant layout: every question has a fixed, named slot
+   regardless of which route/mode is currently showing content there, so
+   switching between Subway & Bus / Commuter Rail / Private Car never
+   reshuffles anything — only the content WITHIN a slot changes. Narrow
+   (single-column) order: route, trips/count, promo, subquestion, reduced.
+   Wide (2-column) order:
+     route        | trips/count
+     promo        | promo        (full width, Commuter Rail only)
+     subquestion  | reduced
+   "subquestion" holds whichever of subway-tier / rail-zone / drive-fields
+   applies to the current route — only one is ever visible at a time.
+   "reduced" (Reduced Fare) is employee-mode only; when it's hidden the
+   row simply collapses, it doesn't leave a gap. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "route"
+    "freq"
+    "promo"
+    "subquestion"
+    "reduced";
   column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
+  align-items: start;
 }
 
 @container abc-calc (min-width: 520px) {
   .abc-farecalc-grid {
     grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "route freq"
+      "promo promo"
+      "subquestion reduced";
   }
 }
+
+[data-abc-route-field] { grid-area: route; }
+[data-abc-trips-field],
+[data-abc-count-field] { grid-area: freq; }
+.abc-farecalc-promo-callout { grid-area: promo; }
+[data-abc-subway-tier-field],
+[data-abc-rail-zone-field],
+[data-abc-drive-fields] { grid-area: subquestion; }
+[data-abc-reduced-fare-field] { grid-area: reduced; }
 
 .abc-farecalc-field-group {
   min-width: 0;
@@ -275,23 +315,8 @@
   white-space: nowrap;
 }
 
-/* "Perq" hyperlinked directly inside its question, instead of a separate
-   toggle button — the accent color is what marks it as a link/theme tie-in. */
-.abc-farecalc-inline-link {
-  color: var(--abc-farecalc-accent);
-  text-decoration: underline;
-  text-underline-offset: 2px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-inline-link:hover {
-    color: var(--abc-navy-deep);
-  }
-}
-
 /* A one-line static explainer directly under a question header, before
-   its control — used for the subsidy and Perq questions instead of a
-   hint that trails the control (or, for Perq, a dynamic toggle). */
+   its control. */
 .abc-farecalc-hint-top {
   margin-top: 0;
   margin-bottom: var(--abc-space-sm);
@@ -308,8 +333,8 @@
   position: absolute;
   top: -10px;
   right: -8px;
-  background: var(--mbta-green);
-  color: #fff;
+  background: var(--bu-mint-bright);
+  color: var(--bu-ink);
   font-size: 0.62rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -331,8 +356,8 @@
    under the route pills, rather than after every other question. ---- */
 .abc-farecalc-promo-callout {
   margin-top: var(--abc-space-md);
-  background: var(--mbta-blue-tint);
-  border-color: var(--mbta-blue);
+  background: var(--mbta-green-tint);
+  border-color: var(--mbta-green);
 }
 
 .abc-farecalc-promo-callout-head {
@@ -345,13 +370,13 @@
 
 .abc-farecalc-promo-callout h4 {
   margin: 0;
-  color: var(--mbta-blue);
+  color: var(--mbta-green);
 }
 
 .abc-farecalc-promo-days {
   flex-shrink: 0;
-  background: var(--mbta-blue);
-  color: #fff;
+  background: var(--bu-mint-bright);
+  color: var(--bu-ink);
   font-size: 0.68rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -384,7 +409,7 @@
    the same specificity-tie reason as .abc-farecalc-line-promo above. ---- */
 .abc-farecalc-line.abc-farecalc-line-subsidy,
 .abc-farecalc-line.abc-farecalc-line-subsidy span {
-  color: var(--bu-mint);
+  color: var(--bu-mint-bright);
   font-weight: 700;
 }
 
@@ -428,7 +453,7 @@
   height: 44px;
   border: none;
   background: var(--abc-farecalc-accent);
-  color: #fff;
+  color: var(--abc-farecalc-accent-text);
   cursor: pointer;
   line-height: 1;
   flex-shrink: 0;
@@ -473,8 +498,16 @@
   margin: 0;
 }
 
+/* Legible darker shade of the same green here specifically — this is
+   plain text on white, where the literal bright accent fails contrast
+   badly (it's meant for filled badges/buttons with dark text on top, not
+   itself as foreground text). Stays purple on the rail theme as before. */
 .abc-farecalc-stepper-input:focus {
-  color: var(--abc-farecalc-accent);
+  color: var(--bu-mint);
+}
+
+.abc-farecalc.abc-theme-rail .abc-farecalc-stepper-input:focus {
+  color: var(--mbta-purple);
 }
 
 .abc-farecalc-stepper-percent {
@@ -687,7 +720,7 @@
 }
 
 .abc-farecalc-crosslink a {
-  color: var(--abc-farecalc-accent);
+  color: var(--bu-mint);
   font-weight: 600;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -715,7 +748,8 @@
 }
 
 .abc-farecalc-cards .abc-card-winner .abc-badge {
-  background: var(--mbta-green);
+  background: var(--bu-mint-bright);
+  color: var(--bu-ink);
 }
 
 .abc-farecalc-cards .abc-card-winner .abc-farecalc-line-final span:last-child {
@@ -876,17 +910,6 @@
   text-align: center;
 }
 
-/* ---- Subway & Bus pass-tier pop-out: Local Bus vs LinkPass, shown only
-   when that route is selected (see updateRouteVisibility in
-   calculator.js). Disabled rather than hidden when Reduced Fare is
-   checked, since there's only one reduced product for Subway & Bus
-   regardless of tier, so the choice stays visible but inert instead of
-   jumping around on screen. ---- */
-.abc-farecalc-tier-disabled {
-  opacity: 0.5;
-  pointer-events: none;
-}
-
 /* ---- Station autocomplete (employee mode, Commuter Rail): same input +
    datalist combobox pattern used elsewhere in these tools for free
    type-ahead search, just reusing .abc-select for consistent sizing. ---- */
@@ -901,43 +924,91 @@
   box-sizing: border-box;
 }
 
-/* ---- Checkboxes (Reduced Fare, Medical Campus daily-rate toggle): same
-   look wherever this pattern shows up. ---- */
-.abc-farecalc-checkbox-field {
+/* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily
+   Parking"): a custom checkbox, not a native one — bigger and bolder to
+   read as a real control in the same visual language as the +/- steppers
+   (bold border, pill-ish accent fill when checked) rather than a small
+   plain browser checkbox. The native <input> stays in the DOM (still
+   keyboard/screen-reader operable, still what calculator.js listens to
+   via its [data-abc-*-toggle] attribute) but is visually hidden; the
+   adjacent <span class="abc-farecalc-toggle-box"> is the thing actually
+   drawn, driven by the input's :checked state via the sibling selector. ---- */
+.abc-farecalc-toggle-field {
   display: flex;
   align-items: center;
 }
 
-.abc-farecalc-checkbox-label {
-  display: flex;
+.abc-farecalc-toggle-field-right {
+  justify-content: flex-end;
+}
+
+/* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
+   so this reliably beats the generic .abc-field label rule (also a
+   tag+class selector, but declared later in base.css) regardless of
+   source order on a specificity tie — the same bug class as the
+   .abc-farecalc-line-promo/-subsidy fix above, just with a different
+   pair of rules. */
+label.abc-farecalc-toggle-label {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-ink);
-  cursor: pointer;
-}
-
-.abc-farecalc-checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--bu-mint);
-  cursor: pointer;
-}
-
-.abc-farecalc-checkbox-label a {
-  color: var(--bu-mint);
+  gap: 10px;
+  font-size: var(--abc-font-size-lg);
   font-weight: 600;
+  color: var(--abc-navy-deep);
+  cursor: pointer;
 }
 
-/* Reduced Fare always lands in the grid's right column (row 2 once the
-   trips/employee-count field already fills row 1 there, row 1 on its own
-   when neither does — e.g. employer + Commuter Rail), so it reads as
-   "beside the route pills, under whatever else is in that column"
-   regardless of which other fields are visible for the current mode/route. */
-@container abc-calc (min-width: 520px) {
-  .abc-farecalc-field-group[data-abc-reduced-fare-field] {
-    grid-column: 2;
-  }
+.abc-farecalc-toggle-label input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.abc-farecalc-toggle-box {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  background: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.abc-farecalc-toggle-box::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:checked + .abc-farecalc-toggle-box {
+  border-color: var(--bu-mint-bright);
+  background: var(--bu-mint-bright);
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:checked + .abc-farecalc-toggle-box::after {
+  background: var(--bu-ink);
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:focus-visible + .abc-farecalc-toggle-box {
+  outline: 2px solid var(--bu-mint-bright);
+  outline-offset: 2px;
+}
+
+.abc-farecalc-toggle-label a {
+  color: var(--bu-mint);
+  font-weight: 700;
 }
 
 /* ---- CRC zone pills: only the zone name is bold, the price in

@@ -52,7 +52,11 @@ const BU_CONFIG = {
     endpoint: "https://airtable-calc-automation.oouadani.workers.dev/",
   },
 
-  weeksPerMonth: 4.345,
+  // 52 weeks in a year ÷ 12 months — the plainest version of this number
+  // to explain to someone looking at the math (vs. the more precise but
+  // harder-to-explain 365.25/7/12 = 4.345, which only differs by a
+  // fraction of a percent). Stated explicitly in the footer accordion.
+  weeksPerMonth: 52 / 12,
 
   // Trip frequency is a direct numeric input (typed or +/-1 stepper), not a
   // button grid — wide enough to cover weekend-only, midday-only, one-way-
@@ -461,10 +465,21 @@ function buCalcAll(passId, tripsPerWeek, reducedFare) {
   const pass = buGetPassOption(passId);
   if (!pass) {
     const zeroBreakdown = buCalcBreakdown(0, BU_CONFIG.subsidyPct);
-    return { pass: null, passBreakdown: zeroBreakdown, rideBreakdown: zeroBreakdown, winner: "pass", annualSavings: 0, promoApplies: false, promoOriginalPrice: 0 };
+    return {
+      pass: null, passBreakdown: zeroBreakdown, rideBreakdown: zeroBreakdown, winner: "pass",
+      annualSavings: 0, promoApplies: false, promoOriginalPrice: 0,
+      passRegularTotal: 0, rideRegularTotal: 0, reducedFareDiscount: 0, rideReducedFareDiscount: 0,
+    };
   }
-  const resolved = buResolvePassPrice(pass, reducedFare);
-  const rideTotal = buCalcPayPerRideTotal(resolved.oneWayFare, tripsPerWeek, BU_CONFIG.weeksPerMonth);
+  // "Total monthly cost" always shows the regular (non-reduced) sticker
+  // price, same as it always shows the pre-promo price — Reduced Fare is
+  // then its own itemized deduction, exactly like the Commuter Rail promo
+  // is, rather than silently swapping the sticker price shown.
+  const regular = buResolvePassPrice(pass, false);
+  const resolved = reducedFare ? buResolvePassPrice(pass, true) : regular;
+
+  const rideRegularTotal = buCalcPayPerRideTotal(regular.oneWayFare, tripsPerWeek, BU_CONFIG.weeksPerMonth);
+  const rideReducedTotal = buCalcPayPerRideTotal(resolved.oneWayFare, tripsPerWeek, BU_CONFIG.weeksPerMonth);
 
   const promoApplies = mbtaPromoApplies(BU_CONFIG, passId);
   const passPrice = promoApplies
@@ -472,12 +487,19 @@ function buCalcAll(passId, tripsPerWeek, reducedFare) {
     : resolved.monthlyPrice;
 
   const passBreakdown = buCalcBreakdown(passPrice, BU_CONFIG.subsidyPct);
-  const rideBreakdown = buCalcBreakdown(rideTotal, BU_CONFIG.subsidyPct);
+  const rideBreakdown = buCalcBreakdown(rideReducedTotal, BU_CONFIG.subsidyPct);
 
   const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
   const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
 
-  return { pass, passBreakdown, rideBreakdown, winner, annualSavings: monthlyDiff * 12, promoApplies, promoOriginalPrice: resolved.monthlyPrice };
+  return {
+    pass, passBreakdown, rideBreakdown, winner,
+    annualSavings: monthlyDiff * 12, promoApplies, promoOriginalPrice: resolved.monthlyPrice,
+    passRegularTotal: regular.monthlyPrice,
+    rideRegularTotal,
+    reducedFareDiscount: regular.monthlyPrice - resolved.monthlyPrice,
+    rideReducedFareDiscount: rideRegularTotal - rideReducedTotal,
+  };
 }
 
 /** Driving-to-campus monthly estimate. For daily-rate products (Charles
@@ -487,9 +509,9 @@ function buCalcAll(passId, tripsPerWeek, reducedFare) {
 function buCalcParking(selection, daysPerWeek) {
   if (!selection) return null;
   if (selection.rateType === "monthly") {
-    return { label: selection.label, monthlyCost: selection.rate, preTax: selection.preTax, isFlat: true };
+    return { label: selection.label, monthlyCost: selection.rate, preTax: selection.preTax, isFlat: true, rate: selection.rate, daysPerWeek: null };
   }
-  return { label: selection.label, monthlyCost: selection.rate * daysPerWeek * BU_CONFIG.weeksPerMonth, preTax: selection.preTax, isFlat: false };
+  return { label: selection.label, monthlyCost: selection.rate * daysPerWeek * BU_CONFIG.weeksPerMonth, preTax: selection.preTax, isFlat: false, rate: selection.rate, daysPerWeek };
 }
 
 /* ------------------------------------------------------------
@@ -611,16 +633,14 @@ function buInitCalculator(rootEl) {
   });
 
   // ---- Reduced Fare toggle: applies across Subway & Bus and Commuter
-  // Rail (MBTA's reduced program spans both). Subway & Bus collapses to
-  // one product once checked, since there's no separate reduced bus-only
-  // pass — the tier pop-out is disabled rather than hidden, so the choice
-  // stays visible but inert. ----
+  // Rail (MBTA's reduced program spans both). Subway & Bus resolves to the
+  // same $30 reduced product regardless of which tier pill is selected
+  // (MBTA doesn't sell a separate reduced bus-only pass), but the pills
+  // stay fully interactive — nothing about checking this disables them. ----
   const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-toggle]");
   if (reducedFareCheckbox) {
     reducedFareCheckbox.addEventListener("change", () => {
       reducedFare = reducedFareCheckbox.checked;
-      if (subwayTierField) subwayTierField.classList.toggle("abc-farecalc-tier-disabled", reducedFare);
-      tierButtons.forEach((b) => { b.disabled = reducedFare; });
       render();
     });
   }
@@ -763,10 +783,10 @@ function buInitCalculator(rootEl) {
   updateMedicalDailyFieldVisibility();
 
   function updateRouteVisibility() {
-    if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "flex" : "none";
-    if (railZoneField) railZoneField.style.display = routeType === "rail" ? "flex" : "none";
-    if (driveFields) driveFields.style.display = routeType === "drive" ? "block" : "none";
-    if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "block";
+    if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
+    if (railZoneField) railZoneField.style.display = routeType === "rail" ? "" : "none";
+    if (driveFields) driveFields.style.display = routeType === "drive" ? "" : "none";
+    if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
     // Flat headcount only makes sense for Subway & Bus employer mode;
     // Commuter Rail uses the per-zone breakdown, Drive has no employer view.
     if (countField) countField.style.display = (mode === "employer" && routeType === "subway") ? "" : "none";
@@ -830,9 +850,23 @@ function buInitCalculator(rootEl) {
   initStepper("data-abc-count-stepper", BU_CONFIG.employeeCountStep, () => employeeCount, (v) => { employeeCount = v; }, 1, BU_CONFIG.employeeCountMax);
 
   function paintCard(prefix, breakdown) {
-    rootEl.querySelector(`[data-abc-${prefix}-total]`).textContent = abcFormatCurrency(breakdown.total);
     rootEl.querySelector(`[data-abc-${prefix}-subsidy-amt]`).textContent = `-${abcFormatCurrency(breakdown.subsidyAmt)}`;
     rootEl.querySelector(`[data-abc-${prefix}-final]`).textContent = abcFormatCurrency(breakdown.finalCost);
+  }
+
+  /** Reduced Fare discount row, shared between the Pay-Per-Ride and
+   * Monthly Pass cards: only shown when the checkbox is on, same pattern
+   * as the Commuter Rail promo row (its own itemized deduction, not a
+   * silent swap of the sticker price shown above it). */
+  function paintReducedFareRow(prefix, discountAmt) {
+    const row = rootEl.querySelector(`[data-abc-${prefix}-reduced-row]`);
+    if (!row) return;
+    if (reducedFare && discountAmt > 0.005) {
+      rootEl.querySelector(`[data-abc-${prefix}-reduced-amt]`).textContent = `-${abcFormatCurrency(discountAmt)}`;
+      row.style.display = "flex";
+    } else {
+      row.style.display = "none";
+    }
   }
 
   function render() {
@@ -848,6 +882,15 @@ function buInitCalculator(rootEl) {
 
     paintCard("ride", result.rideBreakdown);
     paintCard("pass", result.passBreakdown);
+
+    // "Total monthly cost" always shows the regular (non-reduced, pre-
+    // promo) sticker price on both cards — Reduced Fare and the Commuter
+    // Rail promo are each their own itemized deduction below it, the same
+    // invoice-style waterfall pattern used everywhere else in this tool.
+    rootEl.querySelector("[data-abc-ride-total]").textContent = abcFormatCurrency(result.rideRegularTotal);
+    rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.passRegularTotal);
+    paintReducedFareRow("ride", result.rideReducedFareDiscount);
+    paintReducedFareRow("pass", result.reducedFareDiscount);
 
     // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
     // "Monthly LinkPass (Subway & Bus)" — the latter skips the trailing
@@ -870,7 +913,6 @@ function buInitCalculator(rootEl) {
     const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
       const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
-      rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.promoOriginalPrice);
       rootEl.querySelector("[data-abc-pass-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
       rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
       promoRow.style.display = "flex";
@@ -939,15 +981,34 @@ function buInitCalculator(rootEl) {
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
     const labelEl = rootEl.querySelector("[data-abc-drive-label]");
-    const taxNoteEl = rootEl.querySelector("[data-abc-drive-tax-note]");
-    const weekendNoteEl = rootEl.querySelector("[data-abc-drive-weekend-note]");
+    const contextNoteEl = rootEl.querySelector("[data-abc-drive-context-note]");
+    const rateLabelEl = rootEl.querySelector("[data-abc-drive-rate-label]");
+    const rateAmtEl = rootEl.querySelector("[data-abc-drive-rate-amt]");
     if (totalEl) totalEl.textContent = abcFormatCurrency(parkingCost);
     if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
-    if (taxNoteEl) taxNoteEl.textContent = parking ? (parking.preTax ? "Pre-tax" : "Post-tax") : "";
-    if (weekendNoteEl) {
+
+    // One context line: pre-tax/post-tax explained in plain terms, with
+    // the weekend-rate note appended to the same line (not a second
+    // paragraph) when it applies.
+    if (contextNoteEl && parking) {
+      let note = parking.preTax
+        ? "Pre-tax: deducted from your paycheck before taxes are withheld, same as your MBTA pass contribution."
+        : "Post-tax: paid after taxes are withheld, unlike your MBTA pass contribution.";
       const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
-      weekendNoteEl.style.display = showWeekend ? "block" : "none";
-      if (showWeekend) weekendNoteEl.textContent = `Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day). This estimate uses the weekday rate.`;
+      if (showWeekend) note += ` Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`;
+      contextNoteEl.textContent = note;
+    }
+
+    // Itemized rate line: shows exactly where the number comes from, the
+    // same "source of the number" transparency the other cards already
+    // have (unit price × frequency, or a flat permit rate stated plainly).
+    if (rateLabelEl && rateAmtEl && parking) {
+      if (parking.isFlat) {
+        rateLabelEl.textContent = "Monthly permit rate";
+      } else {
+        rateLabelEl.textContent = `Daily rate (${abcFormatCurrency(parking.rate)}/day × ${parking.daysPerWeek} day${parking.daysPerWeek === 1 ? "" : "s"}/week)`;
+      }
+      rateAmtEl.textContent = abcFormatCurrency(parking.monthlyCost);
     }
 
     const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
