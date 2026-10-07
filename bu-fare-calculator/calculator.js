@@ -63,6 +63,7 @@ const BU_CONFIG = {
   // only, or more-than-5-day patterns that a 1-5 day grid couldn't capture.
   tripsStep: 1,
   tripsMax: 20,
+  driveTripsMax: 7, // a week only has 7 days to drive to campus on
   defaultTripsPerWeek: 6, // equivalent to a 3-day round-trip commute
 
   employeeCountStep: 5,
@@ -619,20 +620,117 @@ function buInitCalculator(rootEl) {
   }
   populateZoneSelect(railZoneSelect);
 
-  // ---- Station picker (employee mode): text input + datalist, sorted
-  // alphabetically, resolving to a zone under the hood. The datalist gives
-  // the "type the first few letters to jump to it" search behavior for
-  // free, matching the org-field autocomplete pattern used elsewhere in
-  // these tools. ----
-  const stationInput = rootEl.querySelector("[data-abc-station-input]");
-  const stationList = rootEl.querySelector("[data-abc-station-list]");
-  if (stationList) {
-    BU_STATIONS.forEach((s) => {
-      const opt = document.createElement("option");
-      opt.value = s.label;
-      stationList.appendChild(opt);
+  /** W3C ARIA "combobox with list autocomplete" pattern — the documented
+   * accessible way to build a type-ahead search field with a popup list
+   * (https://www.w3.org/WAI/ARIA/apg/patterns/combobox/), not a bespoke
+   * invention. Used instead of a native <input list> datalist because a
+   * datalist's suggestion popup is drawn entirely by the browser/OS, so
+   * this tool has no real styling control over it — on at least one real
+   * Windows/Chrome combination that showed up as unreadable white-on-
+   * white text while scrolling through it. This listbox is a plain <ul>
+   * this file fully owns, so that class of bug can't happen regardless of
+   * OS or browser. onChange(value) fires on every value change (typed or
+   * selected), same as the old datalist's plain "input" listener did, so
+   * callers don't need to know which widget is underneath. */
+  function initStationCombobox(input, listbox, onChange) {
+    if (!input || !listbox) return;
+    let options = [];
+    let activeIndex = -1;
+
+    function renderOptions(matches) {
+      listbox.innerHTML = "";
+      options = matches;
+      if (matches.length === 0) {
+        const li = document.createElement("li");
+        li.className = "abc-farecalc-combobox-empty";
+        li.textContent = "No matching stations";
+        listbox.appendChild(li);
+        return;
+      }
+      matches.forEach((label, i) => {
+        const li = document.createElement("li");
+        li.className = "abc-farecalc-combobox-option";
+        li.id = `${listbox.id}-opt-${i}`;
+        li.setAttribute("role", "option");
+        li.setAttribute("aria-selected", i === activeIndex ? "true" : "false");
+        li.textContent = label;
+        // mousedown (not click) + preventDefault so the input never
+        // blurs before the selection is handled — the classic listbox
+        // race condition, and also directly what makes the station field
+        // visibly "done" the instant you click rather than leaving the
+        // cursor blinking in a focused-but-ambiguous state.
+        li.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          selectValue(label);
+        });
+        listbox.appendChild(li);
+      });
+    }
+
+    function openWithQuery(query) {
+      const q = query.trim().toLowerCase();
+      const matches = q === "" ? [] : BU_STATIONS.map((s) => s.label).filter((label) => label.toLowerCase().includes(q));
+      activeIndex = -1;
+      renderOptions(matches);
+      const shouldOpen = q !== "";
+      listbox.hidden = !shouldOpen;
+      input.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+    }
+
+    function close() {
+      listbox.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+      activeIndex = -1;
+    }
+
+    function selectValue(label) {
+      input.value = label;
+      close();
+      onChange(label);
+      input.blur();
+    }
+
+    function moveActive(delta) {
+      if (options.length === 0) return;
+      activeIndex = (activeIndex + delta + options.length) % options.length;
+      Array.from(listbox.children).forEach((li, i) => li.setAttribute("aria-selected", i === activeIndex ? "true" : "false"));
+      const activeEl = listbox.children[activeIndex];
+      if (activeEl) {
+        input.setAttribute("aria-activedescendant", activeEl.id);
+        activeEl.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    input.addEventListener("input", () => {
+      openWithQuery(input.value);
+      onChange(input.value.trim());
     });
+    input.addEventListener("focus", () => openWithQuery(input.value));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (listbox.hidden) openWithQuery(input.value);
+        moveActive(1);
+      } else if (e.key === "ArrowUp") {
+        if (!listbox.hidden) { e.preventDefault(); moveActive(-1); }
+      } else if (e.key === "Enter") {
+        if (!listbox.hidden && activeIndex >= 0 && options[activeIndex]) {
+          e.preventDefault();
+          selectValue(options[activeIndex]);
+        }
+      } else if (e.key === "Escape") {
+        close();
+      }
+    });
+    input.addEventListener("blur", close);
   }
+
+  // ---- Station picker (employee mode): resolves to a zone under the
+  // hood via the combobox above. ----
+  const stationInput = rootEl.querySelector("[data-abc-station-input]");
+  const stationListbox = rootEl.querySelector("[data-abc-station-listbox]");
+  initStationCombobox(stationInput, stationListbox, () => { updateStationParkingFieldVisibility(); render(); });
 
   function currentStationLabel() {
     return stationInput ? stationInput.value.trim() : "";
@@ -842,10 +940,12 @@ function buInitCalculator(rootEl) {
   // ---- Drive card's "compare against" toggle (Subway & Bus vs Commuter
   // Rail) — swaps the comparison card's numbers in place rather than
   // adding a third card, with an inline station field for Commuter Rail
-  // that reuses the same station datalist the main CR picker uses. ----
+  // using the same combobox pattern as the main CR station picker. ----
   const driveCompareButtons = rootEl.querySelectorAll("[data-abc-drive-compare-select]");
   const driveCompareStationField = rootEl.querySelector("[data-abc-drive-compare-station-field]");
   const driveCompareStationInput = rootEl.querySelector("[data-abc-drive-compare-station-input]");
+  const driveCompareStationListbox = rootEl.querySelector("[data-abc-drive-compare-listbox]");
+  initStationCombobox(driveCompareStationInput, driveCompareStationListbox, render);
 
   driveCompareButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -855,8 +955,6 @@ function buInitCalculator(rootEl) {
       render();
     });
   });
-
-  if (driveCompareStationInput) driveCompareStationInput.addEventListener("input", render);
 
   /** Reduced Fare's checkbox physically moves depending on route: nested
    * under the Local Bus/LinkPass pills for Subway & Bus (same slot/spacing
@@ -921,55 +1019,66 @@ function buInitCalculator(rootEl) {
     btn.addEventListener("click", () => {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      // A value valid for transit (up to 20 one-way trips/week) can be
+      // invalid the moment Drive is selected (at most 7 days/week) — clamp
+      // it down immediately rather than leaving a stale over-the-cap number
+      // sitting in the field.
+      if (routeType === "drive" && tripsPerWeek > BU_CONFIG.driveTripsMax) {
+        tripsPerWeek = BU_CONFIG.driveTripsMax;
+      }
+      if (tripsStepper) tripsStepper.repaint();
       updateRouteVisibility();
       render();
     });
   });
   updateRouteVisibility();
 
-  if (stationInput) stationInput.addEventListener("input", () => { updateStationParkingFieldVisibility(); render(); });
   railZoneSelect.addEventListener("change", render);
 
   // ---- Generic stepper (trips/week, employee count): typed or +/- ----
+  // max can be a plain number or a function, so the trips stepper's cap
+  // can depend on the current route (a week only has 7 days to drive,
+  // but up to 20 one-way transit trips is a real weekly pattern).
   function initStepper(rootAttr, step, getValue, setValue, min, max) {
     const stepperEl = rootEl.querySelector(`[${rootAttr}]`);
-    if (!stepperEl) return;
+    if (!stepperEl) return null;
     const input = stepperEl.querySelector("[data-abc-stepper-value]");
     const minusBtn = stepperEl.querySelector("[data-abc-stepper-minus]");
     const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
 
-    function paint() { input.value = getValue(); }
+    function currentMax() { return typeof max === "function" ? max() : max; }
+    function paint() { input.value = getValue(); input.max = currentMax(); }
     minusBtn.addEventListener("click", () => { setValue(Math.max(min, getValue() - step)); paint(); render(); });
-    plusBtn.addEventListener("click", () => { setValue(Math.min(max, getValue() + step)); paint(); render(); });
+    plusBtn.addEventListener("click", () => { setValue(Math.min(currentMax(), getValue() + step)); paint(); render(); });
     input.addEventListener("input", () => {
       const raw = Number(input.value);
-      if (!Number.isNaN(raw)) { setValue(Math.min(max, Math.max(min, raw))); render(); }
+      if (!Number.isNaN(raw)) { setValue(Math.min(currentMax(), Math.max(min, raw))); render(); }
     });
     input.addEventListener("blur", paint);
     paint();
+    return { repaint: paint };
   }
 
-  initStepper("data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek, (v) => { tripsPerWeek = v; }, 0, BU_CONFIG.tripsMax);
+  const tripsStepper = initStepper(
+    "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek, (v) => { tripsPerWeek = v; }, 0,
+    () => (routeType === "drive" ? BU_CONFIG.driveTripsMax : BU_CONFIG.tripsMax)
+  );
   initStepper("data-abc-count-stepper", BU_CONFIG.employeeCountStep, () => employeeCount, (v) => { employeeCount = v; }, 1, BU_CONFIG.employeeCountMax);
 
-  function paintCard(prefix, breakdown) {
-    rootEl.querySelector(`[data-abc-${prefix}-subsidy-amt]`).textContent = `-${abcFormatCurrency(breakdown.subsidyAmt)}`;
-    rootEl.querySelector(`[data-abc-${prefix}-final]`).textContent = abcFormatCurrency(breakdown.finalCost);
-  }
-
-  /** Reduced Fare discount row, shared between the Pay-Per-Ride and
-   * Monthly Pass cards: only shown when the checkbox is on, same pattern
-   * as the Commuter Rail promo row (its own itemized deduction, not a
-   * silent swap of the sticker price shown above it). */
-  function paintReducedFareRow(prefix, discountAmt) {
-    const row = rootEl.querySelector(`[data-abc-${prefix}-reduced-row]`);
-    if (!row) return;
-    if (reducedFare && discountAmt > 0.005) {
-      rootEl.querySelector(`[data-abc-${prefix}-reduced-amt]`).textContent = `-${abcFormatCurrency(discountAmt)}`;
-      row.style.display = "flex";
-    } else {
-      row.style.display = "none";
-    }
+  /** Rounds one line to a whole dollar, writes it (with an optional "-"
+   * prefix) to the given element, and returns the signed rounded amount.
+   * Every card total in this tool is built by chaining calls to this and
+   * accumulating the return values into a running remainder, so the final
+   * line a card shows is always the exact sum of the rounded lines printed
+   * above it — none of the underlying math (weeksPerMonth, 50% splits,
+   * promo percentages) produces round numbers on its own, but what's on
+   * screen should still visibly add up rather than needing a calculator
+   * to double check. */
+  function roundAndShow(selector, rawAmount, isDeduction) {
+    const el = rootEl.querySelector(selector);
+    const rounded = abcRoundToDollar(Math.abs(rawAmount));
+    if (el) el.textContent = `${isDeduction ? "-" : ""}${abcFormatCurrencyWhole(rounded)}`;
+    return isDeduction ? -rounded : rounded;
   }
 
   function render() {
@@ -982,19 +1091,37 @@ function buInitCalculator(rootEl) {
 
   function renderEmployee() {
     const result = buCalcAll(currentPassId(), tripsPerWeek, reducedFare);
+    const parkingSubsidy = (routeType === "rail" && stationParking)
+      ? buCalcStationParkingSubsidy(currentStationLabel(), tripsPerWeek)
+      : null;
 
-    paintCard("ride", result.rideBreakdown);
-    paintCard("pass", result.passBreakdown);
+    // Every card total below is built the same way: round each line to a
+    // whole dollar as it's painted, and keep a running "remaining" value
+    // that the final line is set from — so what's on screen always adds
+    // up exactly, even though none of the underlying math (the 4.33
+    // weeks/month conversion, 50% splits, promo percentages) produces
+    // round numbers on its own. "Total monthly cost" also spells out its
+    // own formula inline for Pay-Per-Ride, where that conversion actually
+    // happens; Monthly Pass is just the flat sticker price, no formula
+    // needed there.
 
-    // "Total monthly cost" always shows the regular (non-reduced, pre-
-    // promo) sticker price on both cards — Reduced Fare and the Commuter
-    // Rail promo are each their own itemized deduction below it, the same
-    // invoice-style waterfall pattern used everywhere else in this tool.
-    rootEl.querySelector("[data-abc-ride-total]").textContent = abcFormatCurrency(result.rideRegularTotal);
-    rootEl.querySelector("[data-abc-pass-total]").textContent = abcFormatCurrency(result.passRegularTotal);
-    paintReducedFareRow("ride", result.rideReducedFareDiscount);
-    paintReducedFareRow("pass", result.reducedFareDiscount);
+    // ---- Pay-Per-Ride card ----
+    const rideTotalLabelEl = rootEl.querySelector("[data-abc-ride-total-label]");
+    if (rideTotalLabelEl && result.pass) {
+      rideTotalLabelEl.textContent =
+        `Total monthly cost (${abcFormatCurrency(result.pass.oneWayFare)}/trip × ${tripsPerWeek} trip${tripsPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+    }
+    let rideRemaining = roundAndShow("[data-abc-ride-total]", result.rideRegularTotal, false);
+    const rideReducedRow = rootEl.querySelector("[data-abc-ride-reduced-row]");
+    if (reducedFare && result.rideReducedFareDiscount > 0.005) {
+      rideRemaining += roundAndShow("[data-abc-ride-reduced-amt]", result.rideReducedFareDiscount, true);
+      rideReducedRow.style.display = "flex";
+    } else {
+      rideReducedRow.style.display = "none";
+    }
+    rideRemaining += roundAndShow("[data-abc-ride-subsidy-amt]", result.rideBreakdown.subsidyAmt, true);
 
+    // ---- Monthly Pass card ----
     // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
     // "Monthly LinkPass (Subway & Bus)" — the latter skips the trailing
     // "Pass" since LinkPass already has one in its own name.
@@ -1004,52 +1131,60 @@ function buInitCalculator(rootEl) {
         ? (result.pass.label.toLowerCase().includes("pass") ? `Monthly ${result.pass.label}` : `Monthly ${result.pass.label} Pass`)
         : "Monthly Pass";
     }
-
-    // "Total monthly cost" line spells out the zone in parentheses once a
-    // Commuter Rail station resolves to one, so someone who picked "Four
-    // Corners/Geneva" can still see it's billed as Zone 1A.
+    // Spells out the zone in parentheses once a Commuter Rail station
+    // resolves to one, so someone who picked "Four Corners/Geneva" can
+    // still see it's billed as Zone 1A.
     const totalLabelEl = rootEl.querySelector("[data-abc-pass-total-label]");
     if (totalLabelEl) {
       totalLabelEl.textContent = (routeType === "rail" && result.pass) ? `Total monthly cost (${result.pass.label})` : "Total monthly cost";
     }
-
+    let passRemaining = roundAndShow("[data-abc-pass-total]", result.passRegularTotal, false);
+    const passReducedRow = rootEl.querySelector("[data-abc-pass-reduced-row]");
+    if (reducedFare && result.reducedFareDiscount > 0.005) {
+      passRemaining += roundAndShow("[data-abc-pass-reduced-amt]", result.reducedFareDiscount, true);
+      passReducedRow.style.display = "flex";
+    } else {
+      passReducedRow.style.display = "none";
+    }
     const promoRow = rootEl.querySelector("[data-abc-pass-promo-row]");
     if (result.promoApplies) {
       const promoAmt = result.promoOriginalPrice - result.passBreakdown.total;
       rootEl.querySelector("[data-abc-pass-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
-      rootEl.querySelector("[data-abc-pass-promo-amt]").textContent = `-${abcFormatCurrency(promoAmt)}`;
+      passRemaining += roundAndShow("[data-abc-pass-promo-amt]", promoAmt, true);
       promoRow.style.display = "flex";
     } else {
       promoRow.style.display = "none";
     }
+    passRemaining += roundAndShow("[data-abc-pass-subsidy-amt]", result.passBreakdown.subsidyAmt, true);
 
-    // MBTA station parking: an ADD-ON to the pass/ride cost (not a
+    // ---- MBTA station parking: an ADD-ON to the pass/ride cost (not a
     // discount on it), only applied when the checkbox is on. Itemized the
     // same two-line way as everything else (full cost, then BU's subsidy
-    // deducted from it), and added into both cards' final totals since
-    // whichever option someone picks, the same parking cost applies.
-    const parkingSubsidy = (routeType === "rail" && stationParking)
-      ? buCalcStationParkingSubsidy(currentStationLabel(), tripsPerWeek)
-      : null;
+    // deducted from it), folded into both cards' running remainders since
+    // whichever option someone picks, the same parking cost applies. ----
     ["ride", "pass"].forEach((prefix) => {
       const row = rootEl.querySelector(`[data-abc-${prefix}-station-parking-row]`);
       const subsidyRow = rootEl.querySelector(`[data-abc-${prefix}-station-parking-subsidy-row]`);
       if (!row || !subsidyRow) return;
       if (parkingSubsidy) {
         rootEl.querySelector(`[data-abc-${prefix}-station-parking-label]`).textContent =
-          `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week)`;
-        rootEl.querySelector(`[data-abc-${prefix}-station-parking-amt]`).textContent = abcFormatCurrency(parkingSubsidy.fullMonthlyCost);
-        rootEl.querySelector(`[data-abc-${prefix}-station-parking-subsidy-amt]`).textContent = `-${abcFormatCurrency(parkingSubsidy.subsidyAmt)}`;
+          `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+        const addAmt = roundAndShow(`[data-abc-${prefix}-station-parking-amt]`, parkingSubsidy.fullMonthlyCost, false);
+        const subAmt = roundAndShow(`[data-abc-${prefix}-station-parking-subsidy-amt]`, parkingSubsidy.subsidyAmt, true);
+        if (prefix === "ride") rideRemaining += addAmt + subAmt; else passRemaining += addAmt + subAmt;
         row.style.display = "flex";
         subsidyRow.style.display = "flex";
-        const finalEl = rootEl.querySelector(`[data-abc-${prefix}-final]`);
-        const baseFinal = prefix === "ride" ? result.rideBreakdown.finalCost : result.passBreakdown.finalCost;
-        finalEl.textContent = abcFormatCurrency(baseFinal + parkingSubsidy.netCost);
       } else {
         row.style.display = "none";
         subsidyRow.style.display = "none";
       }
     });
+
+    rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
+    rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
+    // finalCost used below (winner/savings calc) stays on the precise,
+    // unrounded math — only display is rounded, so a photo-finish between
+    // ride and pass still picks the actual cheaper option.
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -1062,7 +1197,7 @@ function buInitCalculator(rootEl) {
     const loserCard = result.winner === "ride" ? passCard : rideCard;
     const otherOptionLabel = result.winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
     winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
-    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(result.annualSavings);
+    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.annualSavings));
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
@@ -1121,7 +1256,7 @@ function buInitCalculator(rootEl) {
     const contextNoteEl = rootEl.querySelector("[data-abc-drive-context-note]");
     const rateLabelEl = rootEl.querySelector("[data-abc-drive-rate-label]");
     const rateAmtEl = rootEl.querySelector("[data-abc-drive-rate-amt]");
-    if (totalEl) totalEl.textContent = abcFormatCurrency(parkingCost);
+    if (totalEl) totalEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(parkingCost));
     if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
 
     // One context line: pre-tax/post-tax explained in plain terms, with
@@ -1143,13 +1278,13 @@ function buInitCalculator(rootEl) {
       if (parking.isFlat) {
         rateLabelEl.textContent = "Monthly permit rate";
       } else {
-        rateLabelEl.textContent = `Daily rate (${abcFormatCurrency(parking.rate)}/day × ${parking.daysPerWeek} day${parking.daysPerWeek === 1 ? "" : "s"}/week)`;
+        rateLabelEl.textContent = `Daily rate (${abcFormatCurrency(parking.rate)}/day × ${parking.daysPerWeek} day${parking.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
       }
-      rateAmtEl.textContent = abcFormatCurrency(parking.monthlyCost);
+      rateAmtEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(parking.monthlyCost));
     }
 
     const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
-    if (compareEl) compareEl.textContent = abcFormatCurrency(compareCost);
+    if (compareEl) compareEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(compareCost));
     const compareTitleEl = rootEl.querySelector("[data-abc-drive-compare-title]");
     if (compareTitleEl) compareTitleEl.textContent = compareTitle;
     const compareNoteEl = rootEl.querySelector("[data-abc-drive-compare-note]");
@@ -1172,7 +1307,7 @@ function buInitCalculator(rootEl) {
       const loserCard = driveWins ? compareCard : driveCard;
       const diff = Math.abs(parkingCost - compareCost);
       winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
-      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrency(diff * 12);
+      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
 
       const driveSavingsVsEl = driveCard.querySelector("[data-abc-savings-vs]");
@@ -1208,20 +1343,24 @@ function buInitCalculator(rootEl) {
       };
     }
 
-    rootEl.querySelector("[data-abc-emp-total]").textContent = abcFormatCurrency(r.totalSticker);
+    // Same rounded-running-remainder pattern as the employee cards: round
+    // each line to a whole dollar as it's painted, and set the final line
+    // from what's left over, so it always equals exactly what's printed
+    // above it.
+    let empRemaining = roundAndShow("[data-abc-emp-total]", r.totalSticker, false);
 
     const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
     if (r.promoApplies) {
       rootEl.querySelector("[data-abc-emp-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
-      rootEl.querySelector("[data-abc-emp-promo-amt]").textContent = `-${abcFormatCurrency(r.promoAmt)}`;
+      empRemaining += roundAndShow("[data-abc-emp-promo-amt]", r.promoAmt, true);
       promoRow.style.display = "flex";
     } else {
       promoRow.style.display = "none";
     }
 
-    rootEl.querySelector("[data-abc-emp-share-amt]").textContent = `-${abcFormatCurrency(r.employeesShareAmt)}`;
-    rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrency(r.totalMonth);
-    rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrency(r.employeeSavesMonth);
+    empRemaining += roundAndShow("[data-abc-emp-share-amt]", r.employeesShareAmt, true);
+    rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrencyWhole(empRemaining);
+    rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(r.employeeSavesMonth));
 
     const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
     if (breakdownEl) {
@@ -1231,9 +1370,9 @@ function buInitCalculator(rootEl) {
           const row = document.createElement("div");
           row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
           const label = document.createElement("span");
-          label.textContent = `${zone.label} (${abcFormatCurrency(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
+          label.textContent = `${zone.label} (${abcFormatCurrencyWhole(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
           const amt = document.createElement("span");
-          amt.textContent = abcFormatCurrency(zone.subtotal);
+          amt.textContent = abcFormatCurrencyWhole(zone.subtotal);
           row.appendChild(label);
           row.appendChild(amt);
           breakdownEl.appendChild(row);

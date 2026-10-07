@@ -923,9 +923,17 @@
   text-align: center;
 }
 
-/* ---- Station autocomplete (employee mode, Commuter Rail): same input +
-   datalist combobox pattern used elsewhere in these tools for free
-   type-ahead search, just reusing .abc-select for consistent sizing. ---- */
+/* ---- Station autocomplete (employee mode, Commuter Rail; Drive mode's
+   comparison station field): the W3C ARIA Authoring Practices "combobox
+   with list autocomplete" pattern — https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+   — not a native <input list> datalist. A native datalist's suggestion
+   popup is drawn entirely by the browser/OS, so this tool has no real
+   styling control over it; on at least one real Windows/Chrome
+   combination that showed up as unreadable white-on-white text while
+   scrolling through it. The combobox pattern's listbox is a plain <ul>
+   this file fully owns and styles, so that class of bug can't happen
+   here regardless of OS/browser, while staying the standard accessible
+   way to build this exact widget (not a bespoke invention). ---- */
 .abc-field-hint-wrap {
   display: flex;
   flex-direction: column;
@@ -935,6 +943,51 @@
 .abc-farecalc-station-input {
   width: 100%;
   box-sizing: border-box;
+}
+
+.abc-farecalc-combobox {
+  position: relative;
+}
+
+.abc-farecalc-combobox-listbox {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--abc-card-bg);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  box-shadow: var(--abc-shadow-card);
+}
+
+.abc-farecalc-combobox-listbox[hidden] {
+  display: none;
+}
+
+.abc-farecalc-combobox-option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: var(--abc-font-size-base);
+  color: var(--abc-ink);
+  cursor: pointer;
+}
+
+.abc-farecalc-combobox-option[aria-selected="true"] {
+  background: var(--bu-mint-tint);
+  color: var(--bu-ink);
+  font-weight: 600;
+}
+
+.abc-farecalc-combobox-empty {
+  padding: 8px 10px;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-faint);
 }
 
 /* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily

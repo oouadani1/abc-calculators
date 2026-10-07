@@ -102,8 +102,10 @@
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-field-hint-wrap" data-mode-only="employee">
-              <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" list="abc-farecalc-station-list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
-              <datalist id="abc-farecalc-station-list" data-abc-station-list></datalist>
+              <div class="abc-farecalc-combobox">
+                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
+                <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
+              </div>
             </div>
 
             <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-mode-only="employee" data-abc-station-parking-field style="display: none;">
@@ -199,7 +201,7 @@
         <h3>Pay-Per-Ride</h3>
 
         <div class="abc-farecalc-line">
-          <span>Total monthly cost</span>
+          <span data-abc-ride-total-label>Total monthly cost</span>
           <span data-abc-ride-total>$0.00</span>
         </div>
         <div class="abc-farecalc-line" data-abc-ride-reduced-row style="display: none;">
@@ -292,7 +294,10 @@
 
         <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
           <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-station">Where would you commute from?</label>
-          <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-station" list="abc-farecalc-station-list" data-abc-drive-compare-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Where would you commute from?" />
+          <div class="abc-farecalc-combobox">
+            <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-drive-compare-listbox" aria-autocomplete="list" data-abc-drive-compare-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Where would you commute from?" />
+            <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-drive-compare-listbox" role="listbox" data-abc-drive-compare-listbox hidden></ul>
+          </div>
         </div>
 
         <p class="abc-farecalc-line-note" data-abc-drive-compare-note>LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
@@ -343,15 +348,14 @@
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
-          <li>MBTA fares are from mbta.com, checked 2026-10-01, and change over time. Treat this as a helpful estimate, not a guarantee.</li>
-          <li>BU covers a fixed 50% of the pass cost for all regular faculty and staff who enroll through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>. This isn't adjustable in this tool because it isn't adjustable in BU's actual benefit.</li>
-          <li>Picking a number of one-way trips lets you model any pattern, not just a standard weekday round-trip commute: weekend trips, midday-only trips, one-way-only trips, or more than 5 days a week all just go into the same number.</li>
-          <li>Every monthly estimate (Pay-Per-Ride, and Driving to Campus for daily parking rates) uses <strong>4.33 weeks per month</strong> (52 weeks in a year, divided by 12 months) to turn a weekly number into a monthly one. <strong>Pay-Per-Ride's total monthly cost</strong> is your one-way fare &times; the number of one-way trips you picked &times; 4.33.</li>
-          <li><strong>Monthly Pass's total monthly cost</strong> (<strong>Full monthly cost</strong> on the employer side) is simply the current MBTA sticker price for that pass, before Reduced Fare, BU's subsidy, or any promo.</li>
-          <li>Reduced Fare uses MBTA's own Reduced Fare price schedule, not a 50%-off calculation; it's a separate, lower set of MBTA prices, broken out as its own discount line so you can see how much it's worth before BU's 50% subsidy is applied on top.</li>
-          <li>Driving-to-campus estimates use BU Transportation Services' published Charles River Campus Employee FLEX Permit rates and Medical Campus garage rates, itemized the same way as the transit cards (rate &times; frequency, or the flat permit price, stated directly). Charles River Zone 1 has a lower weekend rate ($10/day instead of $14); this tool uses the weekday rate for simplicity. Crosstown Garage's daily rate is post-tax; the two monthly permit options and both Charles River zones are pre-tax. These are shown as raw dollar figures without adjusting for individual tax rates.</li>
-          <li>If you're subsidizing more than one Commuter Rail zone, each row above lists that zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA-published weekday parking rate (the largest lot when a station has more than one), assumes one parking day per round trip (your one-way trips per week &divide; 2, rounded up), and adds the result on top of your pass or ride cost; BU's 50% subsidy applies to this parking cost the same way it applies to the pass itself. Not every Commuter Rail station has MBTA parking, so this checkbox only appears for the ones that do.</li>
+          <li>Fares and rates are from mbta.com and BU Transportation Services, checked 2026-10-01. Treat this as a helpful estimate, not a guarantee.</li>
+          <li>BU covers a fixed 50% of the pass cost through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a> for all regular faculty and staff. That rate isn't adjustable here because it isn't adjustable in BU's actual benefit.</li>
+          <li>One-way trips per week can model any pattern (weekend-only, midday-only, more than 5 days), not just a standard weekday round trip.</li>
+          <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; trips per week &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
+          <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one), assumes one parking day per round trip, and applies BU's 50% subsidy the same way it applies to your pass. Only stations with MBTA parking show this option.</li>
+          <li>Subsidizing more than one Commuter Rail zone? Each row lists that zone's price &times; headcount; those add up to Full monthly cost below them.</li>
+          <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
         </ul>
       </div>
     </details>

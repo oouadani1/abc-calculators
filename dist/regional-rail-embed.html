@@ -1497,6 +1497,16 @@ function abcRoundUp(value) {
   return Math.ceil(value);
 }
 
+/** Round to the nearest whole dollar, e.g. 303.33 -> 303, 130.50 -> 131.
+ * For a line-item waterfall (total, then each deduction, then a final
+ * that should visibly equal total minus every deduction shown above it),
+ * round each amount with this BEFORE doing the subtraction, not after —
+ * rounding the precise final independently can land a dollar off from
+ * what the already-rounded lines above it add up to. */
+function abcRoundToDollar(value) {
+  return Math.round(value);
+}
+
 /** Format a plain number with thousands separators, e.g. 1234 -> "1,234" */
 function abcFormatNumber(value) {
   return new Intl.NumberFormat("en-US").format(value);
