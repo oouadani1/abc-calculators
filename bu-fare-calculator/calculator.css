@@ -232,21 +232,29 @@
    regardless of which route/mode is currently showing content there, so
    switching between Subway & Bus / Commuter Rail / Personal Car never
    reshuffles anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, promo, subquestion, reduced.
-   Wide (2-column) order:
+   (single-column) order: route, trips/count, hint, promo, subquestion,
+   reduced. Wide (2-column) order:
      route        | trips/count
+     hint         | hint         (full width, what counts as a "trip")
      promo        | promo        (full width, Commuter Rail only)
      subquestion  | reduced
    "subquestion" holds whichever of subway-tier / rail-zone / drive-fields
    applies to the current route — only one is ever visible at a time.
-   "reduced" (Reduced Fare) is employee-mode only; when it's hidden the
-   row simply collapses, it doesn't leave a gap. ---- */
+   "reduced" (Reduced Fare) and "hint" are employee-mode only; when
+   either is hidden the row simply collapses, it doesn't leave a gap.
+   "hint" is always-visible caption text, not a hover/click tooltip — an
+   earlier tooltip version both hid necessary info behind an icon (a real
+   anti-pattern, not just a style choice) and still broke row-height
+   parity with "route" when the icon wrapped to its own line at some
+   widths. A full-width row sidesteps the imbalance entirely, since both
+   columns above it are equally affected by whatever height it adds. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
     "route"
     "freq"
+    "hint"
     "promo"
     "subquestion"
     "reduced";
@@ -261,6 +269,7 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "route freq"
+      "hint hint"
       "promo promo"
       "subquestion reduced";
   }
@@ -274,6 +283,7 @@
     grid-template-areas:
       "route route"
       "freq freq"
+      "hint hint"
       "promo promo"
       "subquestion subquestion";
   }
@@ -282,6 +292,7 @@
 [data-abc-route-field] { grid-area: route; }
 [data-abc-trips-field],
 [data-abc-count-field] { grid-area: freq; }
+[data-abc-trips-hint] { grid-area: hint; }
 .abc-farecalc-promo-callout { grid-area: promo; }
 [data-abc-subway-tier-field],
 [data-abc-rail-zone-field],
@@ -990,64 +1001,14 @@
   color: var(--abc-ink-faint);
 }
 
-/* ---- Trips question info tooltip: an on-demand explanation instead of
-   permanent helper text, specifically so it adds zero height to the
-   quadrant row by default. Permanent helper text here would make this
-   cell taller than "How do you get to campus?" beside it, and since both
-   sit in the same CSS Grid row, the whole row would grow to match,
-   leaving an awkward gap under the shorter cell. Absolutely positioned,
-   so opening it overlays content instead of pushing anything down. ---- */
-.abc-farecalc-info-anchor {
-  position: relative;
-}
-
-.abc-farecalc-info-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-left: 6px;
-  padding: 0;
-  border: 1.5px solid var(--abc-ink-faint);
-  border-radius: 50%;
-  background: none;
-  color: var(--abc-ink-muted);
-  font-size: 0.7rem;
-  font-weight: 700;
-  font-style: italic;
-  font-family: Georgia, "Times New Roman", serif;
-  line-height: 1;
-  cursor: pointer;
-  vertical-align: middle;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-info-btn:hover {
-    border-color: var(--abc-navy-deep);
-    color: var(--abc-navy-deep);
-  }
-}
-
-.abc-farecalc-info-tooltip {
-  position: absolute;
-  z-index: 25;
-  top: 100%;
-  left: 0;
-  margin-top: 6px;
-  max-width: 280px;
-  padding: 10px 12px;
+/* ---- Trips question hint: always-visible caption, not a hover/click
+   tooltip — see the quadrant-layout comment above for why a tooltip was
+   tried and dropped. Its own full-width grid row, so it can't throw off
+   "route"/"freq" column heights no matter how long the text runs. ---- */
+.abc-farecalc-trips-hint {
+  margin: 0;
   font-size: var(--abc-font-size-sm);
-  font-weight: 400;
-  color: var(--abc-ink);
-  background: var(--abc-card-bg);
-  border: 1.5px solid var(--abc-border);
-  border-radius: var(--abc-radius-sm);
-  box-shadow: var(--abc-shadow-card);
-}
-
-.abc-farecalc-info-tooltip[hidden] {
-  display: none;
+  color: var(--abc-ink-muted);
 }
 
 /* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily
