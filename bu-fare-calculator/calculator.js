@@ -598,10 +598,25 @@ function buInitCalculator(rootEl) {
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const countField = rootEl.querySelector("[data-abc-count-field]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
+  const tripsInfoBtn = rootEl.querySelector("[data-abc-trips-info]");
+  const tripsTooltip = rootEl.querySelector("[data-abc-trips-tooltip]");
+  if (tripsInfoBtn && tripsTooltip) {
+    tripsInfoBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = !tripsTooltip.hidden;
+      tripsTooltip.hidden = isOpen;
+      tripsInfoBtn.setAttribute("aria-expanded", isOpen ? "false" : "true");
+    });
+    document.addEventListener("click", () => {
+      if (!tripsTooltip.hidden) {
+        tripsTooltip.hidden = true;
+        tripsInfoBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
   const reducedFareHomeMount = reducedFareField ? reducedFareField.querySelector(".abc-field") : null;
-  const subwayTierMount = rootEl.querySelector("[data-abc-subway-tier-field] .abc-field");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -997,30 +1012,19 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  /** Reduced Fare's checkbox physically moves depending on route: nested
-   * under the Local Bus/LinkPass pills for Subway & Bus (same slot/spacing
-   * as "Choose Daily Parking" under the Medical Campus pills), or back in
-   * its own grid slot beside the Commuter Rail station question, left-
-   * aligned under the trips stepper above it. Grid placement is by named
-   * area regardless of DOM order, so moving it around the tree doesn't
-   * affect anything else's layout. */
+  /** Reduced Fare's checkbox sits in its own grid slot beside the "which
+   * pass/station" question, left-aligned under the trips stepper above
+   * it — same position for Subway & Bus and Commuter Rail alike (the
+   * subway-specific nested-under-the-pills placement from an earlier
+   * round was dropped in favor of this, for visual consistency between
+   * the two transit modes). Hidden entirely for Drive, same as before. */
   function updateReducedFarePlacement() {
     if (!reducedFareToggleField) return;
-    if (routeType === "subway") {
-      if (reducedFareField) reducedFareField.style.display = "none";
-      if (subwayTierMount && reducedFareToggleField.parentElement !== subwayTierMount) {
-        subwayTierMount.appendChild(reducedFareToggleField);
-      }
-      reducedFareToggleField.classList.remove("abc-farecalc-toggle-field-rail");
-      reducedFareToggleField.classList.add("abc-farecalc-toggle-field-nested");
-    } else {
-      if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
-      if (reducedFareHomeMount && reducedFareToggleField.parentElement !== reducedFareHomeMount) {
-        reducedFareHomeMount.appendChild(reducedFareToggleField);
-      }
-      reducedFareToggleField.classList.remove("abc-farecalc-toggle-field-nested");
-      reducedFareToggleField.classList.toggle("abc-farecalc-toggle-field-rail", routeType === "rail");
+    if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
+    if (reducedFareHomeMount && reducedFareToggleField.parentElement !== reducedFareHomeMount) {
+      reducedFareHomeMount.appendChild(reducedFareToggleField);
     }
+    reducedFareToggleField.classList.toggle("abc-farecalc-toggle-field-rail", routeType !== "drive");
   }
 
   function updateRouteVisibility() {
@@ -1039,6 +1043,12 @@ function buInitCalculator(rootEl) {
           ? "How many days a week do you drive?"
           : "How many one-way trips do you take per week?";
       }
+      // The info tooltip explains what counts as a "trip" — only
+      // relevant for the transit question, not Drive's day count, which
+      // doesn't need the same caveat.
+      if (tripsInfoBtn) tripsInfoBtn.style.display = routeType === "drive" ? "none" : "";
+      if (tripsTooltip) tripsTooltip.hidden = true;
+      if (tripsInfoBtn) tripsInfoBtn.setAttribute("aria-expanded", "false");
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");

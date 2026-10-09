@@ -990,6 +990,66 @@
   color: var(--abc-ink-faint);
 }
 
+/* ---- Trips question info tooltip: an on-demand explanation instead of
+   permanent helper text, specifically so it adds zero height to the
+   quadrant row by default. Permanent helper text here would make this
+   cell taller than "How do you get to campus?" beside it, and since both
+   sit in the same CSS Grid row, the whole row would grow to match,
+   leaving an awkward gap under the shorter cell. Absolutely positioned,
+   so opening it overlays content instead of pushing anything down. ---- */
+.abc-farecalc-info-anchor {
+  position: relative;
+}
+
+.abc-farecalc-info-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0;
+  border: 1.5px solid var(--abc-ink-faint);
+  border-radius: 50%;
+  background: none;
+  color: var(--abc-ink-muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-style: italic;
+  font-family: Georgia, "Times New Roman", serif;
+  line-height: 1;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-info-btn:hover {
+    border-color: var(--abc-navy-deep);
+    color: var(--abc-navy-deep);
+  }
+}
+
+.abc-farecalc-info-tooltip {
+  position: absolute;
+  z-index: 25;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  max-width: 280px;
+  padding: 10px 12px;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 400;
+  color: var(--abc-ink);
+  background: var(--abc-card-bg);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  box-shadow: var(--abc-shadow-card);
+}
+
+.abc-farecalc-info-tooltip[hidden] {
+  display: none;
+}
+
 /* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily
    Parking"): a custom checkbox, not a native one — bigger and bolder to
    read as a real control in the same visual language as the +/- steppers
@@ -1012,10 +1072,13 @@
   margin-top: var(--abc-space-md);
 }
 
-/* Commuter Rail: Reduced Fare stays beside the station question but
-   left-aligned so its left edge lines up with the trips stepper above it
-   (same grid column), nudged down slightly so its own "eyebrow" isn't
-   flush with the station question's baseline. */
+/* Subway & Bus and Commuter Rail alike: Reduced Fare stays beside the
+   "which pass/station" question but left-aligned so its left edge lines
+   up with the trips stepper above it (same grid column), nudged down
+   slightly so its own "eyebrow" isn't flush with the question's
+   baseline. Class name kept as "-rail" even though it now also applies
+   to Subway & Bus, since Commuter Rail is where this placement
+   originated and the two transit modes are meant to look identical here. */
 .abc-farecalc-toggle-field-rail {
   margin-top: var(--abc-space-sm);
 }
