@@ -2266,16 +2266,17 @@ const BU_CONFIG = {
       "Local Bus and LinkPass prices pulled from mbta.com/fares/bus-fares " +
       "and mbta.com/fares/subway-fares. Note: Express Bus fares merged into " +
       "Local Bus pricing on a pilot basis starting 2026-09-01, so there is " +
-      "no separate Express Bus tier here. Commuter Rail zone prices pulled " +
-      "from mbta.com/fares/commuter-rail-fares. Reduced Fare LinkPass/bus " +
-      "and the Zone 1A / Zone 10 Commuter Rail reduced prices are confirmed " +
-      "from mbta.com/fares/reduced. Reduced Fare prices for CR zones 1-9 " +
-      "are NOT individually confirmed — MBTA's reduced page only publishes " +
-      "the range ($30–$209/mo, $1.10–$6.50/ride) and directs to a tariff " +
-      "document. The zones 1-9 figures below are derived by applying the " +
-      "same ratio implied by the two confirmed endpoints (zone 1A and zone " +
-      "10) across the regular-price table. Verify against MBTA's official " +
-      "tariff before relying on these for anything official.",
+      "no separate Express Bus tier here. Commuter Rail one-way and monthly " +
+      "pass prices, and every zone's one-way Reduced Fare price (zones 1-9 " +
+      "included), are confirmed against stations-zones_fares_10.8.26.xlsx " +
+      "(the user's/Amir's dataset, round 7) — this replaced the original " +
+      "ratio-extrapolated zone 1-9 reduced one-way figures with the real " +
+      "published ones (small corrections, a few cents each). Reduced Fare " +
+      "MONTHLY pass prices for zones 1-9 are the one field that dataset " +
+      "doesn't cover and are STILL the original ratio-extrapolated " +
+      "estimates from the two confirmed endpoints (zone 1A and zone 10) — " +
+      "verify against MBTA's official tariff before relying on those for " +
+      "anything official.",
   },
 
   // BU covers a fixed 50% of the pass cost, administered through Edenred
@@ -2344,13 +2345,13 @@ const BU_CONFIG = {
     { id: "local-bus", label: "Local Bus", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
     { id: "linkpass", label: "LinkPass (Subway & Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
-    { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.20, reducedMonthlyPrice: 105.00 },
-    { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.45, reducedMonthlyPrice: 114.00 },
-    { id: "cr-zone-3", label: "Zone 3", group: "rail", oneWayFare: 8.00, monthlyPrice: 261.00, reducedOneWayFare: 3.90, reducedMonthlyPrice: 128.00 },
-    { id: "cr-zone-4", label: "Zone 4", group: "rail", oneWayFare: 8.75, monthlyPrice: 281.00, reducedOneWayFare: 4.30, reducedMonthlyPrice: 138.00 },
-    { id: "cr-zone-5", label: "Zone 5", group: "rail", oneWayFare: 9.75, monthlyPrice: 311.00, reducedOneWayFare: 4.80, reducedMonthlyPrice: 153.00 },
-    { id: "cr-zone-6", label: "Zone 6", group: "rail", oneWayFare: 10.50, monthlyPrice: 340.00, reducedOneWayFare: 5.15, reducedMonthlyPrice: 167.00 },
-    { id: "cr-zone-7", label: "Zone 7", group: "rail", oneWayFare: 11.00, monthlyPrice: 360.00, reducedOneWayFare: 5.40, reducedMonthlyPrice: 177.00 },
+    { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
+    { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
+    { id: "cr-zone-3", label: "Zone 3", group: "rail", oneWayFare: 8.00, monthlyPrice: 261.00, reducedOneWayFare: 4.00, reducedMonthlyPrice: 128.00 },
+    { id: "cr-zone-4", label: "Zone 4", group: "rail", oneWayFare: 8.75, monthlyPrice: 281.00, reducedOneWayFare: 4.25, reducedMonthlyPrice: 138.00 },
+    { id: "cr-zone-5", label: "Zone 5", group: "rail", oneWayFare: 9.75, monthlyPrice: 311.00, reducedOneWayFare: 4.75, reducedMonthlyPrice: 153.00 },
+    { id: "cr-zone-6", label: "Zone 6", group: "rail", oneWayFare: 10.50, monthlyPrice: 340.00, reducedOneWayFare: 5.25, reducedMonthlyPrice: 167.00 },
+    { id: "cr-zone-7", label: "Zone 7", group: "rail", oneWayFare: 11.00, monthlyPrice: 360.00, reducedOneWayFare: 5.50, reducedMonthlyPrice: 177.00 },
     { id: "cr-zone-8", label: "Zone 8", group: "rail", oneWayFare: 12.25, monthlyPrice: 388.00, reducedOneWayFare: 6.00, reducedMonthlyPrice: 190.00 },
     { id: "cr-zone-9", label: "Zone 9", group: "rail", oneWayFare: 12.75, monthlyPrice: 406.00, reducedOneWayFare: 6.25, reducedMonthlyPrice: 199.00 },
     { id: "cr-zone-10", label: "Zone 10", group: "rail", oneWayFare: 13.25, monthlyPrice: 426.00, reducedOneWayFare: 6.50, reducedMonthlyPrice: 209.00 },
