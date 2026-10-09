@@ -61,8 +61,13 @@ const BU_CONFIG = {
   // Trip frequency is a direct numeric input (typed or +/-1 stepper), not a
   // button grid — wide enough to cover weekend-only, midday-only, one-way-
   // only, or more-than-5-day patterns that a 1-5 day grid couldn't capture.
+  // No upper bound for transit: unlike a day count, a ride count has no
+  // real-world ceiling (multiple trips a day, business travel around the
+  // city), so tripsMax is intentionally unbounded rather than an arbitrary
+  // round number. Drive's day-based question is a separate, real
+  // constraint (a week only has 7 days), capped on its own below.
   tripsStep: 1,
-  tripsMax: 20,
+  tripsMax: Infinity,
   driveTripsMax: 7, // a week only has 7 days to drive to campus on
   defaultTripsPerWeek: 6, // equivalent to a 3-day round-trip commute
 
@@ -73,7 +78,14 @@ const BU_CONFIG = {
   // Temporary Commuter Rail promo: 50% off monthly passes, Zone 1A
   // excluded. Still applies to BU employees same as everyone else; BU's
   // subsidy and the promo stack (promo first, then BU's 50%).
+  // `enabled: false` archives this entire feature (badge, callout,
+  // countdown pill, pricing discount) without deleting any of it — the
+  // single choke point is mbtaPromoIsActive() below, which this flag
+  // short-circuits regardless of endDate. Flip it back to true (and
+  // update discountPct/endDate/excludeZoneIds/infoUrl) to resurface this
+  // promo or stand up a similar future one.
   promo: {
+    enabled: false,
     discountPct: 50,
     endDate: "2026-11-30",
     excludeZoneIds: ["cr-zone-1a"],
@@ -350,6 +362,7 @@ function buCalcBreakdown(total, subsidyPct) {
 }
 
 function mbtaPromoIsActive(config, today) {
+  if (!config.promo.enabled) return false;
   const end = new Date(config.promo.endDate + "T23:59:59");
   return (today || new Date()).getTime() <= end.getTime();
 }
@@ -386,13 +399,13 @@ function mbtaPromoApplies(config, passId, today) {
  * dropped off. This is an ADD-ON to the pass/ride cost, not a discount on
  * it — BU's 50% subsidy applies to it the same way it applies to the pass
  * itself, itemized the same two-line way (full cost, then the subsidy
- * deducted from it). One parking day is assumed per round trip
- * (tripsPerWeek / 2), the same round-trip assumption Drive mode uses in
- * the other direction when building its own transit comparison. */
-function buCalcStationParkingSubsidy(stationLabel, tripsPerWeek) {
+ * deducted from it). daysPerWeek is its own direct question (0-7), not
+ * derived from the trips/week number — that number is intentionally
+ * unbounded (any ride pattern, no real ceiling), so dividing it to infer
+ * a day count used to produce nonsense like "10 days/week". */
+function buCalcStationParkingSubsidy(stationLabel, daysPerWeek) {
   const station = buGetStation(stationLabel);
-  if (!station || station.parkingRate == null) return null;
-  const daysPerWeek = abcRoundUp(tripsPerWeek / 2);
+  if (!station || station.parkingRate == null || !daysPerWeek) return null;
   const fullMonthlyCost = station.parkingRate * daysPerWeek * BU_CONFIG.weeksPerMonth;
   const subsidyAmt = fullMonthlyCost * 0.5;
   return { rate: station.parkingRate, daysPerWeek, fullMonthlyCost, subsidyAmt, netCost: fullMonthlyCost - subsidyAmt };
@@ -548,6 +561,7 @@ function buInitCalculator(rootEl) {
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
   let driveCompareMode = "subway"; // "subway" | "rail" — Drive mode's comparison card
   let stationParking = false; // Commuter Rail employee mode only — "Will you drive and park at this station?"
+  let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
 
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   modeButtons.forEach((btn) => {
@@ -562,13 +576,15 @@ function buInitCalculator(rootEl) {
         routeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRouteSelect === "subway"));
         updateRouteVisibility();
       }
-      // Reduced Fare's checkbox is hidden entirely in employer mode, but
-      // the underlying state isn't — reset it here too, so a box checked
-      // while in employee mode can never silently keep discounting an
-      // employer calculation with no visible control left to undo it.
-      if (mode === "employer" && reducedFare) {
+      // Reduced Fare's checkboxes are hidden entirely in employer mode,
+      // but the underlying state isn't — reset it here too, so a box
+      // checked while in employee mode can never silently keep
+      // discounting an employer calculation with no visible control
+      // left to undo it.
+      if (mode === "employer") {
         reducedFare = false;
         if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
+        if (driveReducedFareCheckbox) driveReducedFareCheckbox.checked = false;
       }
       updateStationParkingFieldVisibility();
       render();
@@ -744,14 +760,18 @@ function buInitCalculator(rootEl) {
     return station ? station.zoneId : "";
   }
 
-  // ---- Station parking checkbox: only shown for a station that actually
-  // has an MBTA park-and-ride lot. Hidden whenever that's not true (wrong
-  // route/mode, no station picked, or a station with no lot in the
-  // dataset) — and reset to unchecked whenever it's hidden, the same
-  // "don't let a hidden control silently keep affecting the price" rule
-  // the rest of this tool follows. ----
+  // ---- Station parking checkbox + its own direct "how many days a
+  // week" question: only shown for a station that actually has an MBTA
+  // park-and-ride lot. Hidden whenever that's not true (wrong route/
+  // mode, no station picked, or a station with no lot in the dataset) —
+  // and reset to unchecked whenever it's hidden, the same "don't let a
+  // hidden control silently keep affecting the price" rule the rest of
+  // this tool follows. The days question only appears once the checkbox
+  // itself is checked, and is fully independent of the trips/week number
+  // (which is intentionally unbounded and not a day count). ----
   const stationParkingField = rootEl.querySelector("[data-abc-station-parking-field]");
   const stationParkingToggle = rootEl.querySelector("[data-abc-station-parking-toggle]");
+  const stationParkingDaysField = rootEl.querySelector("[data-abc-station-parking-days-field]");
 
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
@@ -762,14 +782,21 @@ function buInitCalculator(rootEl) {
       stationParking = false;
       if (stationParkingToggle) stationParkingToggle.checked = false;
     }
+    if (stationParkingDaysField) stationParkingDaysField.style.display = hasParking && stationParking ? "block" : "none";
   }
 
   if (stationParkingToggle) {
     stationParkingToggle.addEventListener("change", () => {
       stationParking = stationParkingToggle.checked;
+      updateStationParkingFieldVisibility();
+      if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
       render();
     });
   }
+
+  const stationParkingDaysStepper = initStepper(
+    "data-abc-station-parking-days-stepper", 1, () => stationParkingDays, (v) => { stationParkingDays = v; }, 0, 7
+  );
 
   function currentPassId() {
     if (routeType === "subway") return passTier;
@@ -787,17 +814,30 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  // ---- Reduced Fare toggle: applies across Subway & Bus and Commuter
-  // Rail (MBTA's reduced program spans both). Subway & Bus resolves to the
-  // same $30 reduced product regardless of which tier pill is selected
-  // (MBTA doesn't sell a separate reduced bus-only pass), but the pills
-  // stay fully interactive — nothing about checking this disables them. ----
+  // ---- Reduced Fare toggle: applies across Subway & Bus, Commuter Rail,
+  // and Drive mode's transit-comparison card (MBTA's reduced program
+  // spans all of them). Two physical checkboxes share one state —
+  // the main one (reparented by route, see updateReducedFarePlacement)
+  // and a compact one inside the Drive comparison card, since that card
+  // has no other Reduced Fare control visible. Both stay in sync no
+  // matter which one someone actually clicks. Subway & Bus resolves to
+  // the same $30 reduced product regardless of which tier pill is
+  // selected (MBTA doesn't sell a separate reduced bus-only pass), but
+  // the pills stay fully interactive — nothing about checking this
+  // disables them. ----
   const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-toggle]");
+  const driveReducedFareCheckbox = rootEl.querySelector("[data-abc-drive-reduced-fare-toggle]");
+  function setReducedFare(value) {
+    reducedFare = value;
+    if (reducedFareCheckbox) reducedFareCheckbox.checked = value;
+    if (driveReducedFareCheckbox) driveReducedFareCheckbox.checked = value;
+    render();
+  }
   if (reducedFareCheckbox) {
-    reducedFareCheckbox.addEventListener("change", () => {
-      reducedFare = reducedFareCheckbox.checked;
-      render();
-    });
+    reducedFareCheckbox.addEventListener("change", () => setReducedFare(reducedFareCheckbox.checked));
+  }
+  if (driveReducedFareCheckbox) {
+    driveReducedFareCheckbox.addEventListener("change", () => setReducedFare(driveReducedFareCheckbox.checked));
   }
 
   // ---- Employer multi-zone breakdown (Commuter Rail only) ----
@@ -1047,7 +1087,11 @@ function buInitCalculator(rootEl) {
     const plusBtn = stepperEl.querySelector("[data-abc-stepper-plus]");
 
     function currentMax() { return typeof max === "function" ? max() : max; }
-    function paint() { input.value = getValue(); input.max = currentMax(); }
+    function paint() {
+      input.value = getValue();
+      const max = currentMax();
+      if (Number.isFinite(max)) input.setAttribute("max", max); else input.removeAttribute("max");
+    }
     minusBtn.addEventListener("click", () => { setValue(Math.max(min, getValue() - step)); paint(); render(); });
     plusBtn.addEventListener("click", () => { setValue(Math.min(currentMax(), getValue() + step)); paint(); render(); });
     input.addEventListener("input", () => {
@@ -1092,7 +1136,7 @@ function buInitCalculator(rootEl) {
   function renderEmployee() {
     const result = buCalcAll(currentPassId(), tripsPerWeek, reducedFare);
     const parkingSubsidy = (routeType === "rail" && stationParking)
-      ? buCalcStationParkingSubsidy(currentStationLabel(), tripsPerWeek)
+      ? buCalcStationParkingSubsidy(currentStationLabel(), stationParkingDays)
       : null;
 
     // Every card total below is built the same way: round each line to a
@@ -1247,7 +1291,7 @@ function buInitCalculator(rootEl) {
       const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
       compareCost = compareResult.passBreakdown.finalCost;
       compareTitle = "Subway & Bus Instead";
-      compareNote = "LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.";
+      compareNote = `LinkPass, same number of weekly campus visits, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
     }
     const parkingCost = parking ? parking.monthlyCost : 0;
 
@@ -1259,16 +1303,23 @@ function buInitCalculator(rootEl) {
     if (totalEl) totalEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(parkingCost));
     if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
 
-    // One context line: pre-tax/post-tax explained in plain terms, with
-    // the weekend-rate note appended to the same line (not a second
-    // paragraph) when it applies.
+    // Context bullets: pre-tax/post-tax and the weekend-rate note (when it
+    // applies) are two distinct facts, each its own bullet rather than one
+    // run-on paragraph — easier to scan than undifferentiated gray text.
     if (contextNoteEl && parking) {
-      let note = parking.preTax
-        ? "Pre-tax: deducted from your paycheck before taxes are withheld."
-        : "Post-tax: paid after taxes are withheld.";
+      contextNoteEl.innerHTML = "";
+      const notes = [
+        parking.preTax
+          ? "Pre-tax: deducted from your paycheck before taxes are withheld."
+          : "Post-tax: paid after taxes are withheld.",
+      ];
       const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
-      if (showWeekend) note += ` Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`;
-      contextNoteEl.textContent = note;
+      if (showWeekend) notes.push(`Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`);
+      notes.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        contextNoteEl.appendChild(li);
+      });
     }
 
     // Itemized rate line: shows exactly where the number comes from, the

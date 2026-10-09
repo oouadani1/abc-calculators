@@ -38,7 +38,7 @@
             <div class="abc-choice-grid abc-choice-grid-3">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive" data-mode-only="employee">Private Car</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive" data-mode-only="employee">Personal Car</button>
             </div>
           </div>
         </div>
@@ -114,6 +114,17 @@
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>Will you drive and park at this station?</span>
               </label>
+            </div>
+
+            <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
+              <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-station-parking-days">How many days a week will you park there?</label>
+              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-station-parking-days-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+              </div>
             </div>
 
             <div class="abc-farecalc-zonerow" data-abc-zonerow data-mode-only="employer">
@@ -269,7 +280,7 @@
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3 data-abc-drive-label>Driving to Campus</h3>
-        <p class="abc-farecalc-line-note" data-abc-drive-context-note></p>
+        <ul class="abc-farecalc-line-notes" data-abc-drive-context-note></ul>
         <div class="abc-farecalc-line">
           <span data-abc-drive-rate-label>Daily rate</span>
           <span data-abc-drive-rate-amt>$0.00</span>
@@ -290,6 +301,14 @@
         <div class="abc-choice-grid abc-farecalc-drive-compare-toggle">
           <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="subway">Subway & Bus</button>
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
+        </div>
+
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-reduced-fare-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></span>
+          </label>
         </div>
 
         <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
@@ -353,7 +372,7 @@
           <li>One-way trips per week can model any pattern (weekend-only, midday-only, more than 5 days), not just a standard weekday round trip.</li>
           <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; trips per week &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
           <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one), assumes one parking day per round trip, and applies BU's 50% subsidy the same way it applies to your pass. Only stations with MBTA parking show this option.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter, and applies BU's 50% subsidy the same way it applies to your pass. Only stations with MBTA parking show this option.</li>
           <li>Subsidizing more than one Commuter Rail zone? Each row lists that zone's price &times; headcount; those add up to Full monthly cost below them.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
         </ul>

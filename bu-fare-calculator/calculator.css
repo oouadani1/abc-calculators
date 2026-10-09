@@ -230,7 +230,7 @@
    further down this file. ---- */
 /* ---- Stable quadrant layout: every question has a fixed, named slot
    regardless of which route/mode is currently showing content there, so
-   switching between Subway & Bus / Commuter Rail / Private Car never
+   switching between Subway & Bus / Commuter Rail / Personal Car never
    reshuffles anything — only the content WITHIN a slot changes. Narrow
    (single-column) order: route, trips/count, promo, subquestion, reduced.
    Wide (2-column) order:
@@ -1020,6 +1020,30 @@
   margin-top: var(--abc-space-sm);
 }
 
+/* Drive mode's comparison card: a smaller-scale Reduced Fare toggle for
+   inside a card, where the full-size version (sized for top-level
+   quadrant questions) would read as oversized next to the card's already
+   compact line items. Same checked/unchecked mechanics, just smaller. */
+.abc-farecalc-toggle-field-compact {
+  margin: 0 0 var(--abc-space-md);
+}
+
+.abc-farecalc-toggle-field-compact label.abc-farecalc-toggle-label {
+  font-size: var(--abc-font-size-sm);
+  gap: 8px;
+}
+
+.abc-farecalc-toggle-field-compact .abc-farecalc-toggle-box {
+  width: 18px;
+  height: 18px;
+  border-width: 2px;
+}
+
+.abc-farecalc-toggle-field-compact .abc-farecalc-toggle-box::after {
+  width: 9px;
+  height: 9px;
+}
+
 /* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
    so this reliably beats the generic .abc-field label rule (also a
    tag+class selector, but declared later in base.css) regardless of
@@ -1100,6 +1124,14 @@ label.abc-farecalc-toggle-label {
   margin-bottom: var(--abc-space-md);
 }
 
+/* Station parking's own direct day question — decoupled from the main
+   trips/week number entirely (no more inferring "days" by dividing an
+   intentionally unbounded ride count), same pattern Drive mode already
+   uses for its own day question. Reuses the shared stepper component. */
+.abc-farecalc-station-parking-days {
+  margin-top: var(--abc-space-md);
+}
+
 .abc-farecalc-drive-compare-station-label {
   display: block;
   font-size: var(--abc-font-size-sm);
@@ -1132,6 +1164,29 @@ label.abc-farecalc-toggle-label {
 }
 
 .abc-farecalc-line-note:empty {
+  display: none;
+}
+
+/* Bulleted variant of the context line, for a card with more than one
+   distinct thought to state (pre-tax/post-tax, a weekend-rate note) —
+   separate bullets read as distinct facts instead of one dense run-on
+   paragraph of same-gray text. */
+.abc-farecalc-line-notes {
+  margin: 0 0 var(--abc-space-sm);
+  padding-left: 18px;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-line-notes li {
+  margin-bottom: 4px;
+}
+
+.abc-farecalc-line-notes li:last-child {
+  margin-bottom: 0;
+}
+
+.abc-farecalc-line-notes:empty {
   display: none;
 }
 
