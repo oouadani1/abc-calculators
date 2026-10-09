@@ -810,29 +810,28 @@
    regardless of which route/mode is currently showing content there, so
    switching between Subway & Bus / Commuter Rail / Personal Car never
    reshuffles anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, hint, promo, subquestion,
-   reduced. Wide (2-column) order:
+   (single-column) order: route, trips/count, promo, subquestion, reduced.
+   Wide (2-column) order:
      route        | trips/count
-     hint         | hint         (full width, what counts as a "trip")
      promo        | promo        (full width, Commuter Rail only)
      subquestion  | reduced
    "subquestion" holds whichever of subway-tier / rail-zone / drive-fields
    applies to the current route — only one is ever visible at a time.
-   "reduced" (Reduced Fare) and "hint" are employee-mode only; when
-   either is hidden the row simply collapses, it doesn't leave a gap.
-   "hint" is always-visible caption text, not a hover/click tooltip — an
-   earlier tooltip version both hid necessary info behind an icon (a real
-   anti-pattern, not just a style choice) and still broke row-height
-   parity with "route" when the icon wrapped to its own line at some
-   widths. A full-width row sidesteps the imbalance entirely, since both
-   columns above it are equally affected by whatever height it adds. ---- */
+   "reduced" (Reduced Fare) is employee-mode only; when it's hidden the
+   row simply collapses, it doesn't leave a gap.
+
+   What "a trip" includes used to live here as a "hint" row/tooltip —
+   dropped entirely in favor of folding it into the subtitle at the top
+   of the tool instead, see index.html. Two earlier attempts (a
+   hover/click tooltip, then an always-visible full-width caption row)
+   both worked but were still extra UI the user decided wasn't worth
+   carrying; don't reintroduce either without being asked. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
     "route"
     "freq"
-    "hint"
     "promo"
     "subquestion"
     "reduced";
@@ -847,7 +846,6 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "route freq"
-      "hint hint"
       "promo promo"
       "subquestion reduced";
   }
@@ -861,7 +859,6 @@
     grid-template-areas:
       "route route"
       "freq freq"
-      "hint hint"
       "promo promo"
       "subquestion subquestion";
   }
@@ -870,7 +867,6 @@
 [data-abc-route-field] { grid-area: route; }
 [data-abc-trips-field],
 [data-abc-count-field] { grid-area: freq; }
-[data-abc-trips-hint] { grid-area: hint; }
 .abc-farecalc-promo-callout { grid-area: promo; }
 [data-abc-subway-tier-field],
 [data-abc-rail-zone-field],
@@ -1579,16 +1575,6 @@
   color: var(--abc-ink-faint);
 }
 
-/* ---- Trips question hint: always-visible caption, not a hover/click
-   tooltip — see the quadrant-layout comment above for why a tooltip was
-   tried and dropped. Its own full-width grid row, so it can't throw off
-   "route"/"freq" column heights no matter how long the text runs. ---- */
-.abc-farecalc-trips-hint {
-  margin: 0;
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-ink-muted);
-}
-
 /* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily
    Parking"): a custom checkbox, not a native one — bigger and bolder to
    read as a real control in the same visual language as the +/- steppers
@@ -1852,7 +1838,7 @@ label.abc-farecalc-toggle-label {
 
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA pass worth it for you?</h2>
     <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your department?</h2>
-    <p class="abc-subtitle" data-mode-only="employee">BU provides a 50% monthly transit subsidy for its regular faculty and staff members.</p>
+    <p class="abc-subtitle" data-mode-only="employee">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your one-way trips, include any individual trips you take, such as going to work, during the workday, on weekends, and more.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost.</p>
 
     <div class="abc-farecalc-grid">
@@ -1884,8 +1870,6 @@ label.abc-farecalc-toggle-label {
           </div>
         </div>
       </div>
-
-      <p class="abc-farecalc-trips-hint" data-mode-only="employee" data-abc-trips-hint>Includes any trip you take: to work, during the workday, on weekends, and more.</p>
 
       <div class="abc-farecalc-field-group" data-mode-only="employer" data-abc-count-field style="display: none;">
         <p class="abc-question">How many employees are you covering?</p>
@@ -2868,7 +2852,6 @@ function buInitCalculator(rootEl) {
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const countField = rootEl.querySelector("[data-abc-count-field]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
-  const tripsHint = rootEl.querySelector("[data-abc-trips-hint]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
   const reducedFareHomeMount = reducedFareField ? reducedFareField.querySelector(".abc-field") : null;
@@ -3298,10 +3281,6 @@ function buInitCalculator(rootEl) {
           ? "How many days a week do you drive?"
           : "How many one-way trips do you take per week?";
       }
-      // The hint caption explains what counts as a "trip" — only
-      // relevant for the transit question, not Drive's day count, which
-      // doesn't need the same caveat.
-      if (tripsHint) tripsHint.style.display = routeType === "drive" ? "none" : "";
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");

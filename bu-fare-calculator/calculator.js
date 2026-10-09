@@ -598,7 +598,6 @@ function buInitCalculator(rootEl) {
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const countField = rootEl.querySelector("[data-abc-count-field]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
-  const tripsHint = rootEl.querySelector("[data-abc-trips-hint]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
   const reducedFareHomeMount = reducedFareField ? reducedFareField.querySelector(".abc-field") : null;
@@ -1028,10 +1027,6 @@ function buInitCalculator(rootEl) {
           ? "How many days a week do you drive?"
           : "How many one-way trips do you take per week?";
       }
-      // The hint caption explains what counts as a "trip" — only
-      // relevant for the transit question, not Drive's day count, which
-      // doesn't need the same caveat.
-      if (tripsHint) tripsHint.style.display = routeType === "drive" ? "none" : "";
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");

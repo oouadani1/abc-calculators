@@ -232,29 +232,28 @@
    regardless of which route/mode is currently showing content there, so
    switching between Subway & Bus / Commuter Rail / Personal Car never
    reshuffles anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, hint, promo, subquestion,
-   reduced. Wide (2-column) order:
+   (single-column) order: route, trips/count, promo, subquestion, reduced.
+   Wide (2-column) order:
      route        | trips/count
-     hint         | hint         (full width, what counts as a "trip")
      promo        | promo        (full width, Commuter Rail only)
      subquestion  | reduced
    "subquestion" holds whichever of subway-tier / rail-zone / drive-fields
    applies to the current route — only one is ever visible at a time.
-   "reduced" (Reduced Fare) and "hint" are employee-mode only; when
-   either is hidden the row simply collapses, it doesn't leave a gap.
-   "hint" is always-visible caption text, not a hover/click tooltip — an
-   earlier tooltip version both hid necessary info behind an icon (a real
-   anti-pattern, not just a style choice) and still broke row-height
-   parity with "route" when the icon wrapped to its own line at some
-   widths. A full-width row sidesteps the imbalance entirely, since both
-   columns above it are equally affected by whatever height it adds. ---- */
+   "reduced" (Reduced Fare) is employee-mode only; when it's hidden the
+   row simply collapses, it doesn't leave a gap.
+
+   What "a trip" includes used to live here as a "hint" row/tooltip —
+   dropped entirely in favor of folding it into the subtitle at the top
+   of the tool instead, see index.html. Two earlier attempts (a
+   hover/click tooltip, then an always-visible full-width caption row)
+   both worked but were still extra UI the user decided wasn't worth
+   carrying; don't reintroduce either without being asked. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
     "route"
     "freq"
-    "hint"
     "promo"
     "subquestion"
     "reduced";
@@ -269,7 +268,6 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "route freq"
-      "hint hint"
       "promo promo"
       "subquestion reduced";
   }
@@ -283,7 +281,6 @@
     grid-template-areas:
       "route route"
       "freq freq"
-      "hint hint"
       "promo promo"
       "subquestion subquestion";
   }
@@ -292,7 +289,6 @@
 [data-abc-route-field] { grid-area: route; }
 [data-abc-trips-field],
 [data-abc-count-field] { grid-area: freq; }
-[data-abc-trips-hint] { grid-area: hint; }
 .abc-farecalc-promo-callout { grid-area: promo; }
 [data-abc-subway-tier-field],
 [data-abc-rail-zone-field],
@@ -999,16 +995,6 @@
   padding: 8px 10px;
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-faint);
-}
-
-/* ---- Trips question hint: always-visible caption, not a hover/click
-   tooltip — see the quadrant-layout comment above for why a tooltip was
-   tried and dropped. Its own full-width grid row, so it can't throw off
-   "route"/"freq" column heights no matter how long the text runs. ---- */
-.abc-farecalc-trips-hint {
-  margin: 0;
-  font-size: var(--abc-font-size-sm);
-  color: var(--abc-ink-muted);
 }
 
 /* ---- Toggle fields (Reduced Fare, Medical Campus "Choose Daily
