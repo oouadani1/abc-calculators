@@ -2198,5 +2198,34 @@ document.addEventListener("DOMContentLoaded", () => {
   if (root) mbtaInitCalculator(root);
 });
 </script>
+
+<script>
+/* Reports this page's real content height to whatever parent window
+   embedded it via <iframe>, on load and on every size change (mode
+   switches, route changes, opening the accordion, adding employer
+   zone rows, etc. all change this tool's height). The repo has no
+   way to also edit the PARENT page, so a matching listener has to
+   be added once wherever the <iframe> itself lives — see this repo's
+   root README.md, "Embedding via iframe", for the exact snippet.
+   Without that listener, this postMessage is sent but nothing acts
+   on it, same as before. */
+(function () {
+  var root = document.querySelector(".abc-calc") || document.body;
+  function reportHeight() {
+    var height = Math.ceil(root.getBoundingClientRect().height);
+    if (window.parent !== window) {
+      window.parent.postMessage({ type: "abc-calc-resize", height: height }, "*");
+    }
+  }
+  if (window.ResizeObserver) {
+    new ResizeObserver(reportHeight).observe(root);
+  } else {
+    window.addEventListener("resize", reportHeight);
+    setInterval(reportHeight, 500);
+  }
+  window.addEventListener("load", reportHeight);
+  reportHeight();
+})();
+</script>
 </body>
 </html>

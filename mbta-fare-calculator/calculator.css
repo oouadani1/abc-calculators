@@ -194,25 +194,52 @@
   letter-spacing: -0.02em;
 }
 
-/* ---- Question grid: the four questions pair up into a compact,
-   table-like 2-column layout instead of stacking one after another —
-   the goal is seeing the whole tool without scrolling. Falls back to a
-   single column automatically (via the container query) once the
-   widget is rendered narrow, same mechanism as the narrow-layout rules
-   further down this file. ---- */
+/* ---- Stable quadrant layout: every question has a fixed, named slot
+   regardless of which route/mode is currently showing content there, so
+   switching between Subway & Bus / Commuter Rail never reshuffles
+   anything — only the content WITHIN a slot changes. Narrow
+   (single-column) order: route, trips/count, zone, reduced fare. Wide
+   (2-column) order:
+     route        | trips/count
+     zone         | reduced fare   (Reduced Fare employee-mode only)
+   Employer mode never fills the "reduced" slot, so the zone question
+   spans the full row instead of sitting at half width next to an empty
+   column. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
+  grid-template-areas:
+    "route"
+    "freq"
+    "zone"
+    "reduced";
   column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
+  align-items: start;
 }
 
 @container abc-calc (min-width: 520px) {
   .abc-farecalc-grid {
     grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "route freq"
+      "zone reduced";
+  }
+
+  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
+    grid-template-areas:
+      "route route"
+      "freq freq"
+      "zone zone";
   }
 }
+
+[data-abc-route-field] { grid-area: route; }
+[data-abc-trips-field],
+[data-abc-count-field] { grid-area: freq; }
+[data-abc-rail-zone-field] { grid-area: zone; }
+[data-abc-reduced-fare-field] { grid-area: reduced; }
 
 .abc-farecalc-field-group {
   min-width: 0;
@@ -324,9 +351,16 @@
 /* Promo discount as its own emphasized line item on the Monthly Pass
    card, matching the blue used elsewhere for this promo rather than a
    discreet strikethrough — sits between the full "Total monthly cost"
-   and the employer subsidy / Perq deduction rows below it. */
-.abc-farecalc-line-promo,
-.abc-farecalc-line-promo span {
+   and the employer subsidy / Perq deduction rows below it.
+   Compound selector (.abc-farecalc-line.abc-farecalc-line-promo) rather
+   than a bare class: .abc-farecalc-line itself is declared later in this
+   file, and two single-class selectors tie on specificity, with
+   whichever is declared later in source order winning — silently
+   breaking this exact color override (verified: without the compound
+   selector, the line was rendering in the base rule's muted gray, not
+   blue). */
+.abc-farecalc-line.abc-farecalc-line-promo,
+.abc-farecalc-line.abc-farecalc-line-promo span {
   color: var(--mbta-blue);
   font-weight: 700;
 }
@@ -399,35 +433,6 @@
     background: var(--mbta-blue);
     color: #fff;
   }
-}
-
-/* ---- Day-per-week picker: bold chips ---- */
-.abc-farecalc-day-grid {
-  gap: 10px;
-}
-
-.abc-farecalc-day-btn {
-  font-family: var(--abc-font-mono);
-  font-size: 1.1rem;
-  font-weight: 600;
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--abc-navy-deep);
-  color: #fff;
-  cursor: pointer;
-  transition: background 0.15s ease, transform 0.1s ease;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-day-btn:hover {
-    transform: translateY(-2px);
-  }
-}
-
-.abc-farecalc-day-btn.abc-active {
-  background: var(--abc-farecalc-accent);
 }
 
 /* ---- Stepper (subsidy / pre-tax): +/- buttons flank a real
@@ -604,6 +609,218 @@
   color: var(--abc-ink-faint);
   cursor: default;
   pointer-events: none;
+}
+
+/* ---- Station/organization autocomplete: the W3C ARIA "combobox with
+   list autocomplete" pattern — https://www.w3.org/WAI/ARIA/apg/patterns/combobox/
+   — not a native <input list> datalist, and not a bespoke invention
+   either: it's the documented standard way to build this exact widget. A
+   native datalist's suggestion popup is drawn entirely by the browser/OS,
+   so this tool would have no real styling control over it; this listbox
+   is a plain <ul> fully owned and styled here instead. ---- */
+.abc-field-hint-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.abc-farecalc-station-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.abc-farecalc-combobox {
+  position: relative;
+}
+
+.abc-farecalc-combobox-listbox {
+  position: absolute;
+  z-index: 25;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--abc-card-bg);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  box-shadow: var(--abc-shadow-card);
+}
+
+.abc-farecalc-combobox-listbox[hidden] {
+  display: none;
+}
+
+.abc-farecalc-combobox-option {
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: var(--abc-font-size-base);
+  color: var(--abc-ink);
+  cursor: pointer;
+}
+
+.abc-farecalc-combobox-option[aria-selected="true"] {
+  background: var(--abc-farecalc-accent-tint);
+  color: var(--abc-navy-deep);
+  font-weight: 600;
+}
+
+.abc-farecalc-combobox-empty {
+  padding: 8px 10px;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-faint);
+}
+
+/* ---- Toggle fields (Reduced Fare, "will you drive and park"): a custom
+   checkbox, not a native one — bigger and bolder to read as a real
+   control, in the same visual language as the steppers. The native
+   <input> stays in the DOM (keyboard/screen-reader operable, still what
+   calculator.js listens to) but is visually hidden; the adjacent
+   <span class="abc-farecalc-toggle-box"> is the thing actually drawn,
+   driven by the input's :checked state via the sibling selector. ---- */
+.abc-farecalc-toggle-field {
+  display: flex;
+  align-items: center;
+}
+
+/* Beside the "which pass/station" question, left-aligned so its left
+   edge lines up with the trips stepper above it (same grid column),
+   nudged down slightly so its own "eyebrow" isn't flush with the
+   question's baseline. */
+.abc-farecalc-toggle-field-rail {
+  margin-top: var(--abc-space-sm);
+}
+
+/* Nested under a pill/combobox control above it, same spacing the
+   Reduced Fare toggle uses when it's not in its own grid slot. */
+.abc-farecalc-toggle-field-nested {
+  margin-top: var(--abc-space-md);
+}
+
+/* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
+   so this reliably beats the generic .abc-field label rule (also a
+   tag+class selector, from base.css) regardless of source order on a
+   specificity tie — the same bug class as the .abc-farecalc-line-promo
+   fix above, just a different pair of rules. */
+label.abc-farecalc-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--abc-font-size-lg);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  cursor: pointer;
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.abc-farecalc-toggle-box {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 2.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  background: #fff;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.abc-farecalc-toggle-box::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:checked + .abc-farecalc-toggle-box {
+  border-color: var(--abc-farecalc-accent);
+  background: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:checked + .abc-farecalc-toggle-box::after {
+  background: #fff;
+}
+
+.abc-farecalc-toggle-label input[type="checkbox"]:focus-visible + .abc-farecalc-toggle-box {
+  outline: 2px solid var(--abc-farecalc-accent);
+  outline-offset: 2px;
+}
+
+.abc-farecalc-toggle-label a {
+  color: var(--abc-farecalc-accent);
+  font-weight: 700;
+}
+
+/* ---- Station parking's own direct day question — decoupled from the
+   main trips/week number entirely (that number is intentionally
+   unbounded, not a day count). ---- */
+.abc-farecalc-station-parking-days {
+  margin-top: var(--abc-space-md);
+}
+
+.abc-farecalc-station-parking-days-label {
+  display: block;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  margin-bottom: var(--abc-space-xs);
+}
+
+/* ---- Break-even stat: a callout matching the shared .abc-callout shape
+   (like the promo callout above it), with one big figure and a plain-
+   language takeaway sentence underneath. Always shown in employee mode,
+   regardless of which card currently wins — restored from this tool's
+   original build (see calculator.js), which reported this same pace
+   before a day-count input briefly replaced it. ---- */
+.abc-farecalc-breakeven {
+  margin-top: var(--abc-space-lg);
+  background: var(--abc-farecalc-accent-tint);
+  border-color: var(--abc-farecalc-accent);
+}
+
+.abc-farecalc-breakeven-stat {
+  display: flex;
+  align-items: baseline;
+  gap: var(--abc-space-sm);
+  margin-bottom: var(--abc-space-sm);
+}
+
+.abc-farecalc-breakeven-figure {
+  font-family: var(--abc-font-mono);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--abc-farecalc-accent);
+  line-height: 1;
+}
+
+.abc-farecalc-breakeven-label {
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-breakeven p {
+  margin: 0;
+  font-size: var(--abc-font-size-base);
+  color: var(--abc-ink);
+  line-height: 1.5;
 }
 
 .abc-farecalc .abc-choice-button {
@@ -837,14 +1054,6 @@
   .abc-farecalc-title {
     font-size: 1.4rem;
   }
-  .abc-farecalc-day-btn {
-    width: 42px;
-    height: 42px;
-    font-size: 1rem;
-  }
-  .abc-farecalc-day-grid {
-    gap: 8px;
-  }
   .abc-farecalc-stepper {
     width: 100%;
     justify-content: space-between;
@@ -880,14 +1089,6 @@
 @media (max-width: 480px) {
   .abc-farecalc-title {
     font-size: 1.4rem;
-  }
-  .abc-farecalc-day-btn {
-    width: 42px;
-    height: 42px;
-    font-size: 1rem;
-  }
-  .abc-farecalc-day-grid {
-    gap: 8px;
   }
   .abc-farecalc-stepper {
     width: 100%;
