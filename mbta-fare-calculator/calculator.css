@@ -147,47 +147,6 @@
   color: var(--mbta-green);
 }
 
-/* ---- Organization picker (seeds the analytics log). Sits right under
-   the subtitle, styled as a normal question — not a footer afterthought —
-   hidden entirely unless analytics is wired up. ---- */
-.abc-farecalc-org {
-  margin-bottom: var(--abc-space-sm);
-}
-
-.abc-farecalc-org-input-wrap {
-  position: relative;
-  max-width: 360px;
-}
-
-.abc-farecalc-org-input {
-  width: 100%;
-  padding-right: 34px;
-}
-
-.abc-farecalc-org-clear {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--abc-border);
-  color: var(--abc-ink-muted);
-  font-size: 0.9rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.abc-farecalc-org-clear:hover {
-  background: var(--abc-ink-faint);
-  color: #fff;
-}
-
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
@@ -198,13 +157,16 @@
    regardless of which route/mode is currently showing content there, so
    switching between Subway & Bus / Commuter Rail never reshuffles
    anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, zone, reduced fare. Wide
-   (2-column) order:
+   (single-column) order: route, trips/count, zone, reduced fare,
+   subsidy, Perq. Wide (2-column) order:
      route        | trips/count
      zone         | reduced fare   (Reduced Fare employee-mode only)
-   Employer mode never fills the "reduced" slot, so the zone question
-   spans the full row instead of sitting at half width next to an empty
-   column. ---- */
+     subsidy      | Perq
+   Subsidy and Perq always pair up regardless of mode or route — they're
+   not route-dependent, so they don't need the same "reshuffle" guard the
+   top two rows do. Employer mode never fills the "reduced" slot, so the
+   zone question spans the full row instead of sitting at half width next
+   to an empty column. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -212,7 +174,9 @@
     "route"
     "freq"
     "zone"
-    "reduced";
+    "reduced"
+    "subsidy"
+    "perq";
   column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
@@ -224,14 +188,16 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "route freq"
-      "zone reduced";
+      "zone reduced"
+      "subsidy perq";
   }
 
   .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
     grid-template-areas:
       "route route"
       "freq freq"
-      "zone zone";
+      "zone zone"
+      "subsidy perq";
   }
 }
 
@@ -240,6 +206,8 @@
 [data-abc-count-field] { grid-area: freq; }
 [data-abc-rail-zone-field] { grid-area: zone; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
+[data-abc-subsidy-field] { grid-area: subsidy; }
+[data-abc-perq-field] { grid-area: perq; }
 
 .abc-farecalc-field-group {
   min-width: 0;
@@ -781,46 +749,6 @@ label.abc-farecalc-toggle-label {
   font-weight: 600;
   color: var(--abc-ink-muted);
   margin-bottom: var(--abc-space-xs);
-}
-
-/* ---- Break-even stat: a callout matching the shared .abc-callout shape
-   (like the promo callout above it), with one big figure and a plain-
-   language takeaway sentence underneath. Always shown in employee mode,
-   regardless of which card currently wins — restored from this tool's
-   original build (see calculator.js), which reported this same pace
-   before a day-count input briefly replaced it. ---- */
-.abc-farecalc-breakeven {
-  margin-top: var(--abc-space-lg);
-  background: var(--abc-farecalc-accent-tint);
-  border-color: var(--abc-farecalc-accent);
-}
-
-.abc-farecalc-breakeven-stat {
-  display: flex;
-  align-items: baseline;
-  gap: var(--abc-space-sm);
-  margin-bottom: var(--abc-space-sm);
-}
-
-.abc-farecalc-breakeven-figure {
-  font-family: var(--abc-font-mono);
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: var(--abc-farecalc-accent);
-  line-height: 1;
-}
-
-.abc-farecalc-breakeven-label {
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-}
-
-.abc-farecalc-breakeven p {
-  margin: 0;
-  font-size: var(--abc-font-size-base);
-  color: var(--abc-ink);
-  line-height: 1.5;
 }
 
 .abc-farecalc .abc-choice-button {

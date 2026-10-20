@@ -80,15 +80,6 @@ const MBTA_CONFIG = {
     infoUrl: "https://www.mbta.com/fares/commuter-rail-summer-promotions",
   },
 
-  // Optional analytics: when someone picks their organization, the tool
-  // sends one record (org + their inputs) to this endpoint. Point it at
-  // the Cloudflare Worker that proxies to Airtable (see
-  // analytics/cloudflare-worker.js). Leave blank to disable logging
-  // entirely — the org field simply won't appear.
-  analytics: {
-    endpoint: "https://airtable-calc-automation.oouadani.workers.dev/",
-  },
-
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
   // BOTH the pass and pay-per-ride totals — these are transit-benefit-
   // account features, not pass-specific ones.
@@ -375,19 +366,6 @@ function mbtaCalcStationParking(stationLabel, daysPerWeek) {
   return { rate: station.parkingRate, daysPerWeek, monthlyCost };
 }
 
-/** One-way trips per week needed for the pass to break even against
- * paying per ride, at today's effective prices (after subsidy, Perq,
- * promo, and Reduced Fare, whichever apply) — restored from this tool's
- * original build (see git history, commit 80f0566), adapted from a
- * days-per-week pace to a trips-per-week one since the input itself no
- * longer asks for days. Fractional on purpose: this is a pace to aim
- * for, not a hard count someone needs to hit exactly. */
-function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, effectiveOneWayFare, weeksPerMonth) {
-  if (effectiveOneWayFare <= 0) return 0;
-  const tripsPerMonth = effectivePassCost / effectiveOneWayFare;
-  return tripsPerMonth / weeksPerMonth;
-}
-
 /** Employer view, single pass (Subway & Bus, always just LinkPass): cost of
  * subsidizing a monthly pass across a flat headcount. Reuses the same
  * subsidy-then-pre-tax breakdown as the employee view, but reads the pieces
@@ -505,9 +483,9 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
 }
 
 /** Bundles every derived number the UI needs for both options + inputs,
- * including the break-even pace. Reduced Fare is its own itemized
- * deduction (regular sticker price always shown first), same waterfall
- * pattern the promo and subsidy/Perq lines already use. */
+ * Reduced Fare is its own itemized deduction (regular sticker price
+ * always shown first), same waterfall pattern the promo and subsidy/Perq
+ * lines already use. */
 function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedFare) {
   const pass = mbtaGetPassOption(config, passId);
   if (!pass) {
@@ -524,7 +502,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
       rideRegularTotal: 0,
       reducedFareDiscount: 0,
       rideReducedFareDiscount: 0,
-      breakEvenTripsPerWeek: 0,
     };
   }
 
@@ -549,17 +526,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
   const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
   const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
 
-  // Break-even pace: how many one-way trips/week it'd take for the pass to
-  // match pay-per-ride, at the SAME effective per-ride fare and effective
-  // pass cost already computed above — so a Reduced Fare rider, a promo
-  // zone, and a subsidized employee each see their own real break-even
-  // point, not one generic figure.
-  const breakEvenTripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(
-    passBreakdown.finalCost,
-    resolved.oneWayFare * (1 - subsidyPct / 100) * (1 - perqPct / 100),
-    config.weeksPerMonth
-  );
-
   return {
     pass, passBreakdown, rideBreakdown, winner,
     annualSavings: monthlyDiff * 12, promoApplies, promoOriginalPrice: resolved.monthlyPrice,
@@ -567,7 +533,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
     rideRegularTotal,
     reducedFareDiscount: regular.monthlyPrice - resolved.monthlyPrice,
     rideReducedFareDiscount: rideRegularTotal - rideReducedTotal,
-    breakEvenTripsPerWeek,
   };
 }
 
@@ -934,7 +899,7 @@ function mbtaInitCalculator(rootEl) {
   if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   function updateRouteVisibility() {
-    railZoneField.style.display = routeType === "rail" ? "flex" : "none";
+    railZoneField.style.display = routeType === "rail" ? "" : "none";
     if (countField) countField.style.display = routeType === "rail" ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
@@ -1053,7 +1018,6 @@ function mbtaInitCalculator(rootEl) {
     updatePromoUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
-    scheduleAnalyticsFlush();
   }
 
   function renderEmployee() {
@@ -1137,18 +1101,6 @@ function mbtaInitCalculator(rootEl) {
     rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
     rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
 
-    // ---- Break-even stat: always shown (not gated on winner/loser), the
-    // same pace this tool's very first builds reported before a day-count
-    // input replaced it in mid-2026. ----
-    const breakEvenEl = rootEl.querySelector("[data-abc-breakeven-trips]");
-    if (breakEvenEl) breakEvenEl.textContent = result.breakEvenTripsPerWeek.toFixed(1);
-    const breakEvenNoteEl = rootEl.querySelector("[data-abc-breakeven-note]");
-    if (breakEvenNoteEl) {
-      const trips = result.breakEvenTripsPerWeek.toFixed(1);
-      breakEvenNoteEl.textContent =
-        `If you're taking about ${trips} one-way trips a week or more, the pass is worth it. Fewer than that, and paying per ride will usually cost less.`;
-    }
-
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
     rideCard.classList.toggle("abc-card-winner", result.winner === "ride");
@@ -1163,15 +1115,6 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.annualSavings));
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
-  }
-
-  function currentEmployeeCount() {
-    if (routeType === "rail") {
-      return getZoneRows()
-        .map(readZoneRow)
-        .reduce((sum, row) => sum + (row.count > 0 ? row.count : 0), 0);
-    }
-    return employeeCount;
   }
 
   function renderEmployer() {
@@ -1311,106 +1254,6 @@ function mbtaInitCalculator(rootEl) {
         embedBtn.textContent = originalLabel;
       }, 2500);
     });
-  }
-
-  // Optional analytics: entering an organization starts a session. Every
-  // later input change updates that SAME Airtable record, debounced so
-  // dragging a stepper doesn't spam writes.
-  const orgField = rootEl.querySelector("[data-abc-org-field]");
-  const orgInput = rootEl.querySelector("[data-abc-org-input]");
-  const orgClear = rootEl.querySelector("[data-abc-org-clear]");
-  const orgListbox = rootEl.querySelector("[data-abc-org-listbox]");
-  const analyticsEndpoint = (MBTA_CONFIG.analytics && MBTA_CONFIG.analytics.endpoint) || "";
-  const orgNames = (typeof window !== "undefined" && window.ABC_MEMBER_ORGS) || [];
-
-  let sessionOrg = "";
-  let sessionRecordId = null;
-  let analyticsTimer = null;
-
-  function currentTransitLabel() {
-    if (routeType === "subway") return "Subway & Bus (LinkPass)";
-    const opt = mbtaGetPassOption(MBTA_CONFIG, currentPassId());
-    return "Commuter Rail: " + (opt ? opt.label : "");
-  }
-
-  function analyticsPayload() {
-    return {
-      org: sessionOrg,
-      recordId: sessionRecordId,
-      mode,
-      transit: currentTransitLabel(),
-      contributionPct: subsidyPct,
-      offersPerq: perqEnabled,
-      perqPct: perqEnabled ? perqPct : 0,
-      reducedFare,
-      employeeCount: mode === "employer" ? currentEmployeeCount() : null,
-      source: (typeof window !== "undefined") ? window.location.href : "",
-    };
-  }
-
-  function sendAnalyticsSnapshot() {
-    if (!analyticsEndpoint || !sessionOrg) return;
-    try {
-      fetch(analyticsEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(analyticsPayload()),
-        keepalive: true,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.recordId) sessionRecordId = data.recordId;
-        })
-        .catch(() => {});
-    } catch (err) {
-      /* never let logging break the tool */
-    }
-  }
-
-  function scheduleAnalyticsFlush() {
-    if (!analyticsEndpoint || !orgInput) return;
-    const org = orgInput.value.trim();
-    if (!org) return;
-    if (org !== sessionOrg) {
-      sessionOrg = org;
-      sessionRecordId = null;
-    }
-    clearTimeout(analyticsTimer);
-    analyticsTimer = setTimeout(sendAnalyticsSnapshot, 1500);
-  }
-
-  function flushAnalyticsOnHide() {
-    if (!analyticsEndpoint || !sessionOrg || !analyticsTimer) return;
-    clearTimeout(analyticsTimer);
-    analyticsTimer = null;
-    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(analyticsPayload())], { type: "application/json" });
-      navigator.sendBeacon(analyticsEndpoint, blob);
-    } else {
-      sendAnalyticsSnapshot();
-    }
-  }
-
-  if (orgField && orgInput && orgListbox && analyticsEndpoint && orgNames.length) {
-    orgField.style.display = "";
-    initCombobox(orgInput, orgListbox, () => orgNames, scheduleAnalyticsFlush);
-
-    if (orgClear) {
-      const updateClearVisibility = () => {
-        orgClear.style.display = orgInput.value ? "" : "none";
-      };
-      orgInput.addEventListener("input", updateClearVisibility);
-      orgClear.addEventListener("click", () => {
-        orgInput.value = "";
-        orgClear.style.display = "none";
-        orgInput.focus();
-      });
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") flushAnalyticsOnHide();
-    });
-    window.addEventListener("pagehide", flushAnalyticsOnHide);
   }
 
   render();

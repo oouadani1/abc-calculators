@@ -6,7 +6,9 @@ Commuter benefit calculators.
 
 - `mbta-fare-calculator/`
 - `bluebikes-membership-calculator/`
-- `regional-rail-calculator/`
+- `bu-fare-calculator/`
+
+`archive/regional-rail-calculator/` is a retired Commuter-Rail-only predecessor, fully superseded by `mbta-fare-calculator/` (which now covers Commuter Rail in full, plus Subway & Bus). Not built by `build.sh`.
 
 ## Local preview
 

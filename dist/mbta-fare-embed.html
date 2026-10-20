@@ -725,47 +725,6 @@
   color: var(--mbta-green);
 }
 
-/* ---- Organization picker (seeds the analytics log). Sits right under
-   the subtitle, styled as a normal question — not a footer afterthought —
-   hidden entirely unless analytics is wired up. ---- */
-.abc-farecalc-org {
-  margin-bottom: var(--abc-space-sm);
-}
-
-.abc-farecalc-org-input-wrap {
-  position: relative;
-  max-width: 360px;
-}
-
-.abc-farecalc-org-input {
-  width: 100%;
-  padding-right: 34px;
-}
-
-.abc-farecalc-org-clear {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--abc-border);
-  color: var(--abc-ink-muted);
-  font-size: 0.9rem;
-  line-height: 1;
-  cursor: pointer;
-}
-
-.abc-farecalc-org-clear:hover {
-  background: var(--abc-ink-faint);
-  color: #fff;
-}
-
 /* ---- Bolder title, per the "make it memorable" direction ---- */
 .abc-farecalc-title {
   font-size: 1.75rem;
@@ -776,13 +735,16 @@
    regardless of which route/mode is currently showing content there, so
    switching between Subway & Bus / Commuter Rail never reshuffles
    anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, zone, reduced fare. Wide
-   (2-column) order:
+   (single-column) order: route, trips/count, zone, reduced fare,
+   subsidy, Perq. Wide (2-column) order:
      route        | trips/count
      zone         | reduced fare   (Reduced Fare employee-mode only)
-   Employer mode never fills the "reduced" slot, so the zone question
-   spans the full row instead of sitting at half width next to an empty
-   column. ---- */
+     subsidy      | Perq
+   Subsidy and Perq always pair up regardless of mode or route — they're
+   not route-dependent, so they don't need the same "reshuffle" guard the
+   top two rows do. Employer mode never fills the "reduced" slot, so the
+   zone question spans the full row instead of sitting at half width next
+   to an empty column. ---- */
 .abc-farecalc-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -790,7 +752,9 @@
     "route"
     "freq"
     "zone"
-    "reduced";
+    "reduced"
+    "subsidy"
+    "perq";
   column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
@@ -802,14 +766,16 @@
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
       "route freq"
-      "zone reduced";
+      "zone reduced"
+      "subsidy perq";
   }
 
   .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
     grid-template-areas:
       "route route"
       "freq freq"
-      "zone zone";
+      "zone zone"
+      "subsidy perq";
   }
 }
 
@@ -818,6 +784,8 @@
 [data-abc-count-field] { grid-area: freq; }
 [data-abc-rail-zone-field] { grid-area: zone; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
+[data-abc-subsidy-field] { grid-area: subsidy; }
+[data-abc-perq-field] { grid-area: perq; }
 
 .abc-farecalc-field-group {
   min-width: 0;
@@ -1361,46 +1329,6 @@ label.abc-farecalc-toggle-label {
   margin-bottom: var(--abc-space-xs);
 }
 
-/* ---- Break-even stat: a callout matching the shared .abc-callout shape
-   (like the promo callout above it), with one big figure and a plain-
-   language takeaway sentence underneath. Always shown in employee mode,
-   regardless of which card currently wins — restored from this tool's
-   original build (see calculator.js), which reported this same pace
-   before a day-count input briefly replaced it. ---- */
-.abc-farecalc-breakeven {
-  margin-top: var(--abc-space-lg);
-  background: var(--abc-farecalc-accent-tint);
-  border-color: var(--abc-farecalc-accent);
-}
-
-.abc-farecalc-breakeven-stat {
-  display: flex;
-  align-items: baseline;
-  gap: var(--abc-space-sm);
-  margin-bottom: var(--abc-space-sm);
-}
-
-.abc-farecalc-breakeven-figure {
-  font-family: var(--abc-font-mono);
-  font-size: 2.25rem;
-  font-weight: 700;
-  color: var(--abc-farecalc-accent);
-  line-height: 1;
-}
-
-.abc-farecalc-breakeven-label {
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-}
-
-.abc-farecalc-breakeven p {
-  margin: 0;
-  font-size: var(--abc-font-size-base);
-  color: var(--abc-ink);
-  line-height: 1.5;
-}
-
 .abc-farecalc .abc-choice-button {
   display: inline-flex;
   align-items: center;
@@ -1712,21 +1640,6 @@ label.abc-farecalc-toggle-label {
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
-    <div class="abc-farecalc-org" data-abc-org-field style="display: none;">
-      <p class="abc-question">What organization are you affiliated with?</p>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-farecalc-org-input-wrap">
-            <div class="abc-farecalc-combobox">
-              <input class="abc-select abc-farecalc-org-input" id="abc-farecalc-org-input" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-org-listbox" aria-autocomplete="list" data-abc-org-input placeholder="Start typing your organization&hellip;" autocomplete="off" aria-label="What organization are you affiliated with?" />
-              <button type="button" class="abc-farecalc-org-clear" data-abc-org-clear aria-label="Clear organization" style="display: none;">&times;</button>
-              <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-org-listbox" role="listbox" data-abc-org-listbox hidden></ul>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-route-field>
         <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
@@ -1847,6 +1760,57 @@ label.abc-farecalc-toggle-label {
           </div>
         </div>
       </div>
+
+      <div class="abc-farecalc-field-group" data-abc-subsidy-field>
+        <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
+        <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+              <div class="abc-farecalc-stepper-value-wrap">
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="0" inputmode="numeric" aria-label="Employer subsidy percentage" />
+                <span class="abc-farecalc-stepper-percent">%</span>
+              </div>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-perq-field>
+        <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Typically, your employer will take the cost right out of your paycheck.</span>
+        <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Typically, you'll take the cost right out of employees' paychecks.</span>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
+              <button type="button" class="abc-choice-button" data-abc-perq-select="no">No</button>
+            </div>
+
+            <div class="abc-farecalc-reveal" data-abc-perq-stepper-field style="display: none;">
+              <div class="abc-farecalc-stepper" data-abc-perq-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="30" inputmode="numeric" aria-label="Pre-tax savings percentage" />
+                  <span class="abc-farecalc-stepper-percent">%</span>
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
+              </div>
+              <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
+            </div>
+
+            <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
+              Would a Perq pass be valuable to you? Let your employer know you'd like to participate.
+              <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">See how Perq works</a>.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
@@ -1855,7 +1819,7 @@ label.abc-farecalc-toggle-label {
         <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
       </div>
       <p>
-        Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded), and you can buy a discounted pass directly at any time through mTicket, fare vending machines, ticket windows, or monthly Autopay, with no employer or Perq ordering window to catch.
+        Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded).
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's&nbsp;site</a>.
       </p>
     </div>
@@ -1932,14 +1896,6 @@ label.abc-farecalc-toggle-label {
       </div>
     </div>
 
-    <div class="abc-callout abc-farecalc-breakeven" data-mode-only="employee">
-      <div class="abc-farecalc-breakeven-stat">
-        <span class="abc-farecalc-breakeven-figure" data-abc-breakeven-trips>0.0</span>
-        <span class="abc-farecalc-breakeven-label">one-way trips a week to break even</span>
-      </div>
-      <p data-abc-breakeven-note></p>
-    </div>
-
     <div class="abc-farecalc-employer-results" data-mode-only="employer">
       <div class="abc-card abc-farecalc-employer-card">
         <h3>Monthly Program Cost</h3>
@@ -1969,57 +1925,6 @@ label.abc-farecalc-toggle-label {
       </div>
     </div>
 
-    <div class="abc-farecalc-field-group">
-      <p class="abc-question" data-mode-only="employee">How much does your employer cover?</p>
-      <p class="abc-question" data-mode-only="employer">How much will you contribute?</p>
-      <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Your employer may subsidize some or all of the costs of an MBTA pass. If you're not sure how much they cover, ask your HR team. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
-      <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Choose how much of each employee's monthly pass your organization will cover. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-farecalc-stepper" data-abc-subsidy-stepper>
-            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-            <div class="abc-farecalc-stepper-value-wrap">
-              <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="0" inputmode="numeric" aria-label="Employer subsidy percentage" />
-              <span class="abc-farecalc-stepper-percent">%</span>
-            </div>
-            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="abc-farecalc-field-group">
-      <p class="abc-question" data-mode-only="employee">Does your employer offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-      <p class="abc-question" data-mode-only="employer">Will you offer <a class="abc-farecalc-inline-link" href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">Perq</a>?</p>
-      <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employee">Typically, your employer will take the cost right out of your paycheck.</span>
-      <span class="abc-field-hint abc-farecalc-hint-top" data-mode-only="employer">Typically, you'll take the cost right out of employees' paychecks.</span>
-      <div class="abc-input-row">
-        <div class="abc-field" style="flex-basis: 100%;">
-          <div class="abc-choice-grid">
-            <button type="button" class="abc-choice-button" data-abc-perq-select="yes">Yes</button>
-            <button type="button" class="abc-choice-button" data-abc-perq-select="no">No</button>
-          </div>
-
-          <div class="abc-farecalc-reveal" data-abc-perq-stepper-field style="display: none;">
-            <div class="abc-farecalc-stepper" data-abc-perq-stepper>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5%">&minus;</button>
-              <div class="abc-farecalc-stepper-value-wrap">
-                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="100" value="30" inputmode="numeric" aria-label="Pre-tax savings percentage" />
-                <span class="abc-farecalc-stepper-percent">%</span>
-              </div>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5%">+</button>
-            </div>
-            <span class="abc-field-hint">MBTA's Perq page cites about 30% in typical pre-tax savings. Type any number, or use the <span class="abc-farecalc-nowrap">+/- buttons</span>.</span>
-          </div>
-
-          <p class="abc-field-hint abc-farecalc-perq-advocacy" data-abc-perq-advocacy style="display: none;">
-            Would a Perq pass be valuable to you? Let your employer know you'd like to participate.
-            <a href="https://www.mbta.com/pass-program/perq/perq-employees" target="_blank" rel="noopener">See how Perq works</a>.
-          </p>
-        </div>
-      </div>
-    </div>
-
     <p class="abc-farecalc-crosslink">
       Also want to get around by bike? Check out our <a href="https://abctma.com/tdm-thought-leadership/bluebikes-corporate-membership-calculator" target="_blank" rel="noopener">Bluebikes membership calculator</a> too.
     </p>
@@ -2035,7 +1940,6 @@ label.abc-farecalc-toggle-label {
           <li>Reduced Fare uses MBTA's own Reduced Fare price schedule, not a 50%-off calculation; it's a separate, lower set of MBTA prices, broken out as its own discount line. Confirmed for Zone 1A and Zones 1-10; MBTA doesn't publish a Reduced Fare breakdown by Interzone at all, so those figures are estimated (see the tool's source code for the exact method), worth confirming directly with MBTA before relying on them.</li>
           <li>Employer subsidy and pre-tax savings are applied the same way to both options, after any promo or Reduced Fare discount.</li>
           <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. Only stations with MBTA parking show this option, and it isn't available for Interzone routes (selected only through the employer zone dropdown).</li>
-          <li>"Trips a week to break even" is the pace at which a monthly pass costs the same as paying per ride, at your own subsidy/Perq/promo/Reduced-Fare rate; fractional on purpose, since it's a pace to aim for, not a hard count.</li>
           <li>If you're subsidizing more than one Commuter Rail zone, each row above lists that zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them. The promo and your contribution are applied once, after that, to reach <strong>Your estimated monthly cost</strong>.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
@@ -2104,171 +2008,6 @@ function abcFormatPercent(value) {
     maximumFractionDigits: 0,
   }).format(value);
 }
-
-/* ============================================================
-   ABC member + parent organizations — combined, deduped list.
-   Names only, pulled from the TMA member + parent CSV exports
-   (no other member data). Used to seed the optional "which
-   organization are you with?" analytics field. Refresh this
-   from the cleaned member list when it's ready.
-   ============================================================ */
-window.ABC_MEMBER_ORGS = [
-  "10 Saint James Avenue",
-  "100 Federal Street",
-  "100 Summer Street",
-  "114 Western Ave",
-  "1170-1190 Soldiers Field Road",
-  "120 Brookline Ave",
-  "1249-1255 Boylston",
-  "125 Summer Street",
-  "126 Brookline Ave",
-  "1284 Soldiers Field Road",
-  "1300 Soldiers Field Road",
-  "131 Dartmouth Street",
-  "132 Brookline Ave",
-  "1330 Boylston Street",
-  "1340 Soldiers Field Road",
-  "1380 Soldiers Field Road",
-  "140 Clarendon St",
-  "197 Clarendon",
-  "200 Berkeley Street",
-  "200 Clarendon Street",
-  "222 Berkeley/500 Boylston",
-  "225 Franklin Street",
-  "226 Causeway Street",
-  "28 State Street",
-  "321 Harrison Ave",
-  "33 Broad Street",
-  "35-43 Braintree - The Indie",
-  "350 Boylston St.",
-  "401 Park",
-  "50 Post Office Square",
-  "60 State Street",
-  "745 Atlantic Ave",
-  "75 Arlington Street",
-  "777 Boylston St.",
-  "84 Seattle Street",
-  "A Cadmus Company",
-  "Alder at Allston Yards",
-  "Allston Yards",
-  "Amazon.com Services",
-  "Amazon.com Services, LLC",
-  "Athenahealth",
-  "Atlantic Wharf",
-  "Atlas Hotels",
-  "Avalon Bay",
-  "BioMed Realty Trust",
-  "BioMed Realty Trust, Inc.",
-  "Boston Health Care for the Homeless Program",
-  "Boston Landing",
-  "Boston Medical Center",
-  "Boston Medical Center – Brighton",
-  "Boston Properties",
-  "Boston University",
-  "Boston University Charles River Campus",
-  "Boston University Medical Campus",
-  "Brighton Landing Condominium",
-  "BXP",
-  "Cabot",
-  "Cabot & Forbes",
-  "Cabot, Cabot & Forbes",
-  "Cabot, Cabot, & Forbes",
-  "Cadmus Group",
-  "CannonDesign",
-  "Carr Properties",
-  "CBRE",
-  "Celtics",
-  "Charles River Plaza",
-  "Clarendon Back Bay",
-  "Coast and Harbor Associates",
-  "Coast and Harbor Associates, Inc.",
-  "Collier International",
-  "Colliers International",
-  "Continuum",
-  "Cushman & Wakefield",
-  "Doubletree Hotel",
-  "Eastern Bank",
-  "Environmental Health & Engineering",
-  "ERG",
-  "EY",
-  "Fenway Triangle",
-  "Fidelity",
-  "First Church of Christ",
-  "First Church of Christ, Scientist",
-  "Fortis Property Group",
-  "Fortis Property Group, LLC",
-  "Franklin Cummings Tech",
-  "Fuss & O'Neil",
-  "GBH",
-  "Harvard Business Publishing",
-  "Harvard Real Estate",
-  "Hilco Redevelopment Partners",
-  "HNTB",
-  "Hood Park",
-  "Hub25",
-  "Inc.",
-  "Independence Wharf",
-  "Ink Block",
-  "Jacobs",
-  "JLL",
-  "John Hancock",
-  "Liberty Hotel",
-  "Liberty Mutual",
-  "Lincoln Properties",
-  "LLC",
-  "Loews Hotel",
-  "Manulife",
-  "Massachusetts General Hospital",
-  "Meister Consultants Group, A Cadmus Company",
-  "Millennium Place",
-  "Millennium Place - 580 Washington Street",
-  "National Development",
-  "NBBJ",
-  "New Balance Athletics",
-  "New Balance Development Group",
-  "New England Development",
-  "Newmark Knight Frank",
-  "One Beacon Street",
-  "One Charles Condominiums",
-  "One Lincoln Street",
-  "One Post Office Square",
-  "Oxford Properties",
-  "Peabody Office",
-  "Prudential Center",
-  "Putnam Investments",
-  "Rasky Partners Inc.",
-  "Related",
-  "Related Beal",
-  "Rockhill Management",
-  "Rowes Wharf",
-  "Samuels & Associates",
-  "Sasaki",
-  "Scape",
-  "Scientist",
-  "Shriners Hospitals for Children",
-  "Sonos",
-  "STA Design",
-  "State Street",
-  "The Arlington",
-  "The Bon",
-  "The Brookliner",
-  "The Davis Companies",
-  "The Hub on Causeway",
-  "The Overlook at St. Gabriel's",
-  "The Winthrop Center",
-  "Tufts Medford-Somerville Campus",
-  "Tufts Medical Center",
-  "Tufts Shared Services",
-  "U.S. Environmental Protection Agency",
-  "University of Massachusetts Boston",
-  "Van Ness",
-  "Verizon",
-  "Verra",
-  "W Hotel",
-  "Waterstone at the Circle",
-  "Willow Bridge Property Company",
-  "WilmerHale",
-];
 
 /* ============================================================
    ABC MBTA Fare / Monthly Pass Calculator
@@ -2350,15 +2089,6 @@ const MBTA_CONFIG = {
     endDate: "2026-11-30",
     excludeZoneIds: ["cr-zone-1a"],
     infoUrl: "https://www.mbta.com/fares/commuter-rail-summer-promotions",
-  },
-
-  // Optional analytics: when someone picks their organization, the tool
-  // sends one record (org + their inputs) to this endpoint. Point it at
-  // the Cloudflare Worker that proxies to Airtable (see
-  // analytics/cloudflare-worker.js). Leave blank to disable logging
-  // entirely — the org field simply won't appear.
-  analytics: {
-    endpoint: "https://airtable-calc-automation.oouadani.workers.dev/",
   },
 
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
@@ -2647,19 +2377,6 @@ function mbtaCalcStationParking(stationLabel, daysPerWeek) {
   return { rate: station.parkingRate, daysPerWeek, monthlyCost };
 }
 
-/** One-way trips per week needed for the pass to break even against
- * paying per ride, at today's effective prices (after subsidy, Perq,
- * promo, and Reduced Fare, whichever apply) — restored from this tool's
- * original build (see git history, commit 80f0566), adapted from a
- * days-per-week pace to a trips-per-week one since the input itself no
- * longer asks for days. Fractional on purpose: this is a pace to aim
- * for, not a hard count someone needs to hit exactly. */
-function mbtaCalcBreakEvenTripsPerWeek(effectivePassCost, effectiveOneWayFare, weeksPerMonth) {
-  if (effectiveOneWayFare <= 0) return 0;
-  const tripsPerMonth = effectivePassCost / effectiveOneWayFare;
-  return tripsPerMonth / weeksPerMonth;
-}
-
 /** Employer view, single pass (Subway & Bus, always just LinkPass): cost of
  * subsidizing a monthly pass across a flat headcount. Reuses the same
  * subsidy-then-pre-tax breakdown as the employee view, but reads the pieces
@@ -2777,9 +2494,9 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
 }
 
 /** Bundles every derived number the UI needs for both options + inputs,
- * including the break-even pace. Reduced Fare is its own itemized
- * deduction (regular sticker price always shown first), same waterfall
- * pattern the promo and subsidy/Perq lines already use. */
+ * Reduced Fare is its own itemized deduction (regular sticker price
+ * always shown first), same waterfall pattern the promo and subsidy/Perq
+ * lines already use. */
 function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedFare) {
   const pass = mbtaGetPassOption(config, passId);
   if (!pass) {
@@ -2796,7 +2513,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
       rideRegularTotal: 0,
       reducedFareDiscount: 0,
       rideReducedFareDiscount: 0,
-      breakEvenTripsPerWeek: 0,
     };
   }
 
@@ -2821,17 +2537,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
   const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
   const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
 
-  // Break-even pace: how many one-way trips/week it'd take for the pass to
-  // match pay-per-ride, at the SAME effective per-ride fare and effective
-  // pass cost already computed above — so a Reduced Fare rider, a promo
-  // zone, and a subsidized employee each see their own real break-even
-  // point, not one generic figure.
-  const breakEvenTripsPerWeek = mbtaCalcBreakEvenTripsPerWeek(
-    passBreakdown.finalCost,
-    resolved.oneWayFare * (1 - subsidyPct / 100) * (1 - perqPct / 100),
-    config.weeksPerMonth
-  );
-
   return {
     pass, passBreakdown, rideBreakdown, winner,
     annualSavings: monthlyDiff * 12, promoApplies, promoOriginalPrice: resolved.monthlyPrice,
@@ -2839,7 +2544,6 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
     rideRegularTotal,
     reducedFareDiscount: regular.monthlyPrice - resolved.monthlyPrice,
     rideReducedFareDiscount: rideRegularTotal - rideReducedTotal,
-    breakEvenTripsPerWeek,
   };
 }
 
@@ -3206,7 +2910,7 @@ function mbtaInitCalculator(rootEl) {
   if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   function updateRouteVisibility() {
-    railZoneField.style.display = routeType === "rail" ? "flex" : "none";
+    railZoneField.style.display = routeType === "rail" ? "" : "none";
     if (countField) countField.style.display = routeType === "rail" ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
@@ -3325,7 +3029,6 @@ function mbtaInitCalculator(rootEl) {
     updatePromoUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
-    scheduleAnalyticsFlush();
   }
 
   function renderEmployee() {
@@ -3409,18 +3112,6 @@ function mbtaInitCalculator(rootEl) {
     rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
     rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
 
-    // ---- Break-even stat: always shown (not gated on winner/loser), the
-    // same pace this tool's very first builds reported before a day-count
-    // input replaced it in mid-2026. ----
-    const breakEvenEl = rootEl.querySelector("[data-abc-breakeven-trips]");
-    if (breakEvenEl) breakEvenEl.textContent = result.breakEvenTripsPerWeek.toFixed(1);
-    const breakEvenNoteEl = rootEl.querySelector("[data-abc-breakeven-note]");
-    if (breakEvenNoteEl) {
-      const trips = result.breakEvenTripsPerWeek.toFixed(1);
-      breakEvenNoteEl.textContent =
-        `If you're taking about ${trips} one-way trips a week or more, the pass is worth it. Fewer than that, and paying per ride will usually cost less.`;
-    }
-
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
     rideCard.classList.toggle("abc-card-winner", result.winner === "ride");
@@ -3435,15 +3126,6 @@ function mbtaInitCalculator(rootEl) {
     winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.annualSavings));
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
-  }
-
-  function currentEmployeeCount() {
-    if (routeType === "rail") {
-      return getZoneRows()
-        .map(readZoneRow)
-        .reduce((sum, row) => sum + (row.count > 0 ? row.count : 0), 0);
-    }
-    return employeeCount;
   }
 
   function renderEmployer() {
@@ -3583,106 +3265,6 @@ function mbtaInitCalculator(rootEl) {
         embedBtn.textContent = originalLabel;
       }, 2500);
     });
-  }
-
-  // Optional analytics: entering an organization starts a session. Every
-  // later input change updates that SAME Airtable record, debounced so
-  // dragging a stepper doesn't spam writes.
-  const orgField = rootEl.querySelector("[data-abc-org-field]");
-  const orgInput = rootEl.querySelector("[data-abc-org-input]");
-  const orgClear = rootEl.querySelector("[data-abc-org-clear]");
-  const orgListbox = rootEl.querySelector("[data-abc-org-listbox]");
-  const analyticsEndpoint = (MBTA_CONFIG.analytics && MBTA_CONFIG.analytics.endpoint) || "";
-  const orgNames = (typeof window !== "undefined" && window.ABC_MEMBER_ORGS) || [];
-
-  let sessionOrg = "";
-  let sessionRecordId = null;
-  let analyticsTimer = null;
-
-  function currentTransitLabel() {
-    if (routeType === "subway") return "Subway & Bus (LinkPass)";
-    const opt = mbtaGetPassOption(MBTA_CONFIG, currentPassId());
-    return "Commuter Rail: " + (opt ? opt.label : "");
-  }
-
-  function analyticsPayload() {
-    return {
-      org: sessionOrg,
-      recordId: sessionRecordId,
-      mode,
-      transit: currentTransitLabel(),
-      contributionPct: subsidyPct,
-      offersPerq: perqEnabled,
-      perqPct: perqEnabled ? perqPct : 0,
-      reducedFare,
-      employeeCount: mode === "employer" ? currentEmployeeCount() : null,
-      source: (typeof window !== "undefined") ? window.location.href : "",
-    };
-  }
-
-  function sendAnalyticsSnapshot() {
-    if (!analyticsEndpoint || !sessionOrg) return;
-    try {
-      fetch(analyticsEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(analyticsPayload()),
-        keepalive: true,
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data && data.recordId) sessionRecordId = data.recordId;
-        })
-        .catch(() => {});
-    } catch (err) {
-      /* never let logging break the tool */
-    }
-  }
-
-  function scheduleAnalyticsFlush() {
-    if (!analyticsEndpoint || !orgInput) return;
-    const org = orgInput.value.trim();
-    if (!org) return;
-    if (org !== sessionOrg) {
-      sessionOrg = org;
-      sessionRecordId = null;
-    }
-    clearTimeout(analyticsTimer);
-    analyticsTimer = setTimeout(sendAnalyticsSnapshot, 1500);
-  }
-
-  function flushAnalyticsOnHide() {
-    if (!analyticsEndpoint || !sessionOrg || !analyticsTimer) return;
-    clearTimeout(analyticsTimer);
-    analyticsTimer = null;
-    if (typeof navigator !== "undefined" && navigator.sendBeacon) {
-      const blob = new Blob([JSON.stringify(analyticsPayload())], { type: "application/json" });
-      navigator.sendBeacon(analyticsEndpoint, blob);
-    } else {
-      sendAnalyticsSnapshot();
-    }
-  }
-
-  if (orgField && orgInput && orgListbox && analyticsEndpoint && orgNames.length) {
-    orgField.style.display = "";
-    initCombobox(orgInput, orgListbox, () => orgNames, scheduleAnalyticsFlush);
-
-    if (orgClear) {
-      const updateClearVisibility = () => {
-        orgClear.style.display = orgInput.value ? "" : "none";
-      };
-      orgInput.addEventListener("input", updateClearVisibility);
-      orgClear.addEventListener("click", () => {
-        orgInput.value = "";
-        orgClear.style.display = "none";
-        orgInput.focus();
-      });
-    }
-
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "hidden") flushAnalyticsOnHide();
-    });
-    window.addEventListener("pagehide", flushAnalyticsOnHide);
   }
 
   render();
