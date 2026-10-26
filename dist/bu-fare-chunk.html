@@ -652,51 +652,9 @@
   border-radius: 16px;
 }
 
-/* ---- Employee / employer mode toggle: a segmented pill switch at the
-   top. The active view is stored on the root as data-abc-mode, which
-   drives all the [data-mode-only] show/hide rules below. ---- */
-.abc-farecalc-modebar {
-  display: inline-flex;
-  gap: 4px;
-  padding: 4px;
-  background: var(--abc-border);
-  border-radius: var(--abc-radius-pill);
-  margin-bottom: var(--abc-space-lg);
-}
-
-.abc-farecalc-mode-btn {
-  font-family: inherit;
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  border: none;
-  background: transparent;
-  color: var(--abc-ink-muted);
-  padding: 8px 18px;
-  border-radius: var(--abc-radius-pill);
-  cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease;
-}
-
-.abc-farecalc-mode-btn.abc-active {
-  background: #fff;
-  color: var(--abc-navy-deep);
-  box-shadow: var(--abc-shadow-card);
-}
-
-/* Show only the elements that belong to the current mode. Two attribute
-   selectors + the class keep specificity above the base display rules
-   (e.g. .abc-cards's flex) without needing !important. */
-.abc-farecalc[data-abc-mode="employer"] [data-mode-only="employee"] {
-  display: none;
-}
-
-.abc-farecalc[data-abc-mode="employee"] [data-mode-only="employer"] {
-  display: none;
-}
-
-/* Employee-count stepper: same control as the % steppers, but headcounts
-   can be several digits, so the value field and its wrapper are wider and
-   there's no trailing "%" glyph. */
+/* Count stepper: same control as the % steppers, but values like trips/
+   week or parking days can be several digits, so the value field and its
+   wrapper are wider and there's no trailing "%" glyph. */
 .abc-farecalc-count-stepper .abc-farecalc-stepper-value-wrap {
   min-width: 96px;
 }
@@ -704,44 +662,6 @@
 .abc-farecalc-count-stepper .abc-farecalc-stepper-input {
   width: 6ch;
   text-align: center;
-}
-
-/* ---- Employer view results: a single card using the same line-item
-   waterfall shape as the employee "Monthly Pass" card (.abc-farecalc-line
-   / -line-promo / -line-final), just totaled across the whole team
-   instead of one person — see renderEmployer() in calculator.js. The h3
-   picks up the shared small/muted .abc-card h3 style (base.css) rather
-   than its own override, so it reads the same as "Monthly Pass" on the
-   employee card. ---- */
-.abc-farecalc-employer-results {
-  margin-top: var(--abc-space-lg);
-}
-
-/* ---- Per-zone cost breakdown: itemized detail shown above the waterfall
-   total (see calculator.js), only populated once there's more than one
-   Commuter Rail zone row, so it collapses to nothing rather than leaving
-   an empty gap when there's just the one (or when Subway & Bus is
-   selected). Every row keeps its border, including the last, since it now
-   leads into "Full monthly cost" rather than trailing off into the note
-   below. Each line is a sticker-price subtotal (unit price × headcount),
-   so the rows sum exactly to "Full monthly cost" right underneath them. ---- */
-.abc-farecalc-zone-breakdown:empty {
-  display: none;
-}
-
-.abc-farecalc-zone-breakdown-line {
-  font-size: 0.8rem;
-}
-
-.abc-farecalc-employer-note {
-  margin: var(--abc-space-md) 0 0;
-  font-size: var(--abc-font-size-base);
-  line-height: 1.5;
-  color: var(--abc-ink);
-}
-
-.abc-farecalc-employer-note strong {
-  color: var(--mbta-green);
 }
 
 /* ---- Organization picker (seeds the analytics log). Sits right under
@@ -840,27 +760,14 @@
       "promo promo"
       "subquestion reduced";
   }
-
-  /* Employer mode never fills the "reduced" slot (Reduced Fare is
-     individual-only), so route/freq/subquestion would each sit at half
-     width with an empty column next to them. Every area spans the full
-     row instead, matching the number-of-employees and zone questions to
-     the rest of the tool's width. */
-  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-grid {
-    grid-template-areas:
-      "route route"
-      "freq freq"
-      "promo promo"
-      "subquestion subquestion";
-  }
 }
 
 [data-abc-route-field] { grid-area: route; }
-[data-abc-trips-field],
-[data-abc-count-field] { grid-area: freq; }
+[data-abc-trips-field] { grid-area: freq; }
 .abc-farecalc-promo-callout { grid-area: promo; }
 [data-abc-subway-tier-field],
 [data-abc-rail-zone-field],
+[data-abc-ferry-route-field],
 [data-abc-drive-fields] { grid-area: subquestion; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
 
@@ -1126,86 +1033,6 @@
   font-size: var(--abc-font-size-sm);
 }
 
-/* ---- Employer multi-zone breakdown: each row pairs a zone select with a
-   headcount input, plus a remove button on every row after the first.
-   The select and count input both carry .abc-select, so they already pick
-   up the uniform 44px height above for free — "same dimensions and height
-   as the picklist" falls out of reusing that class rather than needing
-   its own rule. Employee mode never shows the count input (data-mode-only
-   handles that), so the select alone fills the row at full width there;
-   employer mode splits the row 50/50 once there's something to split it
-   with. ---- */
-.abc-farecalc-zonerow {
-  display: flex;
-  gap: var(--abc-space-sm);
-  align-items: center;
-  margin-bottom: var(--abc-space-sm);
-}
-
-.abc-farecalc-zonerow .abc-select {
-  flex: 1 1 100%;
-  min-width: 0;
-}
-
-.abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
-  flex: 1 1 50%;
-}
-
-.abc-farecalc-zonecount-input {
-  text-align: center;
-  -moz-appearance: textfield;
-}
-
-.abc-farecalc-zonecount-input::placeholder {
-  color: var(--abc-ink-faint);
-  font-weight: 400;
-}
-
-.abc-farecalc-zonecount-input::-webkit-inner-spin-button,
-.abc-farecalc-zonecount-input::-webkit-outer-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
-}
-
-.abc-farecalc-zone-remove {
-  flex: 0 0 44px;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: var(--abc-radius-sm);
-  background: var(--abc-border);
-  color: var(--abc-ink-muted);
-  font-family: var(--abc-font-mono);
-  font-size: 1.25rem;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .abc-farecalc-zone-remove:hover {
-    background: var(--mbta-red);
-    color: #fff;
-  }
-}
-
-.abc-farecalc-zonerows-extra:empty {
-  display: none;
-}
-
-.abc-farecalc-add-zone {
-  display: inline-block;
-  margin-bottom: var(--abc-space-sm);
-}
-
-/* Disabled once every distinct Commuter Rail zone already has a row (see
-   maxZoneRows in calculator.js) — nothing left to add. */
-.abc-farecalc-add-zone-disabled {
-  color: var(--abc-ink-faint);
-  cursor: default;
-  pointer-events: none;
-}
-
 .abc-farecalc .abc-choice-button {
   display: inline-flex;
   align-items: center;
@@ -1371,27 +1198,12 @@
     width: 48px;
     height: 48px;
   }
-  .abc-farecalc-mode-btn,
   .abc-farecalc .abc-select,
   .abc-farecalc .abc-choice-button {
     height: 48px;
   }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
-  }
-  .abc-farecalc-zonerow {
-    flex-wrap: wrap;
-  }
-  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
-    flex-basis: 100%;
-  }
-  .abc-farecalc-zonecount-input {
-    flex: 1 1 auto;
-  }
-  .abc-farecalc-zone-remove {
-    width: 48px;
-    height: 48px;
-    flex-basis: 48px;
   }
 }
 
@@ -1415,27 +1227,12 @@
     width: 48px;
     height: 48px;
   }
-  .abc-farecalc-mode-btn,
   .abc-farecalc .abc-select,
   .abc-farecalc .abc-choice-button {
     height: 48px;
   }
   .abc-farecalc-line-final span:last-child {
     font-size: 1.35rem;
-  }
-  .abc-farecalc-zonerow {
-    flex-wrap: wrap;
-  }
-  .abc-farecalc[data-abc-mode="employer"] .abc-farecalc-zonerow .abc-select {
-    flex-basis: 100%;
-  }
-  .abc-farecalc-zonecount-input {
-    flex: 1 1 auto;
-  }
-  .abc-farecalc-zone-remove {
-    width: 48px;
-    height: 48px;
-    flex-basis: 48px;
   }
 }
 
@@ -1580,12 +1377,38 @@
   align-items: center;
 }
 
+/* Bluebikes add-on toggle: sits standalone below the result cards (not
+   inside the question grid), so it needs its own top margin rather than
+   inheriting one from a parent field-group. The hint line wraps onto its
+   own row underneath, indented to align with the label text past the
+   checkbox. */
+.abc-farecalc-bluebikes-field {
+  margin-top: var(--abc-space-lg);
+  flex-wrap: wrap;
+}
+
+.abc-farecalc-bluebikes-field .abc-field-hint {
+  flex-basis: 100%;
+  margin-top: 4px;
+  margin-left: 34px;
+}
+
 /* Subway & Bus: Reduced Fare slots in directly under the Local Bus /
    LinkPass pills, same spacing as the "Choose Daily Parking" checkbox
    under the Medical Campus garage pills (margin-top: var(--abc-space-md)
    there too) — reparented into [data-abc-subway-tier-field] by JS. */
 .abc-farecalc-toggle-field-nested {
   margin-top: var(--abc-space-md);
+  flex-wrap: wrap;
+}
+
+/* The station-parking disclosure hint wraps onto its own row below the
+   label (instead of squeezing it as a second flex item beside it),
+   indented to align past the checkbox. */
+.abc-farecalc-toggle-field-nested .abc-field-hint {
+  flex-basis: 100%;
+  margin-top: 4px;
+  margin-left: 34px;
 }
 
 /* Subway & Bus and Commuter Rail alike: Reduced Fare stays beside the
@@ -1821,57 +1644,35 @@ label.abc-farecalc-toggle-label {
 }
 </style>
 
-  <div class="abc-calc abc-farecalc abc-farecalc-bu" data-abc-farecalc-root data-abc-mode="employee">
-    <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an individual or an employer">
-      <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an individual</button>
-      <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
-    </div>
-
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employee">Is an MBTA pass worth it for you?</h2>
-    <h2 class="abc-title abc-farecalc-title" data-mode-only="employer">What would an MBTA pass cost your department?</h2>
-    <p class="abc-subtitle" data-mode-only="employee">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your one-way trips, include any individual trips you take, such as going to work, during the workday, on weekends, and more.</p>
-    <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost.</p>
+  <div class="abc-calc abc-farecalc abc-farecalc-bu" data-abc-farecalc-root>
+    <h2 class="abc-title abc-farecalc-title">Is an MBTA pass worth it for you?</h2>
+    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-route-field>
-        <p class="abc-question" data-mode-only="employee">How do you get to campus?</p>
-        <p class="abc-question" data-mode-only="employer">Which pass are you subsidizing?</p>
+        <p class="abc-question">How do you get to campus?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid abc-choice-grid-3">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive" data-mode-only="employee">Personal Car</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive">Personal Car</button>
             </div>
           </div>
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-trips-field>
-        <p class="abc-question" data-abc-trips-label>How many one-way trips do you take per week?</p>
+      <div class="abc-farecalc-field-group" data-abc-trips-field>
+        <p class="abc-question" data-abc-trips-label>How many round-trips do you take per week?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-trips-stepper>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
               <div class="abc-farecalc-stepper-value-wrap">
-                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="20" value="6" inputmode="numeric" aria-label="Trips per week" />
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="10" value="3" inputmode="numeric" aria-label="Round-trips per week" />
               </div>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-mode-only="employer" data-abc-count-field style="display: none;">
-        <p class="abc-question">How many employees are you covering?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-count-stepper>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 5">&minus;</button>
-              <div class="abc-farecalc-stepper-value-wrap">
-                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="1" max="100000" value="25" inputmode="numeric" aria-label="Number of employees covered" />
-              </div>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 5">+</button>
             </div>
           </div>
         </div>
@@ -1899,24 +1700,37 @@ label.abc-farecalc-toggle-label {
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
-        <p class="abc-question" data-mode-only="employee">Which Commuter Rail station do you commute from?</p>
-        <p class="abc-question" data-mode-only="employer">Which zones are you subsidizing?</p>
+      <div class="abc-farecalc-field-group" data-abc-ferry-route-field style="display: none;">
+        <p class="abc-question">Which ferry route do you take?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-field-hint-wrap" data-mode-only="employee">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
+        <p class="abc-question">Which Commuter Rail station do you commute from?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-field-hint-wrap">
               <div class="abc-farecalc-combobox">
                 <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
                 <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
               </div>
             </div>
 
-            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-mode-only="employee" data-abc-station-parking-field style="display: none;">
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-station-parking-field style="display: none;">
               <label class="abc-farecalc-toggle-label">
                 <input type="checkbox" data-abc-station-parking-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>Will you drive and park at this station?</span>
               </label>
+              <span class="abc-field-hint">BU's 50% parking subsidy requires a BU-subsidized Monthly Pass; it isn't available if you're comparing Pay-Per-Ride.</span>
             </div>
 
             <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
@@ -1929,29 +1743,6 @@ label.abc-farecalc-toggle-label {
                 <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
               </div>
             </div>
-
-            <div class="abc-farecalc-zonerow" data-abc-zonerow data-mode-only="employer">
-              <select id="abc-farecalc-zone" class="abc-select" data-abc-rail-zone-select aria-label="Which Commuter Rail zone"></select>
-              <input
-                type="number"
-                class="abc-select abc-farecalc-zonecount-input"
-                data-abc-zone-count-input
-                min="1"
-                step="1"
-                inputmode="numeric"
-                placeholder="Number of employees in this zone"
-                aria-label="Number of employees covered from this zone"
-              />
-            </div>
-
-            <div class="abc-farecalc-zonerows-extra" data-abc-zonerows-extra data-mode-only="employer"></div>
-
-            <button type="button" class="abc-text-link abc-farecalc-add-zone" data-abc-add-zone data-mode-only="employer">+ Add another zone</button>
-
-            <span class="abc-field-hint" data-mode-only="employer">
-              Not sure which zone to select?
-              <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>.
-            </span>
           </div>
         </div>
       </div>
@@ -1997,7 +1788,7 @@ label.abc-farecalc-toggle-label {
       <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-toggle-field" data-mode-only="employee">
+            <div class="abc-farecalc-toggle-field">
               <label class="abc-farecalc-toggle-label">
                 <input type="checkbox" data-abc-reduced-fare-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
@@ -2009,7 +1800,7 @@ label.abc-farecalc-toggle-label {
       </div>
     </div>
 
-    <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
+    <div class="abc-cards abc-farecalc-cards">
       <div class="abc-card" data-abc-card-ride data-abc-mode-card="transit">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
@@ -2022,17 +1813,13 @@ label.abc-farecalc-toggle-label {
           <span>Reduced Fare discount</span>
           <span data-abc-ride-reduced-amt>-$0.00</span>
         </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
-          <span>BU subsidy (50%)</span>
-          <span data-abc-ride-subsidy-amt>$0.00</span>
-        </div>
         <div class="abc-farecalc-line" data-abc-ride-station-parking-row style="display: none;">
           <span data-abc-ride-station-parking-label>MBTA station parking</span>
           <span data-abc-ride-station-parking-amt>$0.00</span>
         </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-ride-station-parking-subsidy-row style="display: none;">
-          <span>BU subsidy on parking (50%)</span>
-          <span data-abc-ride-station-parking-subsidy-amt>$0.00</span>
+        <div class="abc-farecalc-line" data-abc-ride-bluebikes-row style="display: none;">
+          <span>Bluebikes membership ($133.50/yr)</span>
+          <span data-abc-ride-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
@@ -2071,12 +1858,19 @@ label.abc-farecalc-toggle-label {
           <span>BU subsidy on parking (50%)</span>
           <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
         </div>
+        <div class="abc-farecalc-line" data-abc-pass-bluebikes-row style="display: none;">
+          <span>Bluebikes membership ($133.50/yr)</span>
+          <span data-abc-pass-bluebikes-amt>$0.00</span>
+        </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
+        </p>
+        <p class="abc-farecalc-savings-line abc-farecalc-pretax-line" data-abc-pretax-line style="display: none;">
+          Since this is deducted pre-tax, you also save an estimated <strong data-abc-pretax-amt>$0</strong> a month in taxes.
         </p>
       </div>
 
@@ -2133,50 +1927,28 @@ label.abc-farecalc-toggle-label {
       </div>
     </div>
 
-    <div class="abc-farecalc-employer-results" data-mode-only="employer">
-      <div class="abc-card abc-farecalc-employer-card">
-        <h3>Monthly Program Cost</h3>
-
-        <div class="abc-farecalc-zone-breakdown" data-abc-zone-breakdown></div>
-
-        <div class="abc-farecalc-line">
-          <span>Full monthly cost</span>
-          <span data-abc-emp-total>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-emp-promo-row style="display: none;">
-          <span data-abc-emp-promo-label>Commuter Rail promo</span>
-          <span data-abc-emp-promo-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line">
-          <span>Employees' share (50%)</span>
-          <span data-abc-emp-share-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-final">
-          <span>BU's estimated monthly cost</span>
-          <span data-abc-emp-final>$0.00</span>
-        </div>
-
-        <p class="abc-farecalc-employer-note">
-          Each employee saves about <strong data-abc-emp-saves>$0.00</strong> a month thanks to BU's subsidy.
-        </p>
-      </div>
+    <div class="abc-farecalc-toggle-field abc-farecalc-bluebikes-field">
+      <label class="abc-farecalc-toggle-label">
+        <input type="checkbox" data-abc-bluebikes-toggle />
+        <span class="abc-farecalc-toggle-box"></span>
+        <span>Add a <a href="https://abctma.com/tdm-thought-leadership/bluebikes-corporate-membership-calculator" target="_blank" rel="noopener">Bluebikes membership</a> to get to/from the station</span>
+      </label>
+      <span class="abc-field-hint">$133.50/year, about $11/month, added to both cards.</span>
     </div>
-
-    <p class="abc-farecalc-crosslink">
-      Also want to get around by bike? Check out our <a href="https://abctma.com/tdm-thought-leadership/bluebikes-corporate-membership-calculator" target="_blank" rel="noopener">Bluebikes membership calculator</a> too.
-    </p>
 
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares and rates are from mbta.com and BU Transportation Services, checked 2026-10-01. Treat this as a helpful estimate, not a guarantee.</li>
-          <li>BU covers a fixed 50% of the pass cost through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a> for all regular faculty and staff. That rate isn't adjustable here because it isn't adjustable in BU's actual benefit.</li>
-          <li>One-way trips per week can model any pattern (weekend-only, midday-only, more than 5 days), not just a standard weekday round trip.</li>
-          <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; trips per week &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
+          <li>BU covers a fixed 50% of the pass cost through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a> for all regular faculty and staff. That rate isn't adjustable here because it isn't adjustable in BU's actual benefit. BU's subsidy, and the pre-tax savings below, only apply to the Monthly Pass; BU does not subsidize single-ride fares, so Pay-Per-Ride always shows the full MBTA price.</li>
+          <li>Because Monthly Pass deductions run through payroll pre-tax, you also save an estimated 30% on top of BU's subsidy. The exact amount depends on your federal tax bracket (10-37%), plus Massachusetts state tax (5.0%), FICA (6.2%), and PFML (0.5%), for a combined marginal rate of at least 22.7%. This tool uses 30% as a representative average; your actual savings may differ.</li>
+          <li>Round-trips per week can model any pattern (weekend-only, midday-only, more than 5 round-trips, an odd one-way errand counted as its own round-trip), not just a standard weekday commute.</li>
+          <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; (round-trips &times; 2 one-way rides) &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
           <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter, and applies BU's 50% subsidy the same way it applies to your pass. Only stations with MBTA parking show this option.</li>
-          <li>Subsidizing more than one Commuter Rail zone? Each row lists that zone's price &times; headcount; those add up to Full monthly cost below them.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. <strong>BU's 50% parking subsidy only applies alongside a BU-subsidized Monthly Pass</strong>, same as the fare subsidy above, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
+          <li>Ferry one-way and monthly prices are confirmed from mbta.com/fares/ferry-fares. Winthrop/Quincy and Lynn's Reduced Fare prices match the Commuter Rail zones they're fare-integrated with (Zone 1 and Zone 2); Hingham/Hull's Reduced Fare monthly price has no official published figure, so it's estimated using the same ~50%-of-regular ratio the other routes follow.</li>
+          <li>Bluebikes membership, if added, is MBTA-independent: its $133.50/year retail price ($11.13/month) is simply added on top of whichever card you're comparing, unaffected by BU's subsidy or pre-tax savings.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
         </ul>
       </div>
@@ -2283,8 +2055,21 @@ const BU_CONFIG = {
   // BU covers a fixed 50% of the pass cost, administered through Edenred
   // (not Perq — confirmed on bu.edu/transportation/public-transit/
   // employee-mbta-benefits/). There is no subsidy question in this build;
-  // every calculation below uses this constant directly.
+  // every calculation below uses this constant directly. BU does NOT
+  // subsidize single-ride fares (confirmed by Carl Larson, BU Transportation
+  // Services, 2026-10) — only Monthly Pass gets this subsidy, never
+  // Pay-Per-Ride. See buCalcAll() below.
   subsidyPct: 50,
+
+  // Estimated pre-tax savings on top of BU's subsidy, since Monthly Pass
+  // deductions run through payroll pre-tax. Per Carl Larson (BU
+  // Transportation Services, 2026-10): the exact rate depends on an
+  // individual's federal bracket (10-37%) plus MA state tax (5.0%), FICA
+  // (6.2%), and PFML (0.5%) — at least 22.7%, usually 30-35%. 30% is used
+  // here as a representative average, disclosed as an estimate in the
+  // footer, and (like the subsidy above) only ever applied to Monthly
+  // Pass, never Pay-Per-Ride.
+  preTaxSavingsPct: 30,
 
   enrollment: {
     platform: "Edenred",
@@ -2305,21 +2090,21 @@ const BU_CONFIG = {
   weeksPerMonth: 52 / 12,
 
   // Trip frequency is a direct numeric input (typed or +/-1 stepper), not a
-  // button grid — wide enough to cover weekend-only, midday-only, one-way-
-  // only, or more-than-5-day patterns that a 1-5 day grid couldn't capture.
-  // No upper bound for transit: unlike a day count, a ride count has no
-  // real-world ceiling (multiple trips a day, business travel around the
-  // city), so tripsMax is intentionally unbounded rather than an arbitrary
-  // round number. Drive's day-based question is a separate, real
+  // button grid — wide enough to cover weekend-only, midday-only, or more-
+  // than-5-round-trip patterns that a 1-5 day grid couldn't capture. This
+  // value is ROUND-TRIPS/week for Subway & Bus, Commuter Rail, and Ferry
+  // (doubled to one-way trips before it reaches buCalcAll — see
+  // renderEmployee()); the exact same shared variable is reused as literal
+  // DAYS DRIVEN for Drive mode, since the two route families never show at
+  // once. No upper bound for transit: unlike a day count, a ride count has
+  // no real-world ceiling (multiple trips a day, business travel around
+  // the city), so tripsMax is intentionally unbounded rather than an
+  // arbitrary round number. Drive's day-based question is a separate, real
   // constraint (a week only has 7 days), capped on its own below.
   tripsStep: 1,
   tripsMax: Infinity,
   driveTripsMax: 7, // a week only has 7 days to drive to campus on
-  defaultTripsPerWeek: 6, // equivalent to a 3-day round-trip commute
-
-  employeeCountStep: 5,
-  employeeCountMax: 100000,
-  defaultEmployeeCount: 25,
+  defaultTripsPerWeek: 3, // 3 round-trips/week, a typical 3-day office week
 
   // Temporary Commuter Rail promo: 50% off monthly passes, Zone 1A
   // excluded. Still applies to BU employees same as everyone else; BU's
@@ -2356,7 +2141,33 @@ const BU_CONFIG = {
     { id: "cr-zone-8", label: "Zone 8", group: "rail", oneWayFare: 12.25, monthlyPrice: 388.00, reducedOneWayFare: 6.00, reducedMonthlyPrice: 190.00 },
     { id: "cr-zone-9", label: "Zone 9", group: "rail", oneWayFare: 12.75, monthlyPrice: 406.00, reducedOneWayFare: 6.25, reducedMonthlyPrice: 199.00 },
     { id: "cr-zone-10", label: "Zone 10", group: "rail", oneWayFare: 13.25, monthlyPrice: 426.00, reducedOneWayFare: 6.50, reducedMonthlyPrice: 209.00 },
+
+    // Ferry: one-way and monthly prices confirmed live on
+    // mbta.com/fares/ferry-fares (2026-10). MBTA fare-integrates ferry
+    // monthly passes with the equivalent Commuter Rail zone where one
+    // exists, which is exactly why Winthrop/Quincy's and Lynn's prices
+    // below match cr-zone-1 and cr-zone-2 above dollar-for-dollar (not a
+    // coincidence) — their Reduced Fare prices are reused from those
+    // confirmed zones for the same reason. Hingham/Hull has no CR-zone
+    // equivalent; its regular prices are confirmed, but its reduced
+    // MONTHLY price has no published figure, so (like the CR zone 1-9
+    // reduced monthly prices above) it's estimated via the same ~50%-of-
+    // regular ratio the other confirmed routes follow — flagged in the
+    // footer, don't present as exact.
+    { id: "ferry-winthrop-quincy", label: "Winthrop/Quincy Ferry", group: "ferry", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
+    { id: "ferry-lynn", label: "Lynn Ferry", group: "ferry", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
+    { id: "ferry-hingham-hull", label: "Hingham/Hull Ferry", group: "ferry", oneWayFare: 9.75, monthlyPrice: 329.00, reducedOneWayFare: 4.85, reducedMonthlyPrice: 161.00 },
   ],
+
+  // Bluebikes membership add-on: optional, independent of transit choice,
+  // folded as a flat line into both cards' monthly totals when checked.
+  // $133.50/year is this repo's own confirmed retail Annual Membership
+  // price (see bluebikes-membership-calculator/calculator.js,
+  // BIKE_CONFIG.retailAnnualPrice, re-verified 2026-08-25) — NOT the
+  // $75.50 figure Carl Larson's email cited, which is stale; Bluebikes has
+  // raised this price before and this repo's own source is the more
+  // current one.
+  bluebikesAnnualPrice: 133.50,
 };
 
 /* Charles River Campus: two flat daily-rate zones (not per-lot pricing —
@@ -2592,10 +2403,10 @@ function buResolvePassPrice(pass, reducedFare) {
 }
 
 /** Total monthly pay-per-ride cost: one-way fare × one-way trips/week ×
- * weeks/month. tripsPerWeek already counts each one-way ride individually
- * (a 5-day round-trip commute = 10), so there's no separate ×2 here. */
-function buCalcPayPerRideTotal(oneWayFare, tripsPerWeek, weeksPerMonth) {
-  return oneWayFare * tripsPerWeek * weeksPerMonth;
+ * weeks/month. Takes ONE-WAY trips — callers with a round-trips/week input
+ * (the employee transit question) must double it before calling this. */
+function buCalcPayPerRideTotal(oneWayFare, oneWayTripsPerWeek, weeksPerMonth) {
+  return oneWayFare * oneWayTripsPerWeek * weeksPerMonth;
 }
 
 /** Applies BU's fixed 50% subsidy to a monthly total. No pre-tax step —
@@ -2657,94 +2468,23 @@ function buCalcStationParkingSubsidy(stationLabel, daysPerWeek) {
   return { rate: station.parkingRate, daysPerWeek, fullMonthlyCost, subsidyAmt, netCost: fullMonthlyCost - subsidyAmt };
 }
 
-/** Employer view, single pass (Subway & Bus): cost of subsidizing a
- * monthly pass across a flat headcount, at BU's fixed 50%. */
-function buCalcEmployer(passId, employeeCount, reducedFare) {
-  const pass = buGetPassOption(passId);
-  if (!pass) {
-    return { pass: null, passPrice: 0, promoApplies: false, perEmployeeMonth: 0, totalMonth: 0, employeesShareAmt: 0, employeeSavesMonth: 0 };
-  }
-  const promoApplies = mbtaPromoApplies(BU_CONFIG, passId);
-  const resolved = buResolvePassPrice(pass, reducedFare);
-  const passPrice = promoApplies
-    ? resolved.monthlyPrice * (1 - BU_CONFIG.promo.discountPct / 100)
-    : resolved.monthlyPrice;
-  const b = buCalcBreakdown(passPrice, BU_CONFIG.subsidyPct);
-  const perEmployeeMonth = b.subsidyAmt;
-  const totalMonth = perEmployeeMonth * employeeCount;
-  return {
-    pass,
-    passPrice,
-    promoApplies,
-    perEmployeeMonth,
-    totalMonth,
-    employeesShareAmt: (passPrice - b.subsidyAmt) * employeeCount,
-    employeeSavesMonth: b.subsidyAmt,
-  };
-}
-
-/** Clamps a typed zone-headcount value: empty -> 0 (excluded), invalid ->
- * 1, capped at employeeCountMax. Same sanitization rule used throughout
- * the other calculators. */
-function buSanitizeZoneCount(rawValue) {
-  if (rawValue === "" || rawValue == null) return 0;
-  const n = Math.floor(Number(rawValue));
-  if (!Number.isFinite(n) || n < 1) return 1;
-  return Math.min(n, BU_CONFIG.employeeCountMax);
-}
-
-/** Employer view, Commuter Rail: cost of subsidizing passes across a
- * workforce spread across one or more zones, at BU's fixed 50%. */
-function buCalcEmployerMultiZone(zoneRows, reducedFare) {
-  let totalSticker = 0;
-  let totalRaw = 0;
-  let totalCount = 0;
-  let anyPromoApplies = false;
-  const zoneBreakdown = [];
-
-  zoneRows.forEach(({ passId, count }) => {
-    const pass = buGetPassOption(passId);
-    if (!pass || count < 1) return;
-    const promoApplies = mbtaPromoApplies(BU_CONFIG, passId);
-    if (promoApplies) anyPromoApplies = true;
-    const resolved = buResolvePassPrice(pass, reducedFare);
-    const passPrice = promoApplies
-      ? resolved.monthlyPrice * (1 - BU_CONFIG.promo.discountPct / 100)
-      : resolved.monthlyPrice;
-    const zoneRaw = passPrice * count;
-    totalSticker += resolved.monthlyPrice * count;
-    totalRaw += zoneRaw;
-    totalCount += count;
-    zoneBreakdown.push({
-      label: pass.label,
-      count,
-      unitPrice: resolved.monthlyPrice,
-      subtotal: resolved.monthlyPrice * count,
-      zoneOrder: BU_CONFIG.passOptions.indexOf(pass),
-    });
-  });
-
-  zoneBreakdown.sort((a, b) => a.zoneOrder - b.zoneOrder);
-
-  const b = buCalcBreakdown(totalRaw, BU_CONFIG.subsidyPct);
-  const totalMonth = b.subsidyAmt;
-  const promoAmt = totalSticker - totalRaw;
-  const employeesShareAmt = totalRaw - b.subsidyAmt;
-  const employeeSavesMonth = totalCount > 0 ? b.subsidyAmt / totalCount : 0;
-
-  return { totalSticker, totalRaw, promoAmt, employeesShareAmt, totalMonth, zoneBreakdown, promoApplies: anyPromoApplies, totalCount, employeeSavesMonth };
-}
-
 /** Bundles every derived number the employee Pay-Per-Ride vs Monthly Pass
- * comparison needs. */
+ * comparison needs. tripsPerWeek here is in ONE-WAY units (callers with a
+ * round-trips/week input must double it first — see renderEmployee()).
+ * BU's 50% subsidy and the pre-tax savings estimate both apply ONLY to
+ * Monthly Pass, never Pay-Per-Ride — confirmed by Carl Larson (BU
+ * Transportation Services, 2026-10): BU does not subsidize single-ride
+ * fares, so rideFinalCost is always the full (Reduced-Fare-adjusted, if
+ * applicable) sticker cost with no deduction. */
 function buCalcAll(passId, tripsPerWeek, reducedFare) {
   const pass = buGetPassOption(passId);
   if (!pass) {
     const zeroBreakdown = buCalcBreakdown(0, BU_CONFIG.subsidyPct);
     return {
-      pass: null, passBreakdown: zeroBreakdown, rideBreakdown: zeroBreakdown, winner: "pass",
+      pass: null, passBreakdown: zeroBreakdown, rideFinalCost: 0, winner: "pass",
       annualSavings: 0, promoApplies: false, promoOriginalPrice: 0,
       passRegularTotal: 0, rideRegularTotal: 0, reducedFareDiscount: 0, rideReducedFareDiscount: 0,
+      preTaxSavingsAmt: 0,
     };
   }
   // "Total monthly cost" always shows the regular (non-reduced) sticker
@@ -2756,6 +2496,7 @@ function buCalcAll(passId, tripsPerWeek, reducedFare) {
 
   const rideRegularTotal = buCalcPayPerRideTotal(regular.oneWayFare, tripsPerWeek, BU_CONFIG.weeksPerMonth);
   const rideReducedTotal = buCalcPayPerRideTotal(resolved.oneWayFare, tripsPerWeek, BU_CONFIG.weeksPerMonth);
+  const rideFinalCost = rideReducedTotal;
 
   const promoApplies = mbtaPromoApplies(BU_CONFIG, passId);
   const passPrice = promoApplies
@@ -2763,18 +2504,19 @@ function buCalcAll(passId, tripsPerWeek, reducedFare) {
     : resolved.monthlyPrice;
 
   const passBreakdown = buCalcBreakdown(passPrice, BU_CONFIG.subsidyPct);
-  const rideBreakdown = buCalcBreakdown(rideReducedTotal, BU_CONFIG.subsidyPct);
+  const preTaxSavingsAmt = passBreakdown.finalCost * (BU_CONFIG.preTaxSavingsPct / 100);
 
-  const winner = passBreakdown.finalCost <= rideBreakdown.finalCost ? "pass" : "ride";
-  const monthlyDiff = Math.abs(passBreakdown.finalCost - rideBreakdown.finalCost);
+  const winner = passBreakdown.finalCost <= rideFinalCost ? "pass" : "ride";
+  const monthlyDiff = Math.abs(passBreakdown.finalCost - rideFinalCost);
 
   return {
-    pass, passBreakdown, rideBreakdown, winner,
+    pass, passBreakdown, rideFinalCost, winner,
     annualSavings: monthlyDiff * 12, promoApplies, promoOriginalPrice: resolved.monthlyPrice,
     passRegularTotal: regular.monthlyPrice,
     rideRegularTotal,
     reducedFareDiscount: regular.monthlyPrice - resolved.monthlyPrice,
     rideReducedFareDiscount: rideRegularTotal - rideReducedTotal,
+    preTaxSavingsAmt,
   };
 }
 
@@ -2795,53 +2537,25 @@ function buCalcParking(selection, daysPerWeek) {
    ------------------------------------------------------------ */
 
 function buInitCalculator(rootEl) {
-  let mode = "employee"; // "employee" | "employer"
-  let routeType = "subway"; // "subway" | "rail" | "drive"
+  let routeType = "subway"; // "subway" | "rail" | "ferry" | "drive"
   let passTier = "linkpass"; // "local-bus" | "linkpass" — Subway & Bus sub-choice
+  let ferryRouteId = "ferry-winthrop-quincy"; // Ferry sub-choice
   let reducedFare = false;
-  let tripsPerWeek = BU_CONFIG.defaultTripsPerWeek;
-  let employeeCount = BU_CONFIG.defaultEmployeeCount;
+  let tripsPerWeek = BU_CONFIG.defaultTripsPerWeek; // round-trips/week (transit) or days/week (drive) — see BU_CONFIG.tripsStep comment
   let campus = "charles-river"; // "charles-river" | "medical", Drive mode only
   let crcZoneId = "crc-zone-1";
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
   let driveCompareMode = "subway"; // "subway" | "rail" — Drive mode's comparison card
-  let stationParking = false; // Commuter Rail employee mode only — "Will you drive and park at this station?"
+  let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
   let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
-
-  const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
-  modeButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      mode = btn.dataset.abcModeSelect;
-      modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      rootEl.setAttribute("data-abc-mode", mode);
-      // Drive is individual-only; bounce back to Subway & Bus if an
-      // employer switches into a state Drive-mode UI was left in.
-      if (mode === "employer" && routeType === "drive") {
-        routeType = "subway";
-        routeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRouteSelect === "subway"));
-        updateRouteVisibility();
-      }
-      // Reduced Fare's checkboxes are hidden entirely in employer mode,
-      // but the underlying state isn't — reset it here too, so a box
-      // checked while in employee mode can never silently keep
-      // discounting an employer calculation with no visible control
-      // left to undo it.
-      if (mode === "employer") {
-        reducedFare = false;
-        if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
-        if (driveReducedFareCheckbox) driveReducedFareCheckbox.checked = false;
-      }
-      updateStationParkingFieldVisibility();
-      render();
-    });
-  });
+  let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
+  const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
-  const countField = rootEl.querySelector("[data-abc-count-field]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
@@ -2862,24 +2576,24 @@ function buInitCalculator(rootEl) {
     }
   }
 
-  // ---- Commuter Rail zone select (employer mode): unchanged zone-based
-  // picker, 11 zones, no Interzone entries. ----
-  const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
-  function populateZoneSelect(select) {
-    const placeholder = document.createElement("option");
-    placeholder.value = "";
-    placeholder.textContent = "Select zone";
-    placeholder.disabled = true;
-    placeholder.selected = true;
-    select.appendChild(placeholder);
-    BU_CONFIG.passOptions.filter((p) => p.group === "rail").forEach((pass) => {
-      const opt = document.createElement("option");
-      opt.value = pass.id;
-      opt.textContent = pass.label;
-      select.appendChild(opt);
+  // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
+  const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
+  ferryRouteButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ferryRouteId = btn.dataset.abcFerryRouteSelect;
+      ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
+    });
+  });
+
+  // ---- Bluebikes membership add-on toggle ----
+  const bluebikesToggle = rootEl.querySelector("[data-abc-bluebikes-toggle]");
+  if (bluebikesToggle) {
+    bluebikesToggle.addEventListener("change", () => {
+      bluebikesAdded = bluebikesToggle.checked;
+      render();
     });
   }
-  populateZoneSelect(railZoneSelect);
 
   /** W3C ARIA "combobox with list autocomplete" pattern — the documented
    * accessible way to build a type-ahead search field with a popup list
@@ -2987,8 +2701,8 @@ function buInitCalculator(rootEl) {
     input.addEventListener("blur", close);
   }
 
-  // ---- Station picker (employee mode): resolves to a zone under the
-  // hood via the combobox above. ----
+  // ---- Station picker: resolves to a zone under the hood via the
+  // combobox above. ----
   const stationInput = rootEl.querySelector("[data-abc-station-input]");
   const stationListbox = rootEl.querySelector("[data-abc-station-listbox]");
   initStationCombobox(stationInput, stationListbox, () => { updateStationParkingFieldVisibility(); render(); });
@@ -2997,9 +2711,8 @@ function buInitCalculator(rootEl) {
     return stationInput ? stationInput.value.trim() : "";
   }
 
-  /** Resolves the employee-mode rail pass id: from the selected station
-   * when one matches a real station, otherwise unresolved (nothing priced
-   * yet). Employer mode reads the zone select directly instead. */
+  /** Resolves the Commuter Rail pass id from the selected station, when
+   * one matches a real station; otherwise unresolved (nothing priced yet). */
   function employeeRailPassId() {
     const station = buGetStation(currentStationLabel());
     return station ? station.zoneId : "";
@@ -3020,7 +2733,7 @@ function buInitCalculator(rootEl) {
 
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
-    const station = routeType === "rail" && mode === "employee" ? buGetStation(currentStationLabel()) : null;
+    const station = routeType === "rail" ? buGetStation(currentStationLabel()) : null;
     const hasParking = !!(station && station.parkingRate != null);
     stationParkingField.style.display = hasParking ? "flex" : "none";
     if (!hasParking && stationParking) {
@@ -3045,8 +2758,8 @@ function buInitCalculator(rootEl) {
 
   function currentPassId() {
     if (routeType === "subway") return passTier;
-    if (mode === "employee") return employeeRailPassId();
-    return railZoneSelect.value;
+    if (routeType === "ferry") return ferryRouteId;
+    return employeeRailPassId();
   }
 
   // ---- Subway & Bus pass-tier pop-out (Local Bus / LinkPass) ----
@@ -3084,88 +2797,6 @@ function buInitCalculator(rootEl) {
   if (driveReducedFareCheckbox) {
     driveReducedFareCheckbox.addEventListener("change", () => setReducedFare(driveReducedFareCheckbox.checked));
   }
-
-  // ---- Employer multi-zone breakdown (Commuter Rail only) ----
-  const zonerowsExtra = rootEl.querySelector("[data-abc-zonerows-extra]");
-  const addZoneBtn = rootEl.querySelector("[data-abc-add-zone]");
-
-  function wireZoneCountInput(input) {
-    input.addEventListener("input", render);
-    input.addEventListener("blur", () => {
-      if (input.value.trim() === "") return;
-      input.value = buSanitizeZoneCount(input.value);
-    });
-  }
-
-  function createZoneRow() {
-    const row = document.createElement("div");
-    row.className = "abc-farecalc-zonerow";
-    row.setAttribute("data-abc-zonerow", "");
-
-    const select = document.createElement("select");
-    select.className = "abc-select";
-    select.setAttribute("aria-label", "Which Commuter Rail zone");
-    populateZoneSelect(select);
-    select.addEventListener("change", render);
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "abc-select abc-farecalc-zonecount-input";
-    input.min = "1";
-    input.step = "1";
-    input.inputMode = "numeric";
-    input.placeholder = "Number of employees in this zone";
-    input.setAttribute("aria-label", "Number of employees covered from this zone");
-    wireZoneCountInput(input);
-
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "abc-farecalc-zone-remove";
-    removeBtn.setAttribute("aria-label", "Remove this zone");
-    removeBtn.textContent = "−";
-    removeBtn.addEventListener("click", () => {
-      row.remove();
-      updateAddZoneButtonState();
-      render();
-    });
-
-    row.appendChild(select);
-    row.appendChild(input);
-    row.appendChild(removeBtn);
-    return row;
-  }
-
-  function getZoneRows() {
-    const firstRow = rootEl.querySelector("[data-abc-zonerow]");
-    const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
-    return firstRow ? [firstRow, ...extraRows] : extraRows;
-  }
-
-  function readZoneRow(rowEl) {
-    const select = rowEl.querySelector("select");
-    const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
-    return { passId: select ? select.value : "", count: input ? buSanitizeZoneCount(input.value) : 1 };
-  }
-
-  const maxZoneRows = BU_CONFIG.passOptions.filter((p) => p.group === "rail").length;
-  function updateAddZoneButtonState() {
-    if (!addZoneBtn) return;
-    const atLimit = getZoneRows().length >= maxZoneRows;
-    addZoneBtn.disabled = atLimit;
-    addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
-  }
-
-  if (addZoneBtn && zonerowsExtra) {
-    addZoneBtn.addEventListener("click", () => {
-      if (getZoneRows().length >= maxZoneRows) return;
-      zonerowsExtra.appendChild(createZoneRow());
-      updateAddZoneButtonState();
-      render();
-    });
-  }
-
-  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
-  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
@@ -3259,28 +2890,23 @@ function buInitCalculator(rootEl) {
   function updateRouteVisibility() {
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
     if (railZoneField) railZoneField.style.display = routeType === "rail" ? "" : "none";
+    if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
     if (driveFields) driveFields.style.display = routeType === "drive" ? "" : "none";
     updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
-    // Flat headcount only makes sense for Subway & Bus employer mode;
-    // Commuter Rail uses the per-zone breakdown, Drive has no employer view.
-    if (countField) countField.style.display = (mode === "employer" && routeType === "subway") ? "" : "none";
     if (tripsField) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
         label.textContent = routeType === "drive"
           ? "How many days a week do you drive?"
-          : "How many one-way trips do you take per week?";
+          : "How many round-trips do you take per week?";
       }
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");
 
     // Swap the result cards themselves: Pay-Per-Ride/Monthly Pass for
-    // transit routes, the two driving/comparison cards for Drive. Only
-    // relevant in employee mode (Drive has no employer view at all), but
-    // harmless to set regardless since employer mode hides this whole
-    // card row via [data-mode-only="employee"] on its container.
+    // transit routes, the two driving/comparison cards for Drive.
     rootEl.querySelectorAll('[data-abc-mode-card="transit"]').forEach((el) => {
       el.style.display = routeType === "drive" ? "none" : "";
     });
@@ -3293,7 +2919,7 @@ function buInitCalculator(rootEl) {
     btn.addEventListener("click", () => {
       routeType = btn.dataset.abcRouteSelect;
       routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      // A value valid for transit (up to 20 one-way trips/week) can be
+      // A value valid for transit (round-trips/week, uncapped) can be
       // invalid the moment Drive is selected (at most 7 days/week) — clamp
       // it down immediately rather than leaving a stale over-the-cap number
       // sitting in the field.
@@ -3307,9 +2933,7 @@ function buInitCalculator(rootEl) {
   });
   updateRouteVisibility();
 
-  railZoneSelect.addEventListener("change", render);
-
-  // ---- Generic stepper (trips/week, employee count): typed or +/- ----
+  // ---- Generic stepper (trips/week, parking days): typed or +/- ----
   // max can be a plain number or a function, so the trips stepper's cap
   // can depend on the current route (a week only has 7 days to drive,
   // but up to 20 one-way transit trips is a real weekly pattern).
@@ -3341,7 +2965,6 @@ function buInitCalculator(rootEl) {
     "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek, (v) => { tripsPerWeek = v; }, 0,
     () => (routeType === "drive" ? BU_CONFIG.driveTripsMax : BU_CONFIG.tripsMax)
   );
-  initStepper("data-abc-count-stepper", BU_CONFIG.employeeCountStep, () => employeeCount, (v) => { employeeCount = v; }, 1, BU_CONFIG.employeeCountMax);
 
   /** Rounds one line to a whole dollar, writes it (with an optional "-"
    * prefix) to the given element, and returns the signed rounded amount.
@@ -3361,17 +2984,21 @@ function buInitCalculator(rootEl) {
 
   function render() {
     updatePromoUI();
-    if (mode === "employer") renderEmployer();
-    else if (routeType === "drive") renderDrive();
+    if (routeType === "drive") renderDrive();
     else renderEmployee();
     scheduleAnalyticsFlush();
   }
 
   function renderEmployee() {
-    const result = buCalcAll(currentPassId(), tripsPerWeek, reducedFare);
+    // tripsPerWeek is round-trips/week for every non-Drive route; buCalcAll
+    // (and the Pay-Per-Ride fare math inside it) needs ONE-WAY trips, so it
+    // gets doubled right here, the single place that conversion happens.
+    const oneWayTripsPerWeek = tripsPerWeek * 2;
+    const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare);
     const parkingSubsidy = (routeType === "rail" && stationParking)
       ? buCalcStationParkingSubsidy(currentStationLabel(), stationParkingDays)
       : null;
+    const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
 
     // Every card total below is built the same way: round each line to a
     // whole dollar as it's painted, and keep a running "remaining" value
@@ -3383,11 +3010,12 @@ function buInitCalculator(rootEl) {
     // happens; Monthly Pass is just the flat sticker price, no formula
     // needed there.
 
-    // ---- Pay-Per-Ride card ----
+    // ---- Pay-Per-Ride card. No BU subsidy here, ever — BU doesn't
+    // subsidize single-ride fares (see buCalcAll's doc comment). ----
     const rideTotalLabelEl = rootEl.querySelector("[data-abc-ride-total-label]");
     if (rideTotalLabelEl && result.pass) {
       rideTotalLabelEl.textContent =
-        `Total monthly cost (${abcFormatCurrency(result.pass.oneWayFare)}/trip × ${tripsPerWeek} trip${tripsPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+        `Total monthly cost (${abcFormatCurrency(result.pass.oneWayFare)}/trip × ${oneWayTripsPerWeek} one-way trip${oneWayTripsPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
     }
     let rideRemaining = roundAndShow("[data-abc-ride-total]", result.rideRegularTotal, false);
     const rideReducedRow = rootEl.querySelector("[data-abc-ride-reduced-row]");
@@ -3397,7 +3025,6 @@ function buInitCalculator(rootEl) {
     } else {
       rideReducedRow.style.display = "none";
     }
-    rideRemaining += roundAndShow("[data-abc-ride-subsidy-amt]", result.rideBreakdown.subsidyAmt, true);
 
     // ---- Monthly Pass card ----
     // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
@@ -3436,33 +3063,66 @@ function buInitCalculator(rootEl) {
     passRemaining += roundAndShow("[data-abc-pass-subsidy-amt]", result.passBreakdown.subsidyAmt, true);
 
     // ---- MBTA station parking: an ADD-ON to the pass/ride cost (not a
-    // discount on it), only applied when the checkbox is on. Itemized the
-    // same two-line way as everything else (full cost, then BU's subsidy
-    // deducted from it), folded into both cards' running remainders since
-    // whichever option someone picks, the same parking cost applies. ----
-    ["ride", "pass"].forEach((prefix) => {
-      const row = rootEl.querySelector(`[data-abc-${prefix}-station-parking-row]`);
-      const subsidyRow = rootEl.querySelector(`[data-abc-${prefix}-station-parking-subsidy-row]`);
-      if (!row || !subsidyRow) return;
-      if (parkingSubsidy) {
-        rootEl.querySelector(`[data-abc-${prefix}-station-parking-label]`).textContent =
-          `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
-        const addAmt = roundAndShow(`[data-abc-${prefix}-station-parking-amt]`, parkingSubsidy.fullMonthlyCost, false);
-        const subAmt = roundAndShow(`[data-abc-${prefix}-station-parking-subsidy-amt]`, parkingSubsidy.subsidyAmt, true);
-        if (prefix === "ride") rideRemaining += addAmt + subAmt; else passRemaining += addAmt + subAmt;
-        row.style.display = "flex";
-        subsidyRow.style.display = "flex";
-      } else {
-        row.style.display = "none";
-        subsidyRow.style.display = "none";
-      }
-    });
+    // discount on it), only applied when the checkbox is on. BU's 50%
+    // parking subsidy requires a BU-subsidized Monthly Pass (confirmed by
+    // Carl Larson, BU Transportation Services, 2026-10), so Pay-Per-Ride
+    // gets the full, unsubsidized parking line while Monthly Pass gets the
+    // full cost plus the subsidy deducted from it, same two-line itemized
+    // shape as everything else. ----
+    const rideParkingRow = rootEl.querySelector("[data-abc-ride-station-parking-row]");
+    const passParkingRow = rootEl.querySelector("[data-abc-pass-station-parking-row]");
+    const passParkingSubsidyRow = rootEl.querySelector("[data-abc-pass-station-parking-subsidy-row]");
+    if (parkingSubsidy) {
+      const parkingLabel = `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+
+      rootEl.querySelector("[data-abc-ride-station-parking-label]").textContent = parkingLabel;
+      rideRemaining += roundAndShow("[data-abc-ride-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
+      if (rideParkingRow) rideParkingRow.style.display = "flex";
+
+      rootEl.querySelector("[data-abc-pass-station-parking-label]").textContent = parkingLabel;
+      passRemaining += roundAndShow("[data-abc-pass-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
+      passRemaining += roundAndShow("[data-abc-pass-station-parking-subsidy-amt]", parkingSubsidy.subsidyAmt, true);
+      if (passParkingRow) passParkingRow.style.display = "flex";
+      if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "flex";
+    } else {
+      if (rideParkingRow) rideParkingRow.style.display = "none";
+      if (passParkingRow) passParkingRow.style.display = "none";
+      if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "none";
+    }
+
+    // ---- Bluebikes membership add-on: MBTA-independent, so the same flat
+    // monthly cost is added to both cards equally (unaffected by BU's
+    // subsidy or pre-tax savings, which only apply to the transit pass). ----
+    const rideBikeRow = rootEl.querySelector("[data-abc-ride-bluebikes-row]");
+    const passBikeRow = rootEl.querySelector("[data-abc-pass-bluebikes-row]");
+    if (bluebikesAdded) {
+      rideRemaining += roundAndShow("[data-abc-ride-bluebikes-amt]", bluebikesMonthlyCost, false);
+      passRemaining += roundAndShow("[data-abc-pass-bluebikes-amt]", bluebikesMonthlyCost, false);
+      if (rideBikeRow) rideBikeRow.style.display = "flex";
+      if (passBikeRow) passBikeRow.style.display = "flex";
+    } else {
+      if (rideBikeRow) rideBikeRow.style.display = "none";
+      if (passBikeRow) passBikeRow.style.display = "none";
+    }
 
     rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
     rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
     // finalCost used below (winner/savings calc) stays on the precise,
     // unrounded math — only display is rounded, so a photo-finish between
     // ride and pass still picks the actual cheaper option.
+
+    // ---- Pre-tax savings: Monthly Pass only, estimated (see BU_CONFIG.
+    // preTaxSavingsPct's doc comment), shown as supplementary info rather
+    // than folded into "Your estimated monthly cost" above. ----
+    const pretaxLine = rootEl.querySelector("[data-abc-pretax-line]");
+    if (pretaxLine) {
+      if (result.preTaxSavingsAmt > 0.5) {
+        rootEl.querySelector("[data-abc-pretax-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.preTaxSavingsAmt));
+        pretaxLine.style.display = "block";
+      } else {
+        pretaxLine.style.display = "none";
+      }
+    }
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
@@ -3600,72 +3260,6 @@ function buInitCalculator(rootEl) {
     }
   }
 
-  function currentEmployeeCount() {
-    if (routeType === "rail") {
-      return getZoneRows().map(readZoneRow).reduce((sum, row) => sum + (row.count > 0 ? row.count : 0), 0);
-    }
-    return employeeCount;
-  }
-
-  function renderEmployer() {
-    let r;
-    let zoneBreakdown = [];
-
-    if (routeType === "rail") {
-      const zoneRows = getZoneRows().map(readZoneRow);
-      const multi = buCalcEmployerMultiZone(zoneRows, reducedFare);
-      r = multi;
-      zoneBreakdown = multi.zoneBreakdown;
-    } else {
-      const single = buCalcEmployer(currentPassId(), employeeCount, reducedFare);
-      r = {
-        totalSticker: single.pass ? single.pass.monthlyPrice * employeeCount : 0,
-        promoAmt: 0,
-        employeesShareAmt: single.employeesShareAmt,
-        totalMonth: single.totalMonth,
-        employeeSavesMonth: single.employeeSavesMonth,
-        promoApplies: false,
-      };
-    }
-
-    // Same rounded-running-remainder pattern as the employee cards: round
-    // each line to a whole dollar as it's painted, and set the final line
-    // from what's left over, so it always equals exactly what's printed
-    // above it.
-    let empRemaining = roundAndShow("[data-abc-emp-total]", r.totalSticker, false);
-
-    const promoRow = rootEl.querySelector("[data-abc-emp-promo-row]");
-    if (r.promoApplies) {
-      rootEl.querySelector("[data-abc-emp-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
-      empRemaining += roundAndShow("[data-abc-emp-promo-amt]", r.promoAmt, true);
-      promoRow.style.display = "flex";
-    } else {
-      promoRow.style.display = "none";
-    }
-
-    empRemaining += roundAndShow("[data-abc-emp-share-amt]", r.employeesShareAmt, true);
-    rootEl.querySelector("[data-abc-emp-final]").textContent = abcFormatCurrencyWhole(empRemaining);
-    rootEl.querySelector("[data-abc-emp-saves]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(r.employeeSavesMonth));
-
-    const breakdownEl = rootEl.querySelector("[data-abc-zone-breakdown]");
-    if (breakdownEl) {
-      breakdownEl.innerHTML = "";
-      if (zoneBreakdown.length > 1) {
-        zoneBreakdown.forEach((zone) => {
-          const row = document.createElement("div");
-          row.className = "abc-farecalc-line abc-farecalc-zone-breakdown-line";
-          const label = document.createElement("span");
-          label.textContent = `${zone.label} (${abcFormatCurrencyWhole(zone.unitPrice)} × ${abcFormatNumber(zone.count)} employee${zone.count === 1 ? "" : "s"})`;
-          const amt = document.createElement("span");
-          amt.textContent = abcFormatCurrencyWhole(zone.subtotal);
-          row.appendChild(label);
-          row.appendChild(amt);
-          breakdownEl.appendChild(row);
-        });
-      }
-    }
-  }
-
   // ---- Analytics: hardcoded to Boston University, no visible org field.
   // Session starts on first render (debounced) rather than on typing an
   // org name, since there's nothing to type here. ----
@@ -3682,18 +3276,25 @@ function buInitCalculator(rootEl) {
     if (routeType === "drive") {
       return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalLocationId}${medicalDaily ? " (daily)" : ""}`;
     }
-    const opt = buGetPassOption(mode === "employee" ? employeeRailPassId() : railZoneSelect.value);
+    if (routeType === "ferry") {
+      const opt = buGetPassOption(ferryRouteId);
+      return "Ferry: " + (opt ? opt.label : "");
+    }
+    const opt = buGetPassOption(employeeRailPassId());
     return "Commuter Rail: " + (opt ? opt.label : "");
   }
 
   function analyticsPayload() {
+    // mode/employeeCount are kept in the payload shape (hardcoded, since
+    // the Employer tab was removed) rather than renamed, so whatever reads
+    // this on the Airtable side doesn't need a matching schema change.
     return {
       org: sessionOrg,
       recordId: sessionRecordId,
-      mode,
+      mode: "employee",
       transit: currentTransitLabel(),
       reducedFare,
-      employeeCount: mode === "employer" ? currentEmployeeCount() : null,
+      employeeCount: null,
       source: (typeof window !== "undefined") ? window.location.href : "",
     };
   }

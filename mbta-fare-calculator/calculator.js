@@ -4,13 +4,12 @@
    Depends on shared/utils/format.js being loaded first.
 
    Architecture note: comparison-card layout (Jawnt-style side-by-side
-   Pay-Per-Ride vs Monthly Pass), trip frequency as a flexible one-way
-   trips/week input (not a 1-5 days button grid, not capped — any real
-   ride pattern, including midday/weekend/multiple-a-day trips, fits the
-   same number). The tool's very first builds (summer 2026, see git
-   history) also reported a break-even pace ("trips a week to break
-   even") before that was dropped when a day-count input was added —
-   restored here, adapted to the trips-based input instead of days.
+   Pay-Per-Ride vs Monthly Pass), trip frequency as a flexible round-trips/
+   week input (not a 1-5 days button grid, not capped — any real ride
+   pattern, including midday/weekend/multiple-a-day trips, fits the same
+   number). Doubled to one-way trips once, right where it's read off the
+   stepper (see renderEmployee()), since every fare calc underneath takes
+   one-way units.
    ============================================================ */
 
 /* ------------------------------------------------------------
@@ -50,11 +49,14 @@ const MBTA_CONFIG = {
   weeksPerMonth: 4.345,
 
   // Trip frequency: a direct numeric input (typed or +/-1 stepper), not a
-  // button grid — covers weekend-only, midday-only, one-way-only, or
-  // more-than-5-day patterns a 1-5 day grid couldn't capture. No upper
-  // bound: a ride count has no real ceiling the way a day count does.
+  // button grid — covers weekend-only, midday-only, or more-than-5-round-
+  // trip patterns a 1-5 day grid couldn't capture. No upper bound: a ride
+  // count has no real ceiling the way a day count does. This value is
+  // ROUND-TRIPS/week — doubled to one-way trips right where it's read off
+  // the stepper (see renderEmployee()), since mbtaCalcAll() and the fare
+  // math underneath it take one-way units.
   tripsStep: 1,
-  defaultTripsPerWeek: 6, // a 3-day round-trip commute
+  defaultTripsPerWeek: 3, // 3 round-trips/week, a typical 3-day office week
 
   // Employer-mode inputs: how many employees a pass benefit would cover.
   employeeCountStep: 5,
@@ -311,13 +313,11 @@ function mbtaResolvePassPrice(pass, reducedFare) {
   return { oneWayFare: pass.oneWayFare, monthlyPrice: pass.monthlyPrice };
 }
 
-/** Total monthly pay-per-ride cost for a given number of one-way
- * trips/week. tripsPerWeek already counts each one-way ride individually
- * (a 5-day round-trip commute = 10), so there's no separate ×2 here —
- * unlike the old days-based formula, which multiplied a day count by 2
- * to get round trips. */
-function mbtaCalcPayPerRideTotal(oneWayFare, tripsPerWeek, weeksPerMonth) {
-  return oneWayFare * tripsPerWeek * weeksPerMonth;
+/** Total monthly pay-per-ride cost for a given number of ONE-WAY
+ * trips/week. The UI question asks for round-trips, not one-way trips —
+ * callers must double it before calling this (see renderEmployee()). */
+function mbtaCalcPayPerRideTotal(oneWayFare, oneWayTripsPerWeek, weeksPerMonth) {
+  return oneWayFare * oneWayTripsPerWeek * weeksPerMonth;
 }
 
 /** Applies subsidy, then pre-tax savings, to any monthly total. Returns each step. */
@@ -485,7 +485,9 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
 /** Bundles every derived number the UI needs for both options + inputs,
  * Reduced Fare is its own itemized deduction (regular sticker price
  * always shown first), same waterfall pattern the promo and subsidy/Perq
- * lines already use. */
+ * lines already use. tripsPerWeek here is in ONE-WAY units — the caller
+ * (renderEmployee()) doubles the round-trips/week stepper value before
+ * passing it in. */
 function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedFare) {
   const pass = mbtaGetPassOption(config, passId);
   if (!pass) {
@@ -1022,14 +1024,17 @@ function mbtaInitCalculator(rootEl) {
 
   function renderEmployee() {
     const effectivePerqPct = perqEnabled ? perqPct : 0;
-    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), tripsPerWeek, subsidyPct, effectivePerqPct, reducedFare);
+    // tripsPerWeek is round-trips/week; every fare calc below needs
+    // one-way trips, so it's doubled once, right here.
+    const oneWayTripsPerWeek = tripsPerWeek * 2;
+    const result = mbtaCalcAll(MBTA_CONFIG, currentPassId(), oneWayTripsPerWeek, subsidyPct, effectivePerqPct, reducedFare);
 
     // ---- Pay-Per-Ride card ----
     const rideTotalLabelEl = rootEl.querySelector("[data-abc-ride-total-label]");
     if (rideTotalLabelEl && result.pass) {
       const fare = reducedFare ? result.pass.reducedOneWayFare : result.pass.oneWayFare;
       rideTotalLabelEl.textContent =
-        `Total monthly cost (${abcFormatCurrency(fare)}/trip × ${tripsPerWeek} trip${tripsPerWeek === 1 ? "" : "s"}/week × ${MBTA_CONFIG.weeksPerMonth} weeks/month)`;
+        `Total monthly cost (${abcFormatCurrency(fare)}/trip × ${oneWayTripsPerWeek} one-way trip${oneWayTripsPerWeek === 1 ? "" : "s"}/week × ${MBTA_CONFIG.weeksPerMonth} weeks/month)`;
     }
     let rideRemaining = roundAndShow("[data-abc-ride-total]", result.rideRegularTotal, false);
     const rideReducedRow = rootEl.querySelector("[data-abc-ride-reduced-row]");
