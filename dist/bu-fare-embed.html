@@ -3465,6 +3465,13 @@ function buInitCalculator(rootEl) {
       if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
     }
     const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
+    // Parking is asymmetric (ride pays the full rate, pass gets the
+    // subsidized net rate), so it can flip which option is actually
+    // cheaper — the winner/savings comparison below must account for it,
+    // not just result.winner/.annualSavings, which buCalcAll computes
+    // before parking or Bluebikes exist.
+    const rideParkingAddon = parkingSubsidy ? parkingSubsidy.fullMonthlyCost : 0;
+    const passParkingAddon = parkingSubsidy ? parkingSubsidy.netCost : 0;
 
     // Every card total below is built the same way: round each line to a
     // whole dollar as it's painted, and keep a running "remaining" value
@@ -3591,20 +3598,26 @@ function buInitCalculator(rootEl) {
     rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
     // finalCost used below (winner/savings calc) stays on the precise,
     // unrounded math — only display is rounded, so a photo-finish between
-    // ride and pass still picks the actual cheaper option.
+    // ride and pass still picks the actual cheaper option. Parking and
+    // Bluebikes addons are folded in here too, since they're part of
+    // what's actually on screen for each card.
+    const rideFinalCost = result.rideFinalCost + rideParkingAddon + bluebikesMonthlyCost;
+    const passFinalCost = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
+    const winner = passFinalCost <= rideFinalCost ? "pass" : "ride";
+    const annualSavings = Math.abs(passFinalCost - rideFinalCost) * 12;
 
     const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
-    rideCard.classList.toggle("abc-card-winner", result.winner === "ride");
-    passCard.classList.toggle("abc-card-winner", result.winner === "pass");
-    rideCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "ride" ? "visible" : "hidden";
-    passCard.querySelector("[data-abc-badge]").style.visibility = result.winner === "pass" ? "visible" : "hidden";
+    rideCard.classList.toggle("abc-card-winner", winner === "ride");
+    passCard.classList.toggle("abc-card-winner", winner === "pass");
+    rideCard.querySelector("[data-abc-badge]").style.visibility = winner === "ride" ? "visible" : "hidden";
+    passCard.querySelector("[data-abc-badge]").style.visibility = winner === "pass" ? "visible" : "hidden";
 
-    const winnerCard = result.winner === "ride" ? rideCard : passCard;
-    const loserCard = result.winner === "ride" ? passCard : rideCard;
-    const otherOptionLabel = result.winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
-    winnerCard.querySelector("[data-abc-savings-line]").style.display = result.annualSavings > 0.5 ? "block" : "none";
-    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.annualSavings));
+    const winnerCard = winner === "ride" ? rideCard : passCard;
+    const loserCard = winner === "ride" ? passCard : rideCard;
+    const otherOptionLabel = winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
+    winnerCard.querySelector("[data-abc-savings-line]").style.display = annualSavings > 0.5 ? "block" : "none";
+    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(annualSavings));
     winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
     loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
   }
@@ -3793,8 +3806,14 @@ function buInitCalculator(rootEl) {
     // savings comparison below, same "display rounds, math doesn't" rule
     // the main cards follow. Pre-tax-adjusted on both sides (parking and
     // the compared pass alike), per Carl Larson's explicit request that
-    // this comparison stay apples-to-apples.
-    const compareCost = compareResult.passEffectiveCost;
+    // this comparison stay apples-to-apples. Station parking (net of its
+    // own subsidy) and Bluebikes are also folded in here, since both are
+    // already part of what compareRemaining shows on screen — leaving
+    // them out made a cheaper-looking card lose, and made the park-and-
+    // ride days stepper have no effect on "you save $X a year".
+    const compareParkingNetCost = compareParkingSubsidy ? compareParkingSubsidy.netCost : 0;
+    const compareBluebikesCost = driveCompareBluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
+    const compareCost = compareResult.passEffectiveCost + compareParkingNetCost + compareBluebikesCost;
 
     // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
     // driven by whichever option is actually cheaper at the chosen
