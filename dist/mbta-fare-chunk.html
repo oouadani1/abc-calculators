@@ -598,16 +598,28 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --mbta-ferry-blue: #5DA8EA;
+  --mbta-ferry-blue-tint: #EAF4FC;
 }
 
 .abc-farecalc {
   --abc-farecalc-accent: var(--mbta-blue);
   --abc-farecalc-accent-tint: var(--mbta-blue-tint);
+  --abc-farecalc-accent-text: #fff;
 }
 
 .abc-farecalc.abc-theme-rail {
   --abc-farecalc-accent: var(--mbta-purple);
   --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+  --abc-farecalc-accent-text: #fff;
+}
+
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead. */
+.abc-farecalc.abc-theme-ferry {
+  --abc-farecalc-accent: var(--mbta-ferry-blue);
+  --abc-farecalc-accent-tint: var(--mbta-ferry-blue-tint);
+  --abc-farecalc-accent-text: #0C2C50;
 }
 
 /* ---- Wider container for this tool: the extra room is what makes the
@@ -773,7 +785,9 @@
 [data-abc-route-field] { grid-area: route; }
 [data-abc-trips-field],
 [data-abc-count-field] { grid-area: freq; }
-[data-abc-rail-zone-field] { grid-area: zone; }
+[data-abc-rail-zone-field],
+[data-abc-subway-tier-field],
+[data-abc-ferry-route-field] { grid-area: zone; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
 [data-abc-subsidy-field] { grid-area: subsidy; }
 [data-abc-perq-field] { grid-area: perq; }
@@ -936,6 +950,25 @@
   color: #fff;
 }
 
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead, same call as the theme
+   variables above. */
+.abc-farecalc-btn-ferry.abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: #0C2C50;
+}
+
+/* Ferry's own route sub-picker (Winthrop/Quincy / Lynn / Hingham/Hull)
+   gets the same blue as the route button, so the whole ferry selection
+   reads as one color instead of falling back to the shared navy every
+   other generic pill in this tool uses. */
+[data-abc-ferry-route-select].abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: #0C2C50;
+}
+
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
@@ -943,7 +976,8 @@
    behind (hover: hover) — on touch devices, :hover fires on tap and
    has no "mouse leave" to end it, so this animation (and the color
    change) could otherwise fire and hang on a tap meant for scrolling. */
-.abc-farecalc-btn-subway {
+.abc-farecalc-btn-subway,
+.abc-farecalc-btn-ferry {
   overflow: hidden;
   position: relative;
 }
@@ -959,6 +993,12 @@
     border-color: transparent;
     color: #fff;
     animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .abc-farecalc-btn-ferry:hover {
+    border-color: var(--mbta-ferry-blue);
+    color: #0C2C50;
+    animation: abc-farecalc-wave-ferry 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
 
@@ -985,11 +1025,40 @@
   }
 }
 
+/* A single light "glint" band slides left to right through a sea of
+   ferry blue, settling on solid blue — same oversized-background +
+   sliding-position mechanism abc-farecalc-line-swipe uses above, just
+   one soft highlight instead of four hard-edged line colors, reading as
+   a small wave/reflection rather than a rainbow sweep. */
+@keyframes abc-farecalc-wave-ferry {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
     background: var(--mbta-blue);
     color: #fff;
+  }
+  .abc-farecalc-btn-ferry:hover {
+    animation: none;
+    background: var(--mbta-ferry-blue);
+    color: #0C2C50;
   }
 }
 
@@ -1443,6 +1512,14 @@ label.abc-farecalc-toggle-label {
   color: #fff;
 }
 
+/* Ferry theme overrides white text to dark ink wherever the accent color
+   becomes a background (stepper +/- buttons, Perq "Yes") — ferry blue is
+   too light for white text at these sizes (2.5:1 contrast, fails WCAG AA). */
+.abc-farecalc.abc-theme-ferry .abc-farecalc-stepper-btn,
+.abc-farecalc.abc-theme-ferry [data-abc-perq-select].abc-active {
+  color: var(--abc-farecalc-accent-text);
+}
+
 .abc-farecalc [data-abc-perq-select="no"].abc-active {
   background: var(--mbta-red);
   border-color: var(--mbta-red);
@@ -1661,6 +1738,7 @@ label.abc-farecalc-toggle-label {
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway + Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
             </div>
           </div>
         </div>
@@ -1755,6 +1833,31 @@ label.abc-farecalc-toggle-label {
               Not sure which zone to select?
               <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the official MBTA zone map</a>. Covers an Interzone route? Pick it directly from the list.
             </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-subway-tier-field>
+        <p class="abc-question">Which subway or bus pass do you want to compare?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-ferry-route-field style="display: none;">
+        <p class="abc-question">Which ferry route do you take?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
+            </div>
           </div>
         </div>
       </div>
@@ -2123,7 +2226,8 @@ const MBTA_CONFIG = {
   // confirmed from mbta.com/fares/reduced. Interzones are estimated — see
   // fareSource.note above — and carry `reducedEstimated: true`.
   passOptions: [
-    { id: "linkpass", label: "Subway + Bus (LinkPass)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "local-bus", label: "Bus Pass", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
+    { id: "linkpass", label: "LinkPass (Subway + Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
     { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
@@ -2145,6 +2249,20 @@ const MBTA_CONFIG = {
     { id: "cr-interzone-8", label: "Interzone 8", group: "rail", oneWayFare: 6.25, monthlyPrice: 216.00, reducedOneWayFare: 3.00, reducedMonthlyPrice: 97.00, reducedEstimated: true },
     { id: "cr-interzone-9", label: "Interzone 9", group: "rail", oneWayFare: 6.75, monthlyPrice: 237.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 108.00, reducedEstimated: true },
     { id: "cr-interzone-10", label: "Interzone 10", group: "rail", oneWayFare: 7.25, monthlyPrice: 257.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 119.00, reducedEstimated: true },
+
+    // Ferry: one-way and monthly prices confirmed live on
+    // mbta.com/fares/ferry-fares (2026-10), same source used for the BU
+    // fork's identical entries. MBTA fare-integrates ferry monthly passes
+    // with the equivalent Commuter Rail zone where one exists — not a
+    // coincidence that Winthrop/Quincy and Lynn match cr-zone-1 and
+    // cr-zone-2 above dollar-for-dollar, which is also why their Reduced
+    // Fare prices are reused from those confirmed zones. Hingham/Hull has
+    // no CR-zone equivalent; its reduced monthly price has no published
+    // figure, so it's estimated via the same ~50%-of-regular ratio the
+    // other confirmed routes follow — flagged with reducedEstimated.
+    { id: "ferry-winthrop-quincy", label: "Winthrop/Quincy Ferry", group: "ferry", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
+    { id: "ferry-lynn", label: "Lynn Ferry", group: "ferry", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
+    { id: "ferry-hingham-hull", label: "Hingham/Hull Ferry", group: "ferry", oneWayFare: 9.75, monthlyPrice: 329.00, reducedOneWayFare: 4.85, reducedMonthlyPrice: 161.00, reducedEstimated: true },
   ],
 };
 
@@ -2559,7 +2677,9 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
 
 function mbtaInitCalculator(rootEl) {
   let mode = "employee"; // "employee" | "employer"
-  let routeType = "subway"; // "subway" | "rail"
+  let routeType = "subway"; // "subway" | "rail" | "ferry"
+  let passTier = "linkpass"; // "local-bus" | "linkpass" — Subway & Bus sub-choice
+  let ferryRouteId = "ferry-winthrop-quincy";
   let tripsPerWeek = MBTA_CONFIG.defaultTripsPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
   let perqAnswer = null; // null | "yes" | "no" — null means unanswered
@@ -2709,6 +2829,28 @@ function mbtaInitCalculator(rootEl) {
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
+  const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
+  const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
+
+  // ---- Subway & Bus pass-tier pop-out (Bus Pass / LinkPass) ----
+  const tierButtons = rootEl.querySelectorAll("[data-abc-pass-tier-select]");
+  tierButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      passTier = btn.dataset.abcPassTierSelect;
+      tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
+    });
+  });
+
+  // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
+  const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
+  ferryRouteButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ferryRouteId = btn.dataset.abcFerryRouteSelect;
+      ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
+    });
+  });
 
   // Commuter Rail promo: whether it's still running at all is fixed for
   // the whole session, computed once here; whether it actually SHOWS
@@ -2814,7 +2956,8 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function currentPassId() {
-    if (routeType === "subway") return "linkpass";
+    if (routeType === "subway") return passTier;
+    if (routeType === "ferry") return ferryRouteId;
     if (mode === "employee") return employeeRailPassId();
     return railZoneSelect.value;
   }
@@ -2919,9 +3062,12 @@ function mbtaInitCalculator(rootEl) {
 
   function updateRouteVisibility() {
     railZoneField.style.display = routeType === "rail" ? "" : "none";
+    if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
+    if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
     if (countField) countField.style.display = routeType === "rail" ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
+    rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
   }
 
   routeButtons.forEach((btn) => {

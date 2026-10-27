@@ -29,16 +29,28 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --mbta-ferry-blue: #5DA8EA;
+  --mbta-ferry-blue-tint: #EAF4FC;
 }
 
 .abc-farecalc {
   --abc-farecalc-accent: var(--mbta-blue);
   --abc-farecalc-accent-tint: var(--mbta-blue-tint);
+  --abc-farecalc-accent-text: #fff;
 }
 
 .abc-farecalc.abc-theme-rail {
   --abc-farecalc-accent: var(--mbta-purple);
   --abc-farecalc-accent-tint: var(--mbta-purple-tint);
+  --abc-farecalc-accent-text: #fff;
+}
+
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead. */
+.abc-farecalc.abc-theme-ferry {
+  --abc-farecalc-accent: var(--mbta-ferry-blue);
+  --abc-farecalc-accent-tint: var(--mbta-ferry-blue-tint);
+  --abc-farecalc-accent-text: #0C2C50;
 }
 
 /* ---- Wider container for this tool: the extra room is what makes the
@@ -204,7 +216,9 @@
 [data-abc-route-field] { grid-area: route; }
 [data-abc-trips-field],
 [data-abc-count-field] { grid-area: freq; }
-[data-abc-rail-zone-field] { grid-area: zone; }
+[data-abc-rail-zone-field],
+[data-abc-subway-tier-field],
+[data-abc-ferry-route-field] { grid-area: zone; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
 [data-abc-subsidy-field] { grid-area: subsidy; }
 [data-abc-perq-field] { grid-area: perq; }
@@ -367,6 +381,25 @@
   color: #fff;
 }
 
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead, same call as the theme
+   variables above. */
+.abc-farecalc-btn-ferry.abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: #0C2C50;
+}
+
+/* Ferry's own route sub-picker (Winthrop/Quincy / Lynn / Hingham/Hull)
+   gets the same blue as the route button, so the whole ferry selection
+   reads as one color instead of falling back to the shared navy every
+   other generic pill in this tool uses. */
+[data-abc-ferry-route-select].abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: #0C2C50;
+}
+
 /* Swipe flourish: a wide hard-stop gradient strip slides across the
    button on hover (not a color crossfade) and the animation is only
    ever a hover preview — the persistent "selected" look is the solid
@@ -374,7 +407,8 @@
    behind (hover: hover) — on touch devices, :hover fires on tap and
    has no "mouse leave" to end it, so this animation (and the color
    change) could otherwise fire and hang on a tap meant for scrolling. */
-.abc-farecalc-btn-subway {
+.abc-farecalc-btn-subway,
+.abc-farecalc-btn-ferry {
   overflow: hidden;
   position: relative;
 }
@@ -390,6 +424,12 @@
     border-color: transparent;
     color: #fff;
     animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .abc-farecalc-btn-ferry:hover {
+    border-color: var(--mbta-ferry-blue);
+    color: #0C2C50;
+    animation: abc-farecalc-wave-ferry 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
 
@@ -416,11 +456,40 @@
   }
 }
 
+/* A single light "glint" band slides left to right through a sea of
+   ferry blue, settling on solid blue — same oversized-background +
+   sliding-position mechanism abc-farecalc-line-swipe uses above, just
+   one soft highlight instead of four hard-edged line colors, reading as
+   a small wave/reflection rather than a rainbow sweep. */
+@keyframes abc-farecalc-wave-ferry {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
+}
+
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
   .abc-farecalc-btn-subway:hover {
     animation: none;
     background: var(--mbta-blue);
     color: #fff;
+  }
+  .abc-farecalc-btn-ferry:hover {
+    animation: none;
+    background: var(--mbta-ferry-blue);
+    color: #0C2C50;
   }
 }
 
@@ -872,6 +941,14 @@ label.abc-farecalc-toggle-label {
   background: var(--abc-farecalc-accent);
   border-color: var(--abc-farecalc-accent);
   color: #fff;
+}
+
+/* Ferry theme overrides white text to dark ink wherever the accent color
+   becomes a background (stepper +/- buttons, Perq "Yes") — ferry blue is
+   too light for white text at these sizes (2.5:1 contrast, fails WCAG AA). */
+.abc-farecalc.abc-theme-ferry .abc-farecalc-stepper-btn,
+.abc-farecalc.abc-theme-ferry [data-abc-perq-select].abc-active {
+  color: var(--abc-farecalc-accent-text);
 }
 
 .abc-farecalc [data-abc-perq-select="no"].abc-active {

@@ -379,7 +379,8 @@
   color: var(--bu-ink);
 }
 
-.abc-farecalc-btn-subway {
+.abc-farecalc-btn-subway,
+.abc-farecalc-btn-ferry {
   overflow: hidden;
   position: relative;
 }
@@ -391,8 +392,47 @@
     color: #fff;
   }
   .abc-farecalc-btn-ferry:hover {
-    background: var(--mbta-ferry-blue);
+    animation: abc-farecalc-wave-ferry 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     border-color: var(--mbta-ferry-blue);
+    color: var(--bu-ink);
+  }
+}
+
+/* A single light "glint" band slides left to right through a sea of
+   ferry blue, settling on solid blue — same oversized-background +
+   sliding-position mechanism abc-farecalc-line-swipe-bu uses above, just
+   one soft highlight instead of four hard-edged line colors, reading as
+   a small wave/reflection rather than a rainbow sweep. */
+@keyframes abc-farecalc-wave-ferry {
+  0% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 0% 0%;
+  }
+  100% {
+    background-image: linear-gradient(to right,
+      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
+      #EAF6FF 38%, #EAF6FF 50%,
+      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
+    background-size: 500% 100%;
+    background-position: 100% 0%;
+  }
+}
+
+/* prefers-reduced-motion: both swipe animations settle straight to their
+   resting color, no sliding. */
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: reduce) {
+  .abc-farecalc-btn-subway:hover {
+    animation: none;
+    background: var(--bu-mint-bright);
+    color: var(--bu-ink);
+  }
+  .abc-farecalc-btn-ferry:hover {
+    animation: none;
+    background: var(--mbta-ferry-blue);
     color: var(--bu-ink);
   }
 }

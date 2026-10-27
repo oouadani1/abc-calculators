@@ -607,6 +607,9 @@ function buInitCalculator(rootEl) {
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
   let driveCompareMode = "link"; // "bus" | "link" | "rail" | "ferry" — Drive mode's comparison card
   let driveCompareFerryRouteId = "ferry-winthrop-quincy";
+  let driveCompareParking = false; // "Will you drive and park there, then ride the rest of the way?" — bus/link/rail only, no Ferry parking data
+  let driveCompareParkingDays = 3;
+  let driveCompareBluebikesAdded = false;
   let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
   let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
   let rapidStationParking = false; // Subway & Bus only — same question, MBTA_RAPID_STATIONS instead of BU_STATIONS
@@ -974,9 +977,61 @@ function buInitCalculator(rootEl) {
   const driveCompareFerryButtons = rootEl.querySelectorAll("[data-abc-drive-compare-ferry-select]");
   initStationCombobox(driveCompareStationInput, driveCompareStationListbox, render);
 
+  // ---- "Driving to the station" park-and-ride, same BU subsidy as the
+  // main cards: useful for comparing "drive all the way" vs "drive to a
+  // station and ride the rest of the way" per Carl Larson's suggestion.
+  // Bus Pass/Link Pass use MBTA_RAPID_STATIONS via their own station
+  // search (fare doesn't depend on station there, so there's no existing
+  // one to reuse); Commuter Rail reuses driveCompareStationInput, already
+  // resolved for fare purposes. No parking option for Ferry — no station
+  // dataset sourced for it. ----
+  const driveCompareParkingField = rootEl.querySelector("[data-abc-drive-compare-parking-field]");
+  const driveCompareParkingToggle = rootEl.querySelector("[data-abc-drive-compare-parking-toggle]");
+  const driveCompareRapidStationField = rootEl.querySelector("[data-abc-drive-compare-rapid-station-field]");
+  const driveCompareRapidStationInput = rootEl.querySelector("[data-abc-drive-compare-rapid-station-input]");
+  const driveCompareRapidStationListbox = rootEl.querySelector("[data-abc-drive-compare-rapid-listbox]");
+  const driveCompareParkingDaysField = rootEl.querySelector("[data-abc-drive-compare-parking-days-field]");
+  initStationCombobox(driveCompareRapidStationInput, driveCompareRapidStationListbox, render, MBTA_RAPID_STATIONS);
+
+  function currentDriveCompareRapidStationLabel() {
+    return driveCompareRapidStationInput ? driveCompareRapidStationInput.value.trim() : "";
+  }
+
   function updateDriveCompareFieldVisibility() {
     if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
     if (driveCompareFerryField) driveCompareFerryField.style.display = driveCompareMode === "ferry" ? "block" : "none";
+
+    const isRapidMode = driveCompareMode === "bus" || driveCompareMode === "link";
+    const parkingApplies = driveCompareMode !== "ferry";
+    if (driveCompareParkingField) driveCompareParkingField.style.display = parkingApplies ? "flex" : "none";
+    if (!parkingApplies && driveCompareParking) {
+      driveCompareParking = false;
+      if (driveCompareParkingToggle) driveCompareParkingToggle.checked = false;
+    }
+    if (driveCompareRapidStationField) driveCompareRapidStationField.style.display = isRapidMode && driveCompareParking ? "block" : "none";
+    if (driveCompareParkingDaysField) driveCompareParkingDaysField.style.display = parkingApplies && driveCompareParking ? "block" : "none";
+  }
+
+  if (driveCompareParkingToggle) {
+    driveCompareParkingToggle.addEventListener("change", () => {
+      driveCompareParking = driveCompareParkingToggle.checked;
+      updateDriveCompareFieldVisibility();
+      if (driveCompareParkingDaysStepper) driveCompareParkingDaysStepper.repaint();
+      render();
+    });
+  }
+
+  const driveCompareParkingDaysStepper = initStepper(
+    "data-abc-drive-compare-parking-days-stepper", 1, () => driveCompareParkingDays, (v) => { driveCompareParkingDays = v; }, 0, 7
+  );
+
+  // ---- Bluebikes add-on, same as the main cards ----
+  const driveCompareBluebikesToggle = rootEl.querySelector("[data-abc-drive-compare-bluebikes-toggle]");
+  if (driveCompareBluebikesToggle) {
+    driveCompareBluebikesToggle.addEventListener("change", () => {
+      driveCompareBluebikesAdded = driveCompareBluebikesToggle.checked;
+      render();
+    });
   }
 
   driveCompareButtons.forEach((btn) => {
@@ -987,6 +1042,10 @@ function buInitCalculator(rootEl) {
       render();
     });
   });
+  // Default compare mode is "link", which should show the parking toggle
+  // right away — without this, it stays hidden (the HTML default) until
+  // someone clicks a compare-mode button once.
+  updateDriveCompareFieldVisibility();
 
   driveCompareFerryButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1321,12 +1380,12 @@ function buInitCalculator(rootEl) {
     // inline station/route pickers — then renders the exact same itemized
     // waterfall (total, Reduced Fare, promo, BU subsidy, final) the main
     // Pay-Per-Ride/Monthly Pass cards use, via buCalcAll().
-    let comparePassId, compareTitle;
+    let comparePassId, compareTitle, compareStation;
     if (driveCompareMode === "bus") {
       comparePassId = "local-bus";
       compareTitle = "Bus Pass Instead";
     } else if (driveCompareMode === "rail") {
-      const compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
+      compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
       comparePassId = compareStation ? compareStation.zoneId : "";
       compareTitle = "Commuter Rail Instead";
     } else if (driveCompareMode === "ferry") {
@@ -1422,6 +1481,46 @@ function buInitCalculator(rootEl) {
     } else {
       comparePretaxRow.style.display = "none";
     }
+
+    // ---- "Drive to the station" park-and-ride: this compare card always
+    // represents a Monthly Pass scenario, so it gets the full BU subsidy
+    // treatment (full cost + subsidy deducted), same as the main Monthly
+    // Pass card. Rate source depends on mode — rail reuses compareStation
+    // (already resolved above), bus/link resolve their own rapid-transit
+    // station search. ----
+    let compareParkingRate = null;
+    if (driveCompareParking) {
+      if (driveCompareMode === "rail" && compareStation && compareStation.parkingRate != null) {
+        compareParkingRate = compareStation.parkingRate;
+      } else if (driveCompareMode === "bus" || driveCompareMode === "link") {
+        const rapidStation = buGetRapidStation(currentDriveCompareRapidStationLabel());
+        if (rapidStation) compareParkingRate = rapidStation.parkingRate;
+      }
+    }
+    const compareParkingSubsidy = compareParkingRate != null ? buCalcStationParkingSubsidy(compareParkingRate, driveCompareParkingDays) : null;
+    const compareParkingRow = rootEl.querySelector("[data-abc-drive-compare-parking-row]");
+    const compareParkingSubsidyRow = rootEl.querySelector("[data-abc-drive-compare-parking-subsidy-row]");
+    if (compareParkingSubsidy) {
+      rootEl.querySelector("[data-abc-drive-compare-parking-label]").textContent =
+        `MBTA station parking (${abcFormatCurrency(compareParkingSubsidy.rate)}/day × ${compareParkingSubsidy.daysPerWeek} day${compareParkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+      compareRemaining += roundAndShow("[data-abc-drive-compare-parking-amt]", compareParkingSubsidy.fullMonthlyCost, false);
+      compareRemaining += roundAndShow("[data-abc-drive-compare-parking-subsidy-amt]", compareParkingSubsidy.subsidyAmt, true);
+      compareParkingRow.style.display = "flex";
+      compareParkingSubsidyRow.style.display = "flex";
+    } else {
+      compareParkingRow.style.display = "none";
+      compareParkingSubsidyRow.style.display = "none";
+    }
+
+    // ---- Bluebikes add-on, same flat line the main cards use ----
+    const compareBluebikesRow = rootEl.querySelector("[data-abc-drive-compare-bluebikes-row]");
+    if (driveCompareBluebikesAdded) {
+      compareRemaining += roundAndShow("[data-abc-drive-compare-bluebikes-amt]", BU_CONFIG.bluebikesAnnualPrice / 12, false);
+      compareBluebikesRow.style.display = "flex";
+    } else {
+      compareBluebikesRow.style.display = "none";
+    }
+
     rootEl.querySelector("[data-abc-drive-compare-final]").textContent = abcFormatCurrencyWhole(compareRemaining);
     // compareCost stays on the precise, unrounded math for the winner/
     // savings comparison below, same "display rounds, math doesn't" rule

@@ -77,7 +77,7 @@
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>Will you drive and park at a T station?</span>
               </label>
-              <span class="abc-field-hint">BU's parking subsidy works with any BU-subsidized monthly pass, not just Commuter Rail.</span>
+              <span class="abc-field-hint">BU subsidizes 50% of the cost of parking at an MBTA station if you have any BU monthly pass. Only MBTA stations with park-and-ride lots are shown in this list.</span>
             </div>
 
             <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
@@ -198,7 +198,7 @@
               <label class="abc-farecalc-toggle-label">
                 <input type="checkbox" data-abc-bluebikes-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
-                <span>Add a <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">BU discounted Bluebikes membership</a> to get to and from your station</span>
+                <span>I want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes</a></span>
               </label>
             </div>
           </div>
@@ -338,6 +338,38 @@
           </div>
         </div>
 
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact" data-abc-drive-compare-parking-field style="display: none;">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-compare-parking-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>Will you drive and park there, then ride the rest of the way?</span>
+          </label>
+        </div>
+
+        <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-drive-compare-rapid-station-field style="display: none;">
+          <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-drive-compare-rapid-listbox" aria-autocomplete="list" data-abc-drive-compare-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
+          <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-drive-compare-rapid-listbox" role="listbox" data-abc-drive-compare-rapid-listbox hidden></ul>
+        </div>
+
+        <div class="abc-farecalc-station-parking-days" data-abc-drive-compare-parking-days-field style="display: none;">
+          <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-parking-days">How many days a week will you park there?</label>
+          <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-drive-compare-parking-days-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+            <div class="abc-farecalc-stepper-value-wrap">
+              <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-drive-compare-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park there?" />
+            </div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-compare-bluebikes-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>I want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes</a></span>
+          </label>
+        </div>
+
         <div class="abc-farecalc-line">
           <span data-abc-drive-compare-total-label>Total monthly cost</span>
           <span data-abc-drive-compare-total>$0.00</span>
@@ -357,6 +389,18 @@
         <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-compare-pretax-row style="display: none;">
           <span>Est. pre-tax savings (30%)</span>
           <span data-abc-drive-compare-pretax-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-parking-row style="display: none;">
+          <span data-abc-drive-compare-parking-label>MBTA station parking</span>
+          <span data-abc-drive-compare-parking-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-compare-parking-subsidy-row style="display: none;">
+          <span>BU subsidy on parking (50%)</span>
+          <span data-abc-drive-compare-parking-subsidy-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-bluebikes-row style="display: none;">
+          <span>Bluebikes membership ($75.50/yr)</span>
+          <span data-abc-drive-compare-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>

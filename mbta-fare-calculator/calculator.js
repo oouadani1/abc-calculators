@@ -100,7 +100,8 @@ const MBTA_CONFIG = {
   // confirmed from mbta.com/fares/reduced. Interzones are estimated — see
   // fareSource.note above — and carry `reducedEstimated: true`.
   passOptions: [
-    { id: "linkpass", label: "Subway + Bus (LinkPass)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "local-bus", label: "Bus Pass", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
+    { id: "linkpass", label: "LinkPass (Subway + Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
     { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
@@ -122,6 +123,20 @@ const MBTA_CONFIG = {
     { id: "cr-interzone-8", label: "Interzone 8", group: "rail", oneWayFare: 6.25, monthlyPrice: 216.00, reducedOneWayFare: 3.00, reducedMonthlyPrice: 97.00, reducedEstimated: true },
     { id: "cr-interzone-9", label: "Interzone 9", group: "rail", oneWayFare: 6.75, monthlyPrice: 237.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 108.00, reducedEstimated: true },
     { id: "cr-interzone-10", label: "Interzone 10", group: "rail", oneWayFare: 7.25, monthlyPrice: 257.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 119.00, reducedEstimated: true },
+
+    // Ferry: one-way and monthly prices confirmed live on
+    // mbta.com/fares/ferry-fares (2026-10), same source used for the BU
+    // fork's identical entries. MBTA fare-integrates ferry monthly passes
+    // with the equivalent Commuter Rail zone where one exists — not a
+    // coincidence that Winthrop/Quincy and Lynn match cr-zone-1 and
+    // cr-zone-2 above dollar-for-dollar, which is also why their Reduced
+    // Fare prices are reused from those confirmed zones. Hingham/Hull has
+    // no CR-zone equivalent; its reduced monthly price has no published
+    // figure, so it's estimated via the same ~50%-of-regular ratio the
+    // other confirmed routes follow — flagged with reducedEstimated.
+    { id: "ferry-winthrop-quincy", label: "Winthrop/Quincy Ferry", group: "ferry", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
+    { id: "ferry-lynn", label: "Lynn Ferry", group: "ferry", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
+    { id: "ferry-hingham-hull", label: "Hingham/Hull Ferry", group: "ferry", oneWayFare: 9.75, monthlyPrice: 329.00, reducedOneWayFare: 4.85, reducedMonthlyPrice: 161.00, reducedEstimated: true },
   ],
 };
 
@@ -536,7 +551,9 @@ function mbtaCalcAll(config, passId, tripsPerWeek, subsidyPct, perqPct, reducedF
 
 function mbtaInitCalculator(rootEl) {
   let mode = "employee"; // "employee" | "employer"
-  let routeType = "subway"; // "subway" | "rail"
+  let routeType = "subway"; // "subway" | "rail" | "ferry"
+  let passTier = "linkpass"; // "local-bus" | "linkpass" — Subway & Bus sub-choice
+  let ferryRouteId = "ferry-winthrop-quincy";
   let tripsPerWeek = MBTA_CONFIG.defaultTripsPerWeek;
   let subsidyPct = MBTA_CONFIG.defaultSubsidyPct;
   let perqAnswer = null; // null | "yes" | "no" — null means unanswered
@@ -686,6 +703,28 @@ function mbtaInitCalculator(rootEl) {
   const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
+  const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
+  const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
+
+  // ---- Subway & Bus pass-tier pop-out (Bus Pass / LinkPass) ----
+  const tierButtons = rootEl.querySelectorAll("[data-abc-pass-tier-select]");
+  tierButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      passTier = btn.dataset.abcPassTierSelect;
+      tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
+    });
+  });
+
+  // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
+  const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
+  ferryRouteButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ferryRouteId = btn.dataset.abcFerryRouteSelect;
+      ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      render();
+    });
+  });
 
   // Commuter Rail promo: whether it's still running at all is fixed for
   // the whole session, computed once here; whether it actually SHOWS
@@ -791,7 +830,8 @@ function mbtaInitCalculator(rootEl) {
   }
 
   function currentPassId() {
-    if (routeType === "subway") return "linkpass";
+    if (routeType === "subway") return passTier;
+    if (routeType === "ferry") return ferryRouteId;
     if (mode === "employee") return employeeRailPassId();
     return railZoneSelect.value;
   }
@@ -896,9 +936,12 @@ function mbtaInitCalculator(rootEl) {
 
   function updateRouteVisibility() {
     railZoneField.style.display = routeType === "rail" ? "" : "none";
+    if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
+    if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
     if (countField) countField.style.display = routeType === "rail" ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
+    rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
   }
 
   routeButtons.forEach((btn) => {
