@@ -24,7 +24,7 @@
   --mbta-orange: #ED8B00;
   --mbta-green: #00843D;
   --mbta-green-tint: #E5F3EB;
-  --mbta-blue: #003DA5;
+  --mbta-blue: #0E3EA7; /* per explicit correction, not the MBTA-published #003DA5 this was originally sourced from */
   --mbta-blue-tint: #E6ECF8;
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
@@ -381,6 +381,17 @@
   color: #fff;
 }
 
+/* Bus Pass / LinkPass tier pills: explicit override so they match the
+   route button's own blue, instead of falling back to the shared
+   .abc-choice-button.abc-active default (base.css's --abc-navy, a
+   visibly different dark blue — this was the mismatch reported and
+   corrected). */
+[data-abc-pass-tier-select].abc-active {
+  background: var(--mbta-blue);
+  border-color: var(--mbta-blue);
+  color: #fff;
+}
+
 /* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
    even at this font size) — dark ink instead, same call as the theme
    variables above. */
@@ -407,8 +418,7 @@
    behind (hover: hover) — on touch devices, :hover fires on tap and
    has no "mouse leave" to end it, so this animation (and the color
    change) could otherwise fire and hang on a tap meant for scrolling. */
-.abc-farecalc-btn-subway,
-.abc-farecalc-btn-ferry {
+.abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
 }
@@ -424,12 +434,6 @@
     border-color: transparent;
     color: #fff;
     animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  .abc-farecalc-btn-ferry:hover {
-    border-color: var(--mbta-ferry-blue);
-    color: #0C2C50;
-    animation: abc-farecalc-wave-ferry 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
 
@@ -456,27 +460,64 @@
   }
 }
 
-/* A single light "glint" band slides left to right through a sea of
-   ferry blue, settling on solid blue — same oversized-background +
-   sliding-position mechanism abc-farecalc-line-swipe uses above, just
-   one soft highlight instead of four hard-edged line colors, reading as
-   a small wave/reflection rather than a rainbow sweep. */
-@keyframes abc-farecalc-wave-ferry {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
-      #EAF6FF 38%, #EAF6FF 50%,
-      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
+/* ---- Ferry button: a small "gooey blob" fill on hover instead of a
+   sliding gradient — four circles rise from below the button and merge
+   into one liquid blue fill via the SVG #abc-farecalc-goo filter (see
+   index.html), a standard technique (feGaussianBlur then feColorMatrix
+   sharpens the alpha back to hard edges, which is what makes separate
+   circles read as one merging shape instead of four soft overlapping
+   ones), not a bespoke invention. Purely a hover preview, same
+   philosophy as the subway swipe above — the persistent "selected" look
+   is the flat .abc-farecalc-btn-ferry.abc-active fill, not whatever
+   frame the blobs happen to be on. ---- */
+.abc-farecalc-blob-btn {
+  position: relative;
+  isolation: isolate;
+}
+
+.abc-farecalc-blob-inner {
+  z-index: 0;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.abc-farecalc-blob-group {
+  position: relative;
+  display: block;
+  height: 100%;
+  filter: url('#abc-farecalc-goo');
+}
+
+.abc-farecalc-blob {
+  position: absolute;
+  top: 0;
+  width: 25%;
+  height: 100%;
+  background: var(--mbta-ferry-blue);
+  border-radius: 100%;
+  transform: translate3d(0, 160%, 0) scale(1.4);
+  transition: transform 0.45s;
+}
+
+.abc-farecalc-blob:nth-child(1) { left: 0%; }
+.abc-farecalc-blob:nth-child(2) { left: 25%; transition-delay: 0.08s; }
+.abc-farecalc-blob:nth-child(3) { left: 50%; transition-delay: 0.16s; }
+.abc-farecalc-blob:nth-child(4) { left: 75%; transition-delay: 0.24s; }
+
+.abc-farecalc-blob-label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-blob-btn:hover .abc-farecalc-blob {
+    transform: translateZ(0) scale(1.4);
   }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
-      #EAF6FF 38%, #EAF6FF 50%,
-      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
+  .abc-farecalc-blob-btn:hover {
+    border-color: var(--mbta-ferry-blue);
+    color: #0C2C50;
   }
 }
 
@@ -486,10 +527,9 @@
     background: var(--mbta-blue);
     color: #fff;
   }
-  .abc-farecalc-btn-ferry:hover {
-    animation: none;
-    background: var(--mbta-ferry-blue);
-    color: #0C2C50;
+  .abc-farecalc-blob-btn:hover .abc-farecalc-blob {
+    transition: none;
+    transform: translateZ(0) scale(1.4);
   }
 }
 

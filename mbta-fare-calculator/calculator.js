@@ -751,26 +751,50 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
-  // Populate the rail zone dropdown from config (everything except
-  // linkpass), starting on an unselected "Select zone" placeholder rather
-  // than defaulting to a real zone.
-  function populateZoneSelect(select) {
+  // Populate a zone/route dropdown from config, starting on an unselected
+  // placeholder rather than defaulting to a real option. excludeIds (zone
+  // or route ids already picked in SIBLING rows) are left out entirely,
+  // so an employer can't add the same zone/route as two separate rows —
+  // this is also why every call site re-populates every row's select
+  // whenever any row's selection changes, see refreshZoneRowOptions()
+  // below. Preserves currentValue (even if it would otherwise be
+  // excluded, since it's this row's OWN pick, not a sibling's) so
+  // repopulating doesn't silently clear what someone already chose.
+  function populateZoneSelect(select, group, excludeIds, currentValue) {
+    select.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Select zone";
+    placeholder.textContent = group === "ferry" ? "Select route" : "Select zone";
     placeholder.disabled = true;
-    placeholder.selected = true;
     select.appendChild(placeholder);
+    const exclude = excludeIds || [];
     MBTA_CONFIG.passOptions
-      .filter((p) => p.group === "rail")
+      .filter((p) => p.group === group)
+      .filter((p) => p.id === currentValue || !exclude.includes(p.id))
       .forEach((pass) => {
         const opt = document.createElement("option");
         opt.value = pass.id;
         opt.textContent = pass.label;
         select.appendChild(opt);
       });
+    select.value = currentValue && select.querySelector(`option[value="${currentValue}"]`) ? currentValue : "";
+    if (select.value === "") placeholder.selected = true;
   }
-  populateZoneSelect(railZoneSelect);
+
+  // Re-reads every row in a zone-row system (CR or Ferry) and repopulates
+  // each row's dropdown to exclude whichever zones/routes its SIBLINGS
+  // currently have selected — the actual duplicate-prevention mechanism.
+  // Called after every add/remove/change so the exclusion set always
+  // reflects the live state of every other row.
+  function refreshZoneRowOptions(group, rows) {
+    const selectedIds = rows.map((row) => row.querySelector("select").value).filter((v) => v !== "");
+    rows.forEach((row) => {
+      const select = row.querySelector("select");
+      const ownValue = select.value;
+      const excludeIds = selectedIds.filter((id) => id !== ownValue);
+      populateZoneSelect(select, group, excludeIds, ownValue);
+    });
+  }
 
   // ---- Commuter Rail station search (employee mode): resolves to a
   // standard zone (1A-10) under the hood via MBTA_STATIONS, the same
@@ -847,98 +871,143 @@ function mbtaInitCalculator(rootEl) {
     });
   }
 
-  // ---- Employer multi-zone breakdown (Commuter Rail only) ----
-  const zonerowsExtra = rootEl.querySelector("[data-abc-zonerows-extra]");
-  const addZoneBtn = rootEl.querySelector("[data-abc-add-zone]");
+  // ---- Employer multi-zone/route breakdown: one factory, instantiated
+  // once for Commuter Rail zones and once for Ferry routes, since the two
+  // are structurally identical (a dropdown + headcount per row, capped at
+  // one row per distinct zone/route, "+ Add another" up to that cap).
+  // Duplicate prevention: every row's dropdown excludes whatever its
+  // siblings currently have selected (see populateZoneSelect/
+  // refreshZoneRowOptions above), so the same zone/route can't be added
+  // as two separate records. ----
+  function createZoneRowSystem({ group, firstRowSelector, zonerowsExtraSelector, addZoneSelector, firstCountInputSelector, ariaLabel, countPlaceholder, countAriaLabel }) {
+    const zonerowsExtra = rootEl.querySelector(zonerowsExtraSelector);
+    const addZoneBtn = rootEl.querySelector(addZoneSelector);
+    const maxZoneRows = MBTA_CONFIG.passOptions.filter((p) => p.group === group).length;
+
+    function wireZoneCountInput(input) {
+      input.addEventListener("input", render);
+      input.addEventListener("blur", () => {
+        if (input.value.trim() === "") return;
+        input.value = mbtaSanitizeZoneCount(input.value);
+      });
+    }
+
+    function getZoneRows() {
+      const firstRow = rootEl.querySelector(firstRowSelector);
+      const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow], [data-abc-ferry-zonerow]")) : [];
+      return firstRow ? [firstRow, ...extraRows] : extraRows;
+    }
+
+    function readZoneRow(rowEl) {
+      const select = rowEl.querySelector("select");
+      const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
+      return {
+        passId: select ? select.value : "",
+        count: input ? mbtaSanitizeZoneCount(input.value) : 1,
+      };
+    }
+
+    function updateAddZoneButtonState() {
+      if (!addZoneBtn) return;
+      const atLimit = getZoneRows().length >= maxZoneRows;
+      addZoneBtn.disabled = atLimit;
+      addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
+    }
+
+    function handleRowChange() {
+      refreshZoneRowOptions(group, getZoneRows());
+      render();
+    }
+
+    function createZoneRow() {
+      const row = document.createElement("div");
+      row.className = "abc-farecalc-zonerow";
+      row.setAttribute(group === "ferry" ? "data-abc-ferry-zonerow" : "data-abc-zonerow", "");
+
+      const select = document.createElement("select");
+      select.className = "abc-select";
+      select.setAttribute("aria-label", ariaLabel);
+      select.addEventListener("change", handleRowChange);
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "abc-select abc-farecalc-zonecount-input";
+      input.min = "1";
+      input.step = "1";
+      input.inputMode = "numeric";
+      input.placeholder = countPlaceholder;
+      input.setAttribute("aria-label", countAriaLabel);
+      wireZoneCountInput(input);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "abc-farecalc-zone-remove";
+      removeBtn.setAttribute("aria-label", "Remove this row");
+      removeBtn.textContent = "−";
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+        updateAddZoneButtonState();
+        handleRowChange();
+      });
+
+      row.appendChild(select);
+      row.appendChild(input);
+      row.appendChild(removeBtn);
+      populateZoneSelect(select, group);
+      return row;
+    }
+
+    const firstSelect = rootEl.querySelector(`${firstRowSelector} select`);
+    if (firstSelect) {
+      populateZoneSelect(firstSelect, group);
+      firstSelect.addEventListener("change", handleRowChange);
+    }
+    const firstCountInput = rootEl.querySelector(firstCountInputSelector);
+    if (firstCountInput) wireZoneCountInput(firstCountInput);
+
+    if (addZoneBtn && zonerowsExtra) {
+      addZoneBtn.addEventListener("click", () => {
+        if (getZoneRows().length >= maxZoneRows) return;
+        zonerowsExtra.appendChild(createZoneRow());
+        updateAddZoneButtonState();
+        handleRowChange();
+      });
+    }
+
+    return { getZoneRows, readZoneRow };
+  }
+
+  const railZoneRows = createZoneRowSystem({
+    group: "rail",
+    firstRowSelector: "[data-abc-zonerow]",
+    zonerowsExtraSelector: "[data-abc-zonerows-extra]",
+    addZoneSelector: "[data-abc-add-zone]",
+    firstCountInputSelector: "[data-abc-zone-count-input]",
+    ariaLabel: "Which Commuter Rail zone",
+    countPlaceholder: "Number of employees in this zone",
+    countAriaLabel: "Number of employees covered from this zone",
+  });
+
+  const ferryZoneRows = createZoneRowSystem({
+    group: "ferry",
+    firstRowSelector: "[data-abc-ferry-zonerow]",
+    zonerowsExtraSelector: "[data-abc-ferry-zonerows-extra]",
+    addZoneSelector: "[data-abc-ferry-add-zone]",
+    firstCountInputSelector: "[data-abc-ferry-zone-count-input]",
+    ariaLabel: "Which ferry route",
+    countPlaceholder: "Number of employees on this route",
+    countAriaLabel: "Number of employees covered on this route",
+  });
+
   const countField = rootEl.querySelector("[data-abc-count-field]");
-
-  function wireZoneCountInput(input) {
-    input.addEventListener("input", render);
-    input.addEventListener("blur", () => {
-      if (input.value.trim() === "") return;
-      input.value = mbtaSanitizeZoneCount(input.value);
-    });
-  }
-
-  function createZoneRow() {
-    const row = document.createElement("div");
-    row.className = "abc-farecalc-zonerow";
-    row.setAttribute("data-abc-zonerow", "");
-
-    const select = document.createElement("select");
-    select.className = "abc-select";
-    select.setAttribute("aria-label", "Which Commuter Rail zone");
-    populateZoneSelect(select);
-    select.addEventListener("change", render);
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "abc-select abc-farecalc-zonecount-input";
-    input.min = "1";
-    input.step = "1";
-    input.inputMode = "numeric";
-    input.placeholder = "Number of employees in this zone";
-    input.setAttribute("aria-label", "Number of employees covered from this zone");
-    wireZoneCountInput(input);
-
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "abc-farecalc-zone-remove";
-    removeBtn.setAttribute("aria-label", "Remove this zone");
-    removeBtn.textContent = "−";
-    removeBtn.addEventListener("click", () => {
-      row.remove();
-      updateAddZoneButtonState();
-      render();
-    });
-
-    row.appendChild(select);
-    row.appendChild(input);
-    row.appendChild(removeBtn);
-    return row;
-  }
-
-  function getZoneRows() {
-    const firstRow = rootEl.querySelector("[data-abc-zonerow]");
-    const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
-    return firstRow ? [firstRow, ...extraRows] : extraRows;
-  }
-
-  function readZoneRow(rowEl) {
-    const select = rowEl.querySelector("select");
-    const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
-    return {
-      passId: select ? select.value : "",
-      count: input ? mbtaSanitizeZoneCount(input.value) : 1,
-    };
-  }
-
-  const maxZoneRows = MBTA_CONFIG.passOptions.filter((p) => p.group === "rail").length;
-
-  function updateAddZoneButtonState() {
-    if (!addZoneBtn) return;
-    const atLimit = getZoneRows().length >= maxZoneRows;
-    addZoneBtn.disabled = atLimit;
-    addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
-  }
-
-  if (addZoneBtn && zonerowsExtra) {
-    addZoneBtn.addEventListener("click", () => {
-      if (getZoneRows().length >= maxZoneRows) return;
-      zonerowsExtra.appendChild(createZoneRow());
-      updateAddZoneButtonState();
-      render();
-    });
-  }
-
-  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
-  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   function updateRouteVisibility() {
     railZoneField.style.display = routeType === "rail" ? "" : "none";
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
     if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
-    if (countField) countField.style.display = routeType === "rail" ? "none" : "";
+    // Flat headcount only makes sense for Subway & Bus employer mode;
+    // Commuter Rail and Ferry both use their own per-zone/route breakdown.
+    if (countField) countField.style.display = (routeType === "rail" || routeType === "ferry") ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
@@ -953,8 +1022,6 @@ function mbtaInitCalculator(rootEl) {
     });
   });
   updateRouteVisibility();
-
-  railZoneSelect.addEventListener("change", render);
 
   // Perq yes/no: only reveals the stepper (and only counts toward the
   // math) when "yes" is picked. The advocacy line only appears once "no"
@@ -1163,8 +1230,9 @@ function mbtaInitCalculator(rootEl) {
     let r;
     let zoneBreakdown = [];
 
-    if (routeType === "rail") {
-      const zoneRows = getZoneRows().map(readZoneRow);
+    if (routeType === "rail" || routeType === "ferry") {
+      const rowSystem = routeType === "rail" ? railZoneRows : ferryZoneRows;
+      const zoneRows = rowSystem.getZoneRows().map(rowSystem.readZoneRow);
       const multi = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
       r = multi;
       zoneBreakdown = multi.zoneBreakdown;

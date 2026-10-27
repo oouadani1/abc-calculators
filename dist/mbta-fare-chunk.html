@@ -593,7 +593,7 @@
   --mbta-orange: #ED8B00;
   --mbta-green: #00843D;
   --mbta-green-tint: #E5F3EB;
-  --mbta-blue: #003DA5;
+  --mbta-blue: #0E3EA7; /* per explicit correction, not the MBTA-published #003DA5 this was originally sourced from */
   --mbta-blue-tint: #E6ECF8;
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
@@ -950,6 +950,17 @@
   color: #fff;
 }
 
+/* Bus Pass / LinkPass tier pills: explicit override so they match the
+   route button's own blue, instead of falling back to the shared
+   .abc-choice-button.abc-active default (base.css's --abc-navy, a
+   visibly different dark blue — this was the mismatch reported and
+   corrected). */
+[data-abc-pass-tier-select].abc-active {
+  background: var(--mbta-blue);
+  border-color: var(--mbta-blue);
+  color: #fff;
+}
+
 /* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
    even at this font size) — dark ink instead, same call as the theme
    variables above. */
@@ -976,8 +987,7 @@
    behind (hover: hover) — on touch devices, :hover fires on tap and
    has no "mouse leave" to end it, so this animation (and the color
    change) could otherwise fire and hang on a tap meant for scrolling. */
-.abc-farecalc-btn-subway,
-.abc-farecalc-btn-ferry {
+.abc-farecalc-btn-subway {
   overflow: hidden;
   position: relative;
 }
@@ -993,12 +1003,6 @@
     border-color: transparent;
     color: #fff;
     animation: abc-farecalc-line-swipe 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-  }
-
-  .abc-farecalc-btn-ferry:hover {
-    border-color: var(--mbta-ferry-blue);
-    color: #0C2C50;
-    animation: abc-farecalc-wave-ferry 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
 
@@ -1025,27 +1029,64 @@
   }
 }
 
-/* A single light "glint" band slides left to right through a sea of
-   ferry blue, settling on solid blue — same oversized-background +
-   sliding-position mechanism abc-farecalc-line-swipe uses above, just
-   one soft highlight instead of four hard-edged line colors, reading as
-   a small wave/reflection rather than a rainbow sweep. */
-@keyframes abc-farecalc-wave-ferry {
-  0% {
-    background-image: linear-gradient(to right,
-      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
-      #EAF6FF 38%, #EAF6FF 50%,
-      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 0% 0%;
+/* ---- Ferry button: a small "gooey blob" fill on hover instead of a
+   sliding gradient — four circles rise from below the button and merge
+   into one liquid blue fill via the SVG #abc-farecalc-goo filter (see
+   index.html), a standard technique (feGaussianBlur then feColorMatrix
+   sharpens the alpha back to hard edges, which is what makes separate
+   circles read as one merging shape instead of four soft overlapping
+   ones), not a bespoke invention. Purely a hover preview, same
+   philosophy as the subway swipe above — the persistent "selected" look
+   is the flat .abc-farecalc-btn-ferry.abc-active fill, not whatever
+   frame the blobs happen to be on. ---- */
+.abc-farecalc-blob-btn {
+  position: relative;
+  isolation: isolate;
+}
+
+.abc-farecalc-blob-inner {
+  z-index: 0;
+  overflow: hidden;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.abc-farecalc-blob-group {
+  position: relative;
+  display: block;
+  height: 100%;
+  filter: url('#abc-farecalc-goo');
+}
+
+.abc-farecalc-blob {
+  position: absolute;
+  top: 0;
+  width: 25%;
+  height: 100%;
+  background: var(--mbta-ferry-blue);
+  border-radius: 100%;
+  transform: translate3d(0, 160%, 0) scale(1.4);
+  transition: transform 0.45s;
+}
+
+.abc-farecalc-blob:nth-child(1) { left: 0%; }
+.abc-farecalc-blob:nth-child(2) { left: 25%; transition-delay: 0.08s; }
+.abc-farecalc-blob:nth-child(3) { left: 50%; transition-delay: 0.16s; }
+.abc-farecalc-blob:nth-child(4) { left: 75%; transition-delay: 0.24s; }
+
+.abc-farecalc-blob-label {
+  position: relative;
+  z-index: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-farecalc-blob-btn:hover .abc-farecalc-blob {
+    transform: translateZ(0) scale(1.4);
   }
-  100% {
-    background-image: linear-gradient(to right,
-      var(--mbta-ferry-blue) 0%, var(--mbta-ferry-blue) 38%,
-      #EAF6FF 38%, #EAF6FF 50%,
-      var(--mbta-ferry-blue) 50%, var(--mbta-ferry-blue) 100%);
-    background-size: 500% 100%;
-    background-position: 100% 0%;
+  .abc-farecalc-blob-btn:hover {
+    border-color: var(--mbta-ferry-blue);
+    color: #0C2C50;
   }
 }
 
@@ -1055,10 +1096,9 @@
     background: var(--mbta-blue);
     color: #fff;
   }
-  .abc-farecalc-btn-ferry:hover {
-    animation: none;
-    background: var(--mbta-ferry-blue);
-    color: #0C2C50;
+  .abc-farecalc-blob-btn:hover .abc-farecalc-blob {
+    transition: none;
+    transform: translateZ(0) scale(1.4);
   }
 }
 
@@ -1719,6 +1759,22 @@ label.abc-farecalc-toggle-label {
 </style>
 
   <div class="abc-calc abc-farecalc" data-abc-farecalc-root data-abc-mode="employee">
+    <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+      <defs>
+        <!-- "Goo" filter: blurs the blobs together then sharpens the
+             alpha channel back to hard edges, which is what makes four
+             separate circles read as one merging liquid blob instead of
+             four overlapping soft circles. Standard technique, not a
+             bespoke invention — used by the Ferry button's hover fill
+             below (see .abc-farecalc-blob-btn in calculator.css). -->
+        <filter id="abc-farecalc-goo">
+          <feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur" />
+          <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -10" result="goo" />
+          <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+        </filter>
+      </defs>
+    </svg>
+
     <div class="abc-farecalc-modebar" role="group" aria-label="View this tool as an individual or an employer">
       <button type="button" class="abc-farecalc-mode-btn abc-active" data-abc-mode-select="employee">I'm an individual</button>
       <button type="button" class="abc-farecalc-mode-btn" data-abc-mode-select="employer">I'm an employer</button>
@@ -1736,9 +1792,19 @@ label.abc-farecalc-toggle-label {
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway + Bus</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry abc-farecalc-blob-btn" data-abc-route-select="ferry">
+                <span class="abc-farecalc-blob-inner">
+                  <span class="abc-farecalc-blob-group">
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                  </span>
+                </span>
+                <span class="abc-farecalc-blob-label">Ferry</span>
+              </button>
             </div>
           </div>
         </div>
@@ -1775,14 +1841,14 @@ label.abc-farecalc-toggle-label {
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
-        <p class="abc-question" data-mode-only="employee">Which Commuter Rail station do you commute from?</p>
+        <p class="abc-question" data-mode-only="employee">Which station do you commute from?</p>
         <p class="abc-question" data-mode-only="employer">Which zones are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
 
             <div class="abc-field-hint-wrap" data-mode-only="employee">
               <div class="abc-farecalc-combobox">
-                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which Commuter Rail station do you commute from?" />
+                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you commute from?" />
                 <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
               </div>
 
@@ -1790,7 +1856,7 @@ label.abc-farecalc-toggle-label {
                 <label class="abc-farecalc-toggle-label">
                   <input type="checkbox" data-abc-station-parking-toggle />
                   <span class="abc-farecalc-toggle-box"></span>
-                  <span>Will you drive and park at this station?</span>
+                  <span>Will you drive to and park at this station?</span>
                 </label>
               </div>
 
@@ -1850,14 +1916,33 @@ label.abc-farecalc-toggle-label {
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-ferry-route-field style="display: none;">
-        <p class="abc-question">Which ferry route do you take?</p>
+        <p class="abc-question" data-mode-only="employee">Which ferry route do you take?</p>
+        <p class="abc-question" data-mode-only="employer">Which ferry routes are you subsidizing?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid">
+            <div class="abc-choice-grid" data-mode-only="employee">
               <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
               <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
               <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
             </div>
+
+            <div class="abc-farecalc-zonerow" data-abc-ferry-zonerow data-mode-only="employer">
+              <select class="abc-select" data-abc-ferry-zone-select aria-label="Which ferry route"></select>
+              <input
+                type="number"
+                class="abc-select abc-farecalc-zonecount-input"
+                data-abc-ferry-zone-count-input
+                min="1"
+                step="1"
+                inputmode="numeric"
+                placeholder="Number of employees on this route"
+                aria-label="Number of employees covered on this route"
+              />
+            </div>
+
+            <div class="abc-farecalc-zonerows-extra" data-abc-ferry-zonerows-extra data-mode-only="employer"></div>
+
+            <button type="button" class="abc-text-link abc-farecalc-add-zone" data-abc-ferry-add-zone data-mode-only="employer">+ Add another route</button>
           </div>
         </div>
       </div>
@@ -2054,7 +2139,7 @@ label.abc-farecalc-toggle-label {
           <li><strong>Monthly Pass's total monthly cost</strong> (<strong>Full monthly cost</strong> on the employer side) is simply the current MBTA sticker price for that pass, before Reduced Fare, any promo, or your contribution.</li>
           <li>Reduced Fare uses MBTA's own Reduced Fare price schedule, not a 50%-off calculation; it's a separate, lower set of MBTA prices, broken out as its own discount line. Confirmed for Zone 1A and Zones 1-10; MBTA doesn't publish a Reduced Fare breakdown by Interzone at all, so those figures are estimated (see the tool's source code for the exact method), worth confirming directly with MBTA before relying on them.</li>
           <li>Employer subsidy and pre-tax savings are applied the same way to both options, after any promo or Reduced Fare discount.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. Only stations with MBTA parking show this option, and it isn't available for Interzone routes (selected only through the employer zone dropdown).</li>
+          <li>"Will you drive to and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. Only stations with MBTA parking show this option, and it isn't available for Interzone routes (selected only through the employer zone dropdown).</li>
           <li>If you're subsidizing more than one Commuter Rail zone, each row above lists that zone's full sticker price times headcount, and those subtotals add up to <strong>Full monthly cost</strong> right below them. The promo and your contribution are applied once, after that, to reach <strong>Your estimated monthly cost</strong>.</li>
           <li>The 30% pre-tax savings default is MBTA's own Perq page figure, not an exact number. Adjust it if you know your own tax rate.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
@@ -2877,26 +2962,50 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
-  // Populate the rail zone dropdown from config (everything except
-  // linkpass), starting on an unselected "Select zone" placeholder rather
-  // than defaulting to a real zone.
-  function populateZoneSelect(select) {
+  // Populate a zone/route dropdown from config, starting on an unselected
+  // placeholder rather than defaulting to a real option. excludeIds (zone
+  // or route ids already picked in SIBLING rows) are left out entirely,
+  // so an employer can't add the same zone/route as two separate rows —
+  // this is also why every call site re-populates every row's select
+  // whenever any row's selection changes, see refreshZoneRowOptions()
+  // below. Preserves currentValue (even if it would otherwise be
+  // excluded, since it's this row's OWN pick, not a sibling's) so
+  // repopulating doesn't silently clear what someone already chose.
+  function populateZoneSelect(select, group, excludeIds, currentValue) {
+    select.innerHTML = "";
     const placeholder = document.createElement("option");
     placeholder.value = "";
-    placeholder.textContent = "Select zone";
+    placeholder.textContent = group === "ferry" ? "Select route" : "Select zone";
     placeholder.disabled = true;
-    placeholder.selected = true;
     select.appendChild(placeholder);
+    const exclude = excludeIds || [];
     MBTA_CONFIG.passOptions
-      .filter((p) => p.group === "rail")
+      .filter((p) => p.group === group)
+      .filter((p) => p.id === currentValue || !exclude.includes(p.id))
       .forEach((pass) => {
         const opt = document.createElement("option");
         opt.value = pass.id;
         opt.textContent = pass.label;
         select.appendChild(opt);
       });
+    select.value = currentValue && select.querySelector(`option[value="${currentValue}"]`) ? currentValue : "";
+    if (select.value === "") placeholder.selected = true;
   }
-  populateZoneSelect(railZoneSelect);
+
+  // Re-reads every row in a zone-row system (CR or Ferry) and repopulates
+  // each row's dropdown to exclude whichever zones/routes its SIBLINGS
+  // currently have selected — the actual duplicate-prevention mechanism.
+  // Called after every add/remove/change so the exclusion set always
+  // reflects the live state of every other row.
+  function refreshZoneRowOptions(group, rows) {
+    const selectedIds = rows.map((row) => row.querySelector("select").value).filter((v) => v !== "");
+    rows.forEach((row) => {
+      const select = row.querySelector("select");
+      const ownValue = select.value;
+      const excludeIds = selectedIds.filter((id) => id !== ownValue);
+      populateZoneSelect(select, group, excludeIds, ownValue);
+    });
+  }
 
   // ---- Commuter Rail station search (employee mode): resolves to a
   // standard zone (1A-10) under the hood via MBTA_STATIONS, the same
@@ -2973,98 +3082,143 @@ function mbtaInitCalculator(rootEl) {
     });
   }
 
-  // ---- Employer multi-zone breakdown (Commuter Rail only) ----
-  const zonerowsExtra = rootEl.querySelector("[data-abc-zonerows-extra]");
-  const addZoneBtn = rootEl.querySelector("[data-abc-add-zone]");
+  // ---- Employer multi-zone/route breakdown: one factory, instantiated
+  // once for Commuter Rail zones and once for Ferry routes, since the two
+  // are structurally identical (a dropdown + headcount per row, capped at
+  // one row per distinct zone/route, "+ Add another" up to that cap).
+  // Duplicate prevention: every row's dropdown excludes whatever its
+  // siblings currently have selected (see populateZoneSelect/
+  // refreshZoneRowOptions above), so the same zone/route can't be added
+  // as two separate records. ----
+  function createZoneRowSystem({ group, firstRowSelector, zonerowsExtraSelector, addZoneSelector, firstCountInputSelector, ariaLabel, countPlaceholder, countAriaLabel }) {
+    const zonerowsExtra = rootEl.querySelector(zonerowsExtraSelector);
+    const addZoneBtn = rootEl.querySelector(addZoneSelector);
+    const maxZoneRows = MBTA_CONFIG.passOptions.filter((p) => p.group === group).length;
+
+    function wireZoneCountInput(input) {
+      input.addEventListener("input", render);
+      input.addEventListener("blur", () => {
+        if (input.value.trim() === "") return;
+        input.value = mbtaSanitizeZoneCount(input.value);
+      });
+    }
+
+    function getZoneRows() {
+      const firstRow = rootEl.querySelector(firstRowSelector);
+      const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow], [data-abc-ferry-zonerow]")) : [];
+      return firstRow ? [firstRow, ...extraRows] : extraRows;
+    }
+
+    function readZoneRow(rowEl) {
+      const select = rowEl.querySelector("select");
+      const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
+      return {
+        passId: select ? select.value : "",
+        count: input ? mbtaSanitizeZoneCount(input.value) : 1,
+      };
+    }
+
+    function updateAddZoneButtonState() {
+      if (!addZoneBtn) return;
+      const atLimit = getZoneRows().length >= maxZoneRows;
+      addZoneBtn.disabled = atLimit;
+      addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
+    }
+
+    function handleRowChange() {
+      refreshZoneRowOptions(group, getZoneRows());
+      render();
+    }
+
+    function createZoneRow() {
+      const row = document.createElement("div");
+      row.className = "abc-farecalc-zonerow";
+      row.setAttribute(group === "ferry" ? "data-abc-ferry-zonerow" : "data-abc-zonerow", "");
+
+      const select = document.createElement("select");
+      select.className = "abc-select";
+      select.setAttribute("aria-label", ariaLabel);
+      select.addEventListener("change", handleRowChange);
+
+      const input = document.createElement("input");
+      input.type = "number";
+      input.className = "abc-select abc-farecalc-zonecount-input";
+      input.min = "1";
+      input.step = "1";
+      input.inputMode = "numeric";
+      input.placeholder = countPlaceholder;
+      input.setAttribute("aria-label", countAriaLabel);
+      wireZoneCountInput(input);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "abc-farecalc-zone-remove";
+      removeBtn.setAttribute("aria-label", "Remove this row");
+      removeBtn.textContent = "−";
+      removeBtn.addEventListener("click", () => {
+        row.remove();
+        updateAddZoneButtonState();
+        handleRowChange();
+      });
+
+      row.appendChild(select);
+      row.appendChild(input);
+      row.appendChild(removeBtn);
+      populateZoneSelect(select, group);
+      return row;
+    }
+
+    const firstSelect = rootEl.querySelector(`${firstRowSelector} select`);
+    if (firstSelect) {
+      populateZoneSelect(firstSelect, group);
+      firstSelect.addEventListener("change", handleRowChange);
+    }
+    const firstCountInput = rootEl.querySelector(firstCountInputSelector);
+    if (firstCountInput) wireZoneCountInput(firstCountInput);
+
+    if (addZoneBtn && zonerowsExtra) {
+      addZoneBtn.addEventListener("click", () => {
+        if (getZoneRows().length >= maxZoneRows) return;
+        zonerowsExtra.appendChild(createZoneRow());
+        updateAddZoneButtonState();
+        handleRowChange();
+      });
+    }
+
+    return { getZoneRows, readZoneRow };
+  }
+
+  const railZoneRows = createZoneRowSystem({
+    group: "rail",
+    firstRowSelector: "[data-abc-zonerow]",
+    zonerowsExtraSelector: "[data-abc-zonerows-extra]",
+    addZoneSelector: "[data-abc-add-zone]",
+    firstCountInputSelector: "[data-abc-zone-count-input]",
+    ariaLabel: "Which Commuter Rail zone",
+    countPlaceholder: "Number of employees in this zone",
+    countAriaLabel: "Number of employees covered from this zone",
+  });
+
+  const ferryZoneRows = createZoneRowSystem({
+    group: "ferry",
+    firstRowSelector: "[data-abc-ferry-zonerow]",
+    zonerowsExtraSelector: "[data-abc-ferry-zonerows-extra]",
+    addZoneSelector: "[data-abc-ferry-add-zone]",
+    firstCountInputSelector: "[data-abc-ferry-zone-count-input]",
+    ariaLabel: "Which ferry route",
+    countPlaceholder: "Number of employees on this route",
+    countAriaLabel: "Number of employees covered on this route",
+  });
+
   const countField = rootEl.querySelector("[data-abc-count-field]");
-
-  function wireZoneCountInput(input) {
-    input.addEventListener("input", render);
-    input.addEventListener("blur", () => {
-      if (input.value.trim() === "") return;
-      input.value = mbtaSanitizeZoneCount(input.value);
-    });
-  }
-
-  function createZoneRow() {
-    const row = document.createElement("div");
-    row.className = "abc-farecalc-zonerow";
-    row.setAttribute("data-abc-zonerow", "");
-
-    const select = document.createElement("select");
-    select.className = "abc-select";
-    select.setAttribute("aria-label", "Which Commuter Rail zone");
-    populateZoneSelect(select);
-    select.addEventListener("change", render);
-
-    const input = document.createElement("input");
-    input.type = "number";
-    input.className = "abc-select abc-farecalc-zonecount-input";
-    input.min = "1";
-    input.step = "1";
-    input.inputMode = "numeric";
-    input.placeholder = "Number of employees in this zone";
-    input.setAttribute("aria-label", "Number of employees covered from this zone");
-    wireZoneCountInput(input);
-
-    const removeBtn = document.createElement("button");
-    removeBtn.type = "button";
-    removeBtn.className = "abc-farecalc-zone-remove";
-    removeBtn.setAttribute("aria-label", "Remove this zone");
-    removeBtn.textContent = "−";
-    removeBtn.addEventListener("click", () => {
-      row.remove();
-      updateAddZoneButtonState();
-      render();
-    });
-
-    row.appendChild(select);
-    row.appendChild(input);
-    row.appendChild(removeBtn);
-    return row;
-  }
-
-  function getZoneRows() {
-    const firstRow = rootEl.querySelector("[data-abc-zonerow]");
-    const extraRows = zonerowsExtra ? Array.from(zonerowsExtra.querySelectorAll("[data-abc-zonerow]")) : [];
-    return firstRow ? [firstRow, ...extraRows] : extraRows;
-  }
-
-  function readZoneRow(rowEl) {
-    const select = rowEl.querySelector("select");
-    const input = rowEl.querySelector(".abc-farecalc-zonecount-input");
-    return {
-      passId: select ? select.value : "",
-      count: input ? mbtaSanitizeZoneCount(input.value) : 1,
-    };
-  }
-
-  const maxZoneRows = MBTA_CONFIG.passOptions.filter((p) => p.group === "rail").length;
-
-  function updateAddZoneButtonState() {
-    if (!addZoneBtn) return;
-    const atLimit = getZoneRows().length >= maxZoneRows;
-    addZoneBtn.disabled = atLimit;
-    addZoneBtn.classList.toggle("abc-farecalc-add-zone-disabled", atLimit);
-  }
-
-  if (addZoneBtn && zonerowsExtra) {
-    addZoneBtn.addEventListener("click", () => {
-      if (getZoneRows().length >= maxZoneRows) return;
-      zonerowsExtra.appendChild(createZoneRow());
-      updateAddZoneButtonState();
-      render();
-    });
-  }
-
-  const firstZoneCountInput = rootEl.querySelector("[data-abc-zone-count-input]");
-  if (firstZoneCountInput) wireZoneCountInput(firstZoneCountInput);
 
   function updateRouteVisibility() {
     railZoneField.style.display = routeType === "rail" ? "" : "none";
     if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
     if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
-    if (countField) countField.style.display = routeType === "rail" ? "none" : "";
+    // Flat headcount only makes sense for Subway & Bus employer mode;
+    // Commuter Rail and Ferry both use their own per-zone/route breakdown.
+    if (countField) countField.style.display = (routeType === "rail" || routeType === "ferry") ? "none" : "";
     updateStationParkingFieldVisibility();
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
@@ -3079,8 +3233,6 @@ function mbtaInitCalculator(rootEl) {
     });
   });
   updateRouteVisibility();
-
-  railZoneSelect.addEventListener("change", render);
 
   // Perq yes/no: only reveals the stepper (and only counts toward the
   // math) when "yes" is picked. The advocacy line only appears once "no"
@@ -3289,8 +3441,9 @@ function mbtaInitCalculator(rootEl) {
     let r;
     let zoneBreakdown = [];
 
-    if (routeType === "rail") {
-      const zoneRows = getZoneRows().map(readZoneRow);
+    if (routeType === "rail" || routeType === "ferry") {
+      const rowSystem = routeType === "rail" ? railZoneRows : ferryZoneRows;
+      const zoneRows = rowSystem.getZoneRows().map(rowSystem.readZoneRow);
       const multi = mbtaCalcEmployerMultiZone(MBTA_CONFIG, zoneRows, subsidyPct, perqEnabled ? perqPct : 0);
       r = multi;
       zoneBreakdown = multi.zoneBreakdown;
