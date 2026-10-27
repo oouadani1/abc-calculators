@@ -352,13 +352,6 @@
   font-weight: 700;
 }
 
-/* The pre-tax effective-cost line follows the bold final-total line
-   directly, so it needs its own breathing room rather than sitting flush
-   against that heavier border. */
-.abc-farecalc-line-pretax {
-  margin-top: 6px;
-}
-
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
@@ -811,6 +804,10 @@
 
 .abc-farecalc-combobox {
   position: relative;
+}
+
+.abc-farecalc-rapid-station-input-wrap {
+  margin-top: var(--abc-space-md);
 }
 
 .abc-farecalc-combobox-listbox {

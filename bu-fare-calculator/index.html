@@ -70,6 +70,31 @@
               <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
               <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
             </div>
+
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-rapid-station-parking-field style="display: none;">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-rapid-station-parking-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Will you drive and park at a T station?</span>
+              </label>
+              <span class="abc-field-hint">BU's parking subsidy works with any BU-subsidized monthly pass, not just Commuter Rail.</span>
+            </div>
+
+            <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
+              <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-rapid-station-listbox" aria-autocomplete="list" data-abc-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
+              <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-rapid-station-listbox" role="listbox" data-abc-rapid-station-listbox hidden></ul>
+            </div>
+
+            <div class="abc-farecalc-station-parking-days" data-abc-rapid-station-parking-days-field style="display: none;">
+              <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-rapid-station-parking-days">How many days a week will you park there?</label>
+              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-rapid-station-parking-days-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-rapid-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -231,6 +256,10 @@
           <span>BU subsidy (50%)</span>
           <span data-abc-pass-subsidy-amt>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pretax-line style="display: none;">
+          <span>Est. pre-tax savings (30%)</span>
+          <span data-abc-pretax-amt>-$0.00</span>
+        </div>
         <div class="abc-farecalc-line" data-abc-pass-station-parking-row style="display: none;">
           <span data-abc-pass-station-parking-label>MBTA station parking</span>
           <span data-abc-pass-station-parking-amt>$0.00</span>
@@ -247,10 +276,6 @@
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
         </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy abc-farecalc-line-pretax" data-abc-pretax-line style="display: none;">
-          <span>Effective cost after est. pre-tax savings (<span data-abc-pretax-amt>$0</span>/mo)</span>
-          <span data-abc-pretax-final>$0.00</span>
-        </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
         </p>
@@ -263,6 +288,10 @@
         <div class="abc-farecalc-line">
           <span data-abc-drive-rate-label>Daily rate</span>
           <span data-abc-drive-rate-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-pretax-row style="display: none;">
+          <span>Est. pre-tax savings (30%)</span>
+          <span data-abc-drive-pretax-amt>-$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
@@ -325,6 +354,10 @@
           <span>BU subsidy (50%)</span>
           <span data-abc-drive-compare-subsidy-amt>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-compare-pretax-row style="display: none;">
+          <span>Est. pre-tax savings (30%)</span>
+          <span data-abc-drive-compare-pretax-amt>-$0.00</span>
+        </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-drive-compare-final>$0.00</span>
@@ -341,12 +374,13 @@
       <div class="abc-details-body">
         <ul class="abc-farecalc-assumptions">
           <li>Fares and rates are from mbta.com and BU Transportation Services, checked 2026-10-01. Treat this as a helpful estimate, not a guarantee.</li>
-          <li>BU covers a fixed 50% of the pass cost through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a> for all regular faculty and staff. That rate isn't adjustable here because it isn't adjustable in BU's actual benefit. BU's subsidy, and the pre-tax savings below, only apply to the Monthly Pass; BU does not subsidize single-ride fares, so Pay-Per-Ride always shows the full MBTA price.</li>
-          <li>Because Monthly Pass deductions run through payroll pre-tax, you also save an estimated 30% on top of BU's subsidy. The exact amount depends on your federal tax bracket (10-37%), plus Massachusetts state tax (5.0%), FICA (6.2%), and PFML (0.5%), for a combined marginal rate of at least 22.7%. This tool uses 30% as a representative average; your actual savings may differ.</li>
+          <li>BU covers a fixed 50% of the pass cost through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a> for all regular faculty and staff. That rate isn't adjustable here because it isn't adjustable in BU's actual benefit. BU's subsidy, and the pre-tax savings itemized below it, only apply to the Monthly Pass; BU does not subsidize single-ride fares, so Pay-Per-Ride always shows the full MBTA price.</li>
+          <li>Because Monthly Pass deductions run through payroll pre-tax, "Your estimated monthly cost" also nets out an estimated 30% in tax savings on top of BU's subsidy. The exact amount depends on your federal tax bracket (10-37%), plus Massachusetts state tax (5.0%), FICA (6.2%), and PFML (0.5%), for a combined marginal rate of at least 22.7%. This tool uses 30% as a representative average; your actual savings may differ. The same 30% applies to Personal Car's pre-tax parking options, and to whichever pass the Drive comparison card is matched against.</li>
           <li>Round-trips per week can model any pattern (weekend-only, midday-only, more than 5 round-trips, an odd one-way errand counted as its own round-trip), not just a standard weekday commute.</li>
           <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; (round-trips &times; 2 one-way rides) &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
+          <li>Commuter Rail Pay-Per-Ride also adds a one-way Subway &amp; Bus fare per trip, since a CR Monthly Pass includes unlimited subway/bus system-wide but paying per ride on CR doesn't. The only exception is the Framingham/Worcester Line (Worcester through Lansdowne/Boston Landing), whose riders can reach Charles River Campus directly with no transfer. This assumes a Charles River Campus destination; Medical Campus commuters on that line would still need a transfer that isn't modeled here.</li>
           <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. BU offers an additional 50% parking subsidy if you already have a BU-subsidized Monthly Pass, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
+          <li>"Will you drive and park at this station?" (Commuter Rail) and "Will you drive and park at a T station?" (Subway & Bus) both use that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. BU offers an additional 50% parking subsidy if you already have any BU-subsidized Monthly Pass, not just Commuter Rail, so Pay-Per-Ride shows the full, unsubsidized parking cost either way. Only stations with MBTA parking are in these lists.</li>
           <li>Ferry one-way and monthly prices are confirmed from mbta.com/fares/ferry-fares. Winthrop/Quincy and Lynn's Reduced Fare prices match the Commuter Rail zones they're fare-integrated with (Zone 1 and Zone 2); Hingham/Hull's Reduced Fare monthly price has no official published figure, so it's estimated using the same ~50%-of-regular ratio the other routes follow.</li>
           <li>Bluebikes membership, if added, is MBTA-independent: BU's discounted $75.50/year rate ($6.29/month) is simply added on top of whichever card you're comparing, unaffected by BU's transit subsidy or pre-tax savings.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
