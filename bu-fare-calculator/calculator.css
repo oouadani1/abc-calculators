@@ -40,6 +40,8 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --mbta-ferry-blue: #5DA8EA;
+  --mbta-ferry-blue-tint: #EAF4FC;
 
   /* --bu-mint is kept only as a legible-on-white fallback; every actual
      fill (pills, steppers, badges) uses --bu-mint-bright, the literal
@@ -66,6 +68,16 @@
 .abc-farecalc.abc-theme-drive {
   --abc-farecalc-accent: var(--bu-mint-bright);
   --abc-farecalc-accent-tint: var(--bu-mint-tint);
+  --abc-farecalc-accent-text: var(--bu-ink);
+}
+
+/* Ferry blue (#5DA8EA) is too light for white text at the contrast ratios
+   the purple/mint accents use (2.5:1 — fails WCAG AA even at large text
+   sizes), so this theme uses dark ink text instead, same treatment as the
+   mint accent gets. */
+.abc-farecalc.abc-theme-ferry {
+  --abc-farecalc-accent: var(--mbta-ferry-blue);
+  --abc-farecalc-accent-tint: var(--mbta-ferry-blue-tint);
   --abc-farecalc-accent-text: var(--bu-ink);
 }
 
@@ -340,11 +352,38 @@
   font-weight: 700;
 }
 
+/* The pre-tax effective-cost line follows the bold final-total line
+   directly, so it needs its own breathing room rather than sitting flush
+   against that heavier border. */
+.abc-farecalc-line-pretax {
+  margin-top: 6px;
+}
+
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
   border-color: var(--mbta-purple);
   color: #fff;
+}
+
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead, same call as the theme
+   variables above. */
+.abc-farecalc-btn-ferry.abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: var(--bu-ink);
+}
+
+/* Ferry route sub-pickers (main question + Drive's compare card) get the
+   same ferry blue as the route button itself, so the whole ferry "module"
+   reads as one color, the same way Commuter Rail's purple carries through
+   its own controls via the theme variables above. */
+[data-abc-ferry-route-select].abc-active,
+[data-abc-drive-compare-ferry-select].abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: var(--bu-ink);
 }
 
 .abc-farecalc-btn-subway {
@@ -357,6 +396,11 @@
     background: var(--mbta-purple);
     border-color: var(--mbta-purple);
     color: #fff;
+  }
+  .abc-farecalc-btn-ferry:hover {
+    background: var(--mbta-ferry-blue);
+    border-color: var(--mbta-ferry-blue);
+    color: var(--bu-ink);
   }
 }
 
@@ -500,6 +544,14 @@
   padding: var(--abc-space-lg) var(--abc-space-md);
 }
 
+/* Card headers ("Pay-Per-Ride", "Monthly Pass", etc.) use the same dark
+   navy as the final total line below them, instead of the shared
+   .abc-card h3 default (a light gray, base.css) — reads as a stronger,
+   more legible header against this tool's cards. */
+.abc-farecalc-cards .abc-card h3 {
+  color: var(--abc-navy-deep);
+}
+
 .abc-farecalc-line {
   display: flex;
   justify-content: space-between;
@@ -508,6 +560,14 @@
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
   border-bottom: 1px solid var(--abc-border);
+}
+
+/* The line directly before the bold final-total row drops its own
+   border-bottom, so only the final row's heavier border-top shows —
+   otherwise the two sit almost flush and read as one redundant double
+   line (the thin gray rule immediately followed by the bold dark one). */
+.abc-farecalc-line:has(+ .abc-farecalc-line-final) {
+  border-bottom: none;
 }
 
 @container abc-calc (min-width: 560px) {
@@ -681,7 +741,7 @@
    own rule above. One rule covers Subway & Bus / Drive route pills, the
    pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
    there's a single color to change later rather than five. ---- */
-.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail) {
+.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]) {
   background: var(--bu-mint-bright);
   border-color: var(--bu-mint-bright);
   color: var(--bu-ink);
@@ -692,7 +752,7 @@
     animation: abc-farecalc-line-swipe-bu 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     color: var(--bu-ink);
   }
-  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):hover {
+  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]):hover {
     border-color: var(--bu-mint-bright);
   }
 }
@@ -806,22 +866,6 @@
 .abc-farecalc-toggle-field {
   display: flex;
   align-items: center;
-}
-
-/* Bluebikes add-on toggle: sits standalone below the result cards (not
-   inside the question grid), so it needs its own top margin rather than
-   inheriting one from a parent field-group. The hint line wraps onto its
-   own row underneath, indented to align with the label text past the
-   checkbox. */
-.abc-farecalc-bluebikes-field {
-  margin-top: var(--abc-space-lg);
-  flex-wrap: wrap;
-}
-
-.abc-farecalc-bluebikes-field .abc-field-hint {
-  flex-basis: 100%;
-  margin-top: 4px;
-  margin-left: 34px;
 }
 
 /* Subway & Bus: Reduced Fare slots in directly under the Local Bus /

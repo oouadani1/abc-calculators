@@ -30,8 +30,8 @@
             <div class="abc-choice-grid abc-choice-grid-3">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive">Personal Car</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
             </div>
           </div>
         </div>
@@ -67,8 +67,8 @@
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Local Bus</button>
-              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway & Bus)</button>
+              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
             </div>
           </div>
         </div>
@@ -104,7 +104,7 @@
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>Will you drive and park at this station?</span>
               </label>
-              <span class="abc-field-hint">BU's 50% parking subsidy requires a BU-subsidized Monthly Pass; it isn't available if you're comparing Pay-Per-Ride.</span>
+              <span class="abc-field-hint">BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</span>
             </div>
 
             <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
@@ -159,7 +159,7 @@
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-reduced-fare-field>
+      <div class="abc-farecalc-field-group" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-toggle-field">
@@ -167,6 +167,13 @@
                 <input type="checkbox" data-abc-reduced-fare-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></span>
+              </label>
+            </div>
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-bluebikes-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Add a <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">BU discounted Bluebikes membership</a> to get to and from your station</span>
               </label>
             </div>
           </div>
@@ -192,7 +199,7 @@
           <span data-abc-ride-station-parking-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line" data-abc-ride-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($133.50/yr)</span>
+          <span>Bluebikes membership ($75.50/yr)</span>
           <span data-abc-ride-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
@@ -233,18 +240,19 @@
           <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line" data-abc-pass-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($133.50/yr)</span>
+          <span>Bluebikes membership ($75.50/yr)</span>
           <span data-abc-pass-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy abc-farecalc-line-pretax" data-abc-pretax-line style="display: none;">
+          <span>Effective cost after est. pre-tax savings (<span data-abc-pretax-amt>$0</span>/mo)</span>
+          <span data-abc-pretax-final>$0.00</span>
+        </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
-        </p>
-        <p class="abc-farecalc-savings-line abc-farecalc-pretax-line" data-abc-pretax-line style="display: none;">
-          Since this is deducted pre-tax, you also save an estimated <strong data-abc-pretax-amt>$0</strong> a month in taxes.
         </p>
       </div>
 
@@ -267,11 +275,13 @@
 
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3 data-abc-drive-compare-title>Subway &amp; Bus Instead</h3>
+        <h3 data-abc-drive-compare-title>Link Pass Instead</h3>
 
         <div class="abc-choice-grid abc-farecalc-drive-compare-toggle">
-          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="subway">Subway & Bus</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="bus">Bus Pass</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="link">Link Pass</button>
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="ferry">Ferry</button>
         </div>
 
         <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
@@ -290,10 +300,34 @@
           </div>
         </div>
 
-        <p class="abc-farecalc-line-note" data-abc-drive-compare-note>LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
+        <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-ferry-field style="display: none;">
+          <p class="abc-farecalc-drive-compare-station-label">Which ferry route?</p>
+          <div class="abc-choice-grid">
+            <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-ferry-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-lynn">Lynn</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-hingham-hull">Hingham/Hull</button>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-line">
+          <span data-abc-drive-compare-total-label>Total monthly cost</span>
+          <span data-abc-drive-compare-total>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-reduced-row style="display: none;">
+          <span>Reduced Fare discount</span>
+          <span data-abc-drive-compare-reduced-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-drive-compare-promo-row style="display: none;">
+          <span data-abc-drive-compare-promo-label>Commuter Rail promo</span>
+          <span data-abc-drive-compare-promo-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
+          <span>BU subsidy (50%)</span>
+          <span data-abc-drive-compare-subsidy-amt>$0.00</span>
+        </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
-          <span data-abc-drive-compare-total>$0.00</span>
+          <span data-abc-drive-compare-final>$0.00</span>
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus driving.
@@ -301,14 +335,6 @@
       </div>
     </div>
 
-    <div class="abc-farecalc-toggle-field abc-farecalc-bluebikes-field">
-      <label class="abc-farecalc-toggle-label">
-        <input type="checkbox" data-abc-bluebikes-toggle />
-        <span class="abc-farecalc-toggle-box"></span>
-        <span>Add a <a href="https://abctma.com/tdm-thought-leadership/bluebikes-corporate-membership-calculator" target="_blank" rel="noopener">Bluebikes membership</a> to get to/from the station</span>
-      </label>
-      <span class="abc-field-hint">$133.50/year, about $11/month, added to both cards.</span>
-    </div>
 
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
@@ -320,9 +346,9 @@
           <li>Round-trips per week can model any pattern (weekend-only, midday-only, more than 5 round-trips, an odd one-way errand counted as its own round-trip), not just a standard weekday commute.</li>
           <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; (round-trips &times; 2 one-way rides) &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
           <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. <strong>BU's 50% parking subsidy only applies alongside a BU-subsidized Monthly Pass</strong>, same as the fare subsidy above, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. BU offers an additional 50% parking subsidy if you already have a BU-subsidized Monthly Pass, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
           <li>Ferry one-way and monthly prices are confirmed from mbta.com/fares/ferry-fares. Winthrop/Quincy and Lynn's Reduced Fare prices match the Commuter Rail zones they're fare-integrated with (Zone 1 and Zone 2); Hingham/Hull's Reduced Fare monthly price has no official published figure, so it's estimated using the same ~50%-of-regular ratio the other routes follow.</li>
-          <li>Bluebikes membership, if added, is MBTA-independent: its $133.50/year retail price ($11.13/month) is simply added on top of whichever card you're comparing, unaffected by BU's subsidy or pre-tax savings.</li>
+          <li>Bluebikes membership, if added, is MBTA-independent: BU's discounted $75.50/year rate ($6.29/month) is simply added on top of whichever card you're comparing, unaffected by BU's transit subsidy or pre-tax savings.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
         </ul>
       </div>

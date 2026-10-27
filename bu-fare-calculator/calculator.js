@@ -111,8 +111,8 @@ const BU_CONFIG = {
   // selected. No Interzone entries — BU's own benefits page and the
   // station dataset both only cover the 11 standard zones (1A, 1-10).
   passOptions: [
-    { id: "local-bus", label: "Local Bus", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
-    { id: "linkpass", label: "LinkPass (Subway & Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "local-bus", label: "Bus Pass", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
+    { id: "linkpass", label: "LinkPass (Subway + Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
     { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
@@ -144,13 +144,13 @@ const BU_CONFIG = {
 
   // Bluebikes membership add-on: optional, independent of transit choice,
   // folded as a flat line into both cards' monthly totals when checked.
-  // $133.50/year is this repo's own confirmed retail Annual Membership
-  // price (see bluebikes-membership-calculator/calculator.js,
-  // BIKE_CONFIG.retailAnnualPrice, re-verified 2026-08-25) — NOT the
-  // $75.50 figure Carl Larson's email cited, which is stale; Bluebikes has
-  // raised this price before and this repo's own source is the more
-  // current one.
-  bluebikesAnnualPrice: 133.50,
+  // $75.50+tax/year is NOT the generic retail price (that's $133.50/year,
+  // this repo's bluebikes-membership-calculator's BIKE_CONFIG.
+  // retailAnnualPrice) — it's BU's own discounted rate for faculty, staff,
+  // and students, confirmed on bu.edu/transportation/bicycling/
+  // bluebikes-discount/ (2026-10). Correction from an earlier round of
+  // this file, which had used the generic retail price by mistake.
+  bluebikesAnnualPrice: 75.50,
 };
 
 /* Charles River Campus: two flat daily-rate zones (not per-lot pricing —
@@ -529,7 +529,8 @@ function buInitCalculator(rootEl) {
   let crcZoneId = "crc-zone-1";
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
-  let driveCompareMode = "subway"; // "subway" | "rail" — Drive mode's comparison card
+  let driveCompareMode = "link"; // "bus" | "link" | "rail" | "ferry" — Drive mode's comparison card
+  let driveCompareFerryRouteId = "ferry-winthrop-quincy";
   let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
   let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
@@ -836,21 +837,37 @@ function buInitCalculator(rootEl) {
   }
   updateMedicalDailyFieldVisibility();
 
-  // ---- Drive card's "compare against" toggle (Subway & Bus vs Commuter
-  // Rail) — swaps the comparison card's numbers in place rather than
-  // adding a third card, with an inline station field for Commuter Rail
-  // using the same combobox pattern as the main CR station picker. ----
+  // ---- Drive card's "compare against" toggle (Bus Pass / Link Pass /
+  // Commuter Rail / Ferry) — swaps the comparison card's numbers in place
+  // rather than adding more cards, with an inline station field for
+  // Commuter Rail and an inline route picker for Ferry, same combobox/
+  // pop-out patterns as the main questions above. ----
   const driveCompareButtons = rootEl.querySelectorAll("[data-abc-drive-compare-select]");
   const driveCompareStationField = rootEl.querySelector("[data-abc-drive-compare-station-field]");
   const driveCompareStationInput = rootEl.querySelector("[data-abc-drive-compare-station-input]");
   const driveCompareStationListbox = rootEl.querySelector("[data-abc-drive-compare-listbox]");
+  const driveCompareFerryField = rootEl.querySelector("[data-abc-drive-compare-ferry-field]");
+  const driveCompareFerryButtons = rootEl.querySelectorAll("[data-abc-drive-compare-ferry-select]");
   initStationCombobox(driveCompareStationInput, driveCompareStationListbox, render);
+
+  function updateDriveCompareFieldVisibility() {
+    if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
+    if (driveCompareFerryField) driveCompareFerryField.style.display = driveCompareMode === "ferry" ? "block" : "none";
+  }
 
   driveCompareButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       driveCompareMode = btn.dataset.abcDriveCompareSelect;
       driveCompareButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
+      updateDriveCompareFieldVisibility();
+      render();
+    });
+  });
+
+  driveCompareFerryButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      driveCompareFerryRouteId = btn.dataset.abcDriveCompareFerrySelect;
+      driveCompareFerryButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
   });
@@ -887,6 +904,7 @@ function buInitCalculator(rootEl) {
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");
+    rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
 
     // Swap the result cards themselves: Pay-Per-Ride/Monthly Pass for
     // transit routes, the two driving/comparison cards for Drive.
@@ -1095,13 +1113,19 @@ function buInitCalculator(rootEl) {
     // ride and pass still picks the actual cheaper option.
 
     // ---- Pre-tax savings: Monthly Pass only, estimated (see BU_CONFIG.
-    // preTaxSavingsPct's doc comment), shown as supplementary info rather
-    // than folded into "Your estimated monthly cost" above. ----
+    // preTaxSavingsPct's doc comment). Shown as its own line below "Your
+    // estimated monthly cost" rather than folded into it — that line
+    // stays the actual payroll deduction (the real cash flow), while this
+    // one answers "so what's my effective cost accounting for the tax
+    // break" as its own explicit number, using the already-rounded
+    // passRemaining so the two lines visibly subtract to the number shown. ----
     const pretaxLine = rootEl.querySelector("[data-abc-pretax-line]");
     if (pretaxLine) {
       if (result.preTaxSavingsAmt > 0.5) {
-        rootEl.querySelector("[data-abc-pretax-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.preTaxSavingsAmt));
-        pretaxLine.style.display = "block";
+        const pretaxSavingsRounded = abcRoundToDollar(result.preTaxSavingsAmt);
+        rootEl.querySelector("[data-abc-pretax-amt]").textContent = abcFormatCurrencyWhole(pretaxSavingsRounded);
+        rootEl.querySelector("[data-abc-pretax-final]").textContent = abcFormatCurrencyWhole(Math.max(0, passRemaining - pretaxSavingsRounded));
+        pretaxLine.style.display = "flex";
       } else {
         pretaxLine.style.display = "none";
       }
@@ -1147,29 +1171,31 @@ function buInitCalculator(rootEl) {
     const parking = buCalcParking(selection, tripsPerWeek);
 
     // Reference card: what transit would cost at the same frequency, so
-    // driving and transit sit side by side as asked. Defaults to Subway &
-    // Bus (LinkPass); the in-card toggle swaps this to a real Commuter
-    // Rail monthly pass priced from whichever station the user enters,
-    // same BU subsidy and promo logic as the main Commuter Rail cards.
-    let compareCost, compareTitle, compareNote;
-    if (driveCompareMode === "rail") {
+    // driving and transit sit side by side as asked. The in-card toggle
+    // swaps which pass this compares against — Bus Pass and Link Pass
+    // resolve directly, Commuter Rail and Ferry resolve from their own
+    // inline station/route pickers — then renders the exact same itemized
+    // waterfall (total, Reduced Fare, promo, BU subsidy, final) the main
+    // Pay-Per-Ride/Monthly Pass cards use, via buCalcAll().
+    let comparePassId, compareTitle;
+    if (driveCompareMode === "bus") {
+      comparePassId = "local-bus";
+      compareTitle = "Bus Pass Instead";
+    } else if (driveCompareMode === "rail") {
       const compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
+      comparePassId = compareStation ? compareStation.zoneId : "";
       compareTitle = "Commuter Rail Instead";
-      if (compareStation) {
-        const compareResult = buCalcAll(compareStation.zoneId, tripsPerWeek, reducedFare);
-        compareCost = compareResult.passBreakdown.finalCost;
-        compareNote = `Monthly Pass from ${compareStation.label}, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
-      } else {
-        compareCost = 0;
-        compareNote = "Enter a station above to see a Commuter Rail comparison.";
-      }
+    } else if (driveCompareMode === "ferry") {
+      comparePassId = driveCompareFerryRouteId;
+      compareTitle = "Ferry Instead";
     } else {
-      const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
-      const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
-      compareCost = compareResult.passBreakdown.finalCost;
-      compareTitle = "Subway & Bus Instead";
-      compareNote = `LinkPass, same number of weekly campus visits, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
+      comparePassId = "linkpass";
+      compareTitle = "Link Pass Instead";
     }
+    // driving days -> one-way transit-equivalent trips, same conversion
+    // the main cards use for their round-trips/week question.
+    const compareTrips = tripsPerWeek * 2;
+    const compareResult = buCalcAll(comparePassId, compareTrips, reducedFare);
     const parkingCost = parking ? parking.monthlyCost : 0;
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
@@ -1211,12 +1237,38 @@ function buInitCalculator(rootEl) {
       rateAmtEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(parking.monthlyCost));
     }
 
-    const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
-    if (compareEl) compareEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(compareCost));
     const compareTitleEl = rootEl.querySelector("[data-abc-drive-compare-title]");
     if (compareTitleEl) compareTitleEl.textContent = compareTitle;
-    const compareNoteEl = rootEl.querySelector("[data-abc-drive-compare-note]");
-    if (compareNoteEl) compareNoteEl.textContent = compareNote;
+
+    const compareTotalLabelEl = rootEl.querySelector("[data-abc-drive-compare-total-label]");
+    if (compareTotalLabelEl) {
+      compareTotalLabelEl.textContent = (driveCompareMode === "rail" || driveCompareMode === "ferry") && compareResult.pass
+        ? `Total monthly cost (${compareResult.pass.label})`
+        : "Total monthly cost";
+    }
+    let compareRemaining = roundAndShow("[data-abc-drive-compare-total]", compareResult.passRegularTotal, false);
+    const compareReducedRow = rootEl.querySelector("[data-abc-drive-compare-reduced-row]");
+    if (reducedFare && compareResult.reducedFareDiscount > 0.005) {
+      compareRemaining += roundAndShow("[data-abc-drive-compare-reduced-amt]", compareResult.reducedFareDiscount, true);
+      compareReducedRow.style.display = "flex";
+    } else {
+      compareReducedRow.style.display = "none";
+    }
+    const comparePromoRow = rootEl.querySelector("[data-abc-drive-compare-promo-row]");
+    if (compareResult.promoApplies) {
+      const promoAmt = compareResult.promoOriginalPrice - compareResult.passBreakdown.total;
+      rootEl.querySelector("[data-abc-drive-compare-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
+      compareRemaining += roundAndShow("[data-abc-drive-compare-promo-amt]", promoAmt, true);
+      comparePromoRow.style.display = "flex";
+    } else {
+      comparePromoRow.style.display = "none";
+    }
+    compareRemaining += roundAndShow("[data-abc-drive-compare-subsidy-amt]", compareResult.passBreakdown.subsidyAmt, true);
+    rootEl.querySelector("[data-abc-drive-compare-final]").textContent = abcFormatCurrencyWhole(compareRemaining);
+    // compareCost stays on the precise, unrounded math for the winner/
+    // savings comparison below, same "display rounds, math doesn't" rule
+    // the main cards follow.
+    const compareCost = compareResult.passBreakdown.finalCost;
 
     // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
     // driven by whichever option is actually cheaper at the chosen
@@ -1238,8 +1290,14 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
 
+      const driveCompareVsText = {
+        bus: "taking the bus",
+        link: "taking Subway & Bus",
+        rail: "taking Commuter Rail",
+        ferry: "taking the ferry",
+      }[driveCompareMode];
       const driveSavingsVsEl = driveCard.querySelector("[data-abc-savings-vs]");
-      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareMode === "rail" ? "taking Commuter Rail" : "taking Subway & Bus";
+      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareVsText;
     }
   }
 

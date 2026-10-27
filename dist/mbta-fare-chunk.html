@@ -1659,7 +1659,7 @@ label.abc-farecalc-toggle-label {
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway + Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
             </div>
           </div>
@@ -2123,7 +2123,7 @@ const MBTA_CONFIG = {
   // confirmed from mbta.com/fares/reduced. Interzones are estimated — see
   // fareSource.note above — and carry `reducedEstimated: true`.
   passOptions: [
-    { id: "linkpass", label: "Subway & Bus (LinkPass)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "linkpass", label: "Subway + Bus (LinkPass)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
     { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
@@ -2393,7 +2393,10 @@ function mbtaCalcStationParking(stationLabel, daysPerWeek) {
  * subsidizing a monthly pass across a flat headcount. Reuses the same
  * subsidy-then-pre-tax breakdown as the employee view, but reads the pieces
  * from the employer's angle: the subsidy amount is what the employer pays,
- * and subsidy + pre-tax together is what each employee saves. */
+ * and subsidy + pre-tax together is what each employee saves.
+ * The Commuter Rail promo never applies here — bulk/employer-administered
+ * pass orders aren't eligible for that individual retail promo, so this
+ * always prices off the full sticker price regardless of config.promo. */
 function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCount) {
   const pass = mbtaGetPassOption(config, passId);
   if (!pass) {
@@ -2410,17 +2413,14 @@ function mbtaCalcEmployer(config, passId, contributionPct, perqPct, employeeCoun
       contributes: contributionPct > 0,
     };
   }
-  const promoApplies = mbtaPromoApplies(config, passId);
-  const passPrice = promoApplies
-    ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
-    : pass.monthlyPrice;
+  const passPrice = pass.monthlyPrice;
   const b = mbtaCalcBreakdown(passPrice, contributionPct, perqPct);
   const perEmployeeMonth = b.subsidyAmt;
   const totalMonth = perEmployeeMonth * employeeCount;
   return {
     pass,
     passPrice,
-    promoApplies,
+    promoApplies: false,
     perEmployeeMonth,
     totalMonth,
     totalYear: totalMonth * 12,
@@ -2447,28 +2447,18 @@ function mbtaSanitizeZoneCount(rawValue) {
 
 /** Employer view, Commuter Rail: cost of subsidizing passes across a
  * workforce spread across one or more zones. zoneRows is
- * [{ passId, count }, ...] — one entry per zone row in the UI. Each zone's
- * promo eligibility (Zone 1A is excluded) is resolved independently, then
- * subsidy/Perq are applied once to the pooled total, since those
- * percentages are shared across zones rather than set per row. */
+ * [{ passId, count }, ...] — one entry per zone row in the UI. The
+ * Commuter Rail promo never applies here, same reasoning as
+ * mbtaCalcEmployer() above — totalRaw always prices off full sticker. */
 function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
   let totalSticker = 0;
-  let totalRaw = 0;
   let totalCount = 0;
-  let anyPromoApplies = false;
   const zoneBreakdown = [];
 
   zoneRows.forEach(({ passId, count }) => {
     const pass = mbtaGetPassOption(config, passId);
     if (!pass || count < 1) return;
-    const promoApplies = mbtaPromoApplies(config, passId);
-    if (promoApplies) anyPromoApplies = true;
-    const passPrice = promoApplies
-      ? pass.monthlyPrice * (1 - config.promo.discountPct / 100)
-      : pass.monthlyPrice;
-    const zoneRaw = passPrice * count;
     totalSticker += pass.monthlyPrice * count;
-    totalRaw += zoneRaw;
     totalCount += count;
     zoneBreakdown.push({
       label: pass.label,
@@ -2481,17 +2471,16 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
 
   zoneBreakdown.sort((a, b) => a.zoneOrder - b.zoneOrder);
 
-  const b = mbtaCalcBreakdown(totalRaw, contributionPct, perqPct);
+  const b = mbtaCalcBreakdown(totalSticker, contributionPct, perqPct);
   const totalMonth = b.subsidyAmt;
-  const promoAmt = totalSticker - totalRaw;
   const employeesShareAmt = b.afterSubsidy;
   const perEmployeeMonth = totalCount > 0 ? totalMonth / totalCount : 0;
   const employeeSavesMonth = totalCount > 0 ? (b.subsidyAmt + b.pretaxAmt) / totalCount : 0;
 
   return {
     totalSticker,
-    totalRaw,
-    promoAmt,
+    totalRaw: totalSticker,
+    promoAmt: 0,
     employeesShareAmt,
     totalMonth,
     totalYear: totalMonth * 12,
@@ -2500,7 +2489,7 @@ function mbtaCalcEmployerMultiZone(config, zoneRows, contributionPct, perqPct) {
     zoneBreakdown,
     perqIncluded: perqPct > 0,
     contributes: contributionPct > 0,
-    promoApplies: anyPromoApplies,
+    promoApplies: false,
     totalCount,
   };
 }
@@ -2721,19 +2710,24 @@ function mbtaInitCalculator(rootEl) {
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const railZoneSelect = rootEl.querySelector("[data-abc-rail-zone-select]");
 
-  // Commuter Rail promo: the button badge only depends on whether the promo
-  // as a whole is still running, so it's set once here rather than on every
-  // render. The callout and price strikethrough depend on which specific
-  // pass is selected (Zone 1A is excluded), so those are recomputed in
-  // updatePromoUI() below on every render instead.
+  // Commuter Rail promo: whether it's still running at all is fixed for
+  // the whole session, computed once here; whether it actually SHOWS
+  // (badge and callout both) also depends on mode and which pass is
+  // selected (Zone 1A excluded, employer mode never qualifies), so both
+  // are recomputed in updatePromoUI() below on every render.
   const promoActive = mbtaPromoIsActive(MBTA_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
-  if (promoBadge) promoBadge.style.display = promoActive ? "" : "none";
 
+  // Employer-mode purchases don't qualify for this promo (bulk/employer-
+  // administered orders aren't eligible for the individual retail
+  // discount — see mbtaCalcEmployer()'s doc comment), so neither the
+  // route-button badge nor the detailed callout show while in employer
+  // mode, even though the promo is otherwise time-active.
   function updatePromoUI() {
+    if (promoBadge) promoBadge.style.display = (promoActive && mode === "employee") ? "" : "none";
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && routeType === "rail" && !MBTA_CONFIG.promo.excludeZoneIds.includes(currentPassId());
+    const applies = promoActive && mode === "employee" && routeType === "rail" && !MBTA_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = mbtaPromoDaysLeft(MBTA_CONFIG);

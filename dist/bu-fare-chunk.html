@@ -609,6 +609,8 @@
   --mbta-silver: #7C878E;
   --mbta-purple: #80276C; /* Commuter Rail's own official color */
   --mbta-purple-tint: #F3E7F0;
+  --mbta-ferry-blue: #5DA8EA;
+  --mbta-ferry-blue-tint: #EAF4FC;
 
   /* --bu-mint is kept only as a legible-on-white fallback; every actual
      fill (pills, steppers, badges) uses --bu-mint-bright, the literal
@@ -635,6 +637,16 @@
 .abc-farecalc.abc-theme-drive {
   --abc-farecalc-accent: var(--bu-mint-bright);
   --abc-farecalc-accent-tint: var(--bu-mint-tint);
+  --abc-farecalc-accent-text: var(--bu-ink);
+}
+
+/* Ferry blue (#5DA8EA) is too light for white text at the contrast ratios
+   the purple/mint accents use (2.5:1 — fails WCAG AA even at large text
+   sizes), so this theme uses dark ink text instead, same treatment as the
+   mint accent gets. */
+.abc-farecalc.abc-theme-ferry {
+  --abc-farecalc-accent: var(--mbta-ferry-blue);
+  --abc-farecalc-accent-tint: var(--mbta-ferry-blue-tint);
   --abc-farecalc-accent-text: var(--bu-ink);
 }
 
@@ -909,11 +921,38 @@
   font-weight: 700;
 }
 
+/* The pre-tax effective-cost line follows the bold final-total line
+   directly, so it needs its own breathing room rather than sitting flush
+   against that heavier border. */
+.abc-farecalc-line-pretax {
+  margin-top: 6px;
+}
+
 /* ---- Route buttons ---- */
 .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
   border-color: var(--mbta-purple);
   color: #fff;
+}
+
+/* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
+   even at this font size) — dark ink instead, same call as the theme
+   variables above. */
+.abc-farecalc-btn-ferry.abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: var(--bu-ink);
+}
+
+/* Ferry route sub-pickers (main question + Drive's compare card) get the
+   same ferry blue as the route button itself, so the whole ferry "module"
+   reads as one color, the same way Commuter Rail's purple carries through
+   its own controls via the theme variables above. */
+[data-abc-ferry-route-select].abc-active,
+[data-abc-drive-compare-ferry-select].abc-active {
+  background: var(--mbta-ferry-blue);
+  border-color: var(--mbta-ferry-blue);
+  color: var(--bu-ink);
 }
 
 .abc-farecalc-btn-subway {
@@ -926,6 +965,11 @@
     background: var(--mbta-purple);
     border-color: var(--mbta-purple);
     color: #fff;
+  }
+  .abc-farecalc-btn-ferry:hover {
+    background: var(--mbta-ferry-blue);
+    border-color: var(--mbta-ferry-blue);
+    color: var(--bu-ink);
   }
 }
 
@@ -1069,6 +1113,14 @@
   padding: var(--abc-space-lg) var(--abc-space-md);
 }
 
+/* Card headers ("Pay-Per-Ride", "Monthly Pass", etc.) use the same dark
+   navy as the final total line below them, instead of the shared
+   .abc-card h3 default (a light gray, base.css) — reads as a stronger,
+   more legible header against this tool's cards. */
+.abc-farecalc-cards .abc-card h3 {
+  color: var(--abc-navy-deep);
+}
+
 .abc-farecalc-line {
   display: flex;
   justify-content: space-between;
@@ -1077,6 +1129,14 @@
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
   border-bottom: 1px solid var(--abc-border);
+}
+
+/* The line directly before the bold final-total row drops its own
+   border-bottom, so only the final row's heavier border-top shows —
+   otherwise the two sit almost flush and read as one redundant double
+   line (the thin gray rule immediately followed by the bold dark one). */
+.abc-farecalc-line:has(+ .abc-farecalc-line-final) {
+  border-bottom: none;
 }
 
 @container abc-calc (min-width: 560px) {
@@ -1250,7 +1310,7 @@
    own rule above. One rule covers Subway & Bus / Drive route pills, the
    pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
    there's a single color to change later rather than five. ---- */
-.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail) {
+.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]) {
   background: var(--bu-mint-bright);
   border-color: var(--bu-mint-bright);
   color: var(--bu-ink);
@@ -1261,7 +1321,7 @@
     animation: abc-farecalc-line-swipe-bu 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     color: var(--bu-ink);
   }
-  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):hover {
+  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]):hover {
     border-color: var(--bu-mint-bright);
   }
 }
@@ -1375,22 +1435,6 @@
 .abc-farecalc-toggle-field {
   display: flex;
   align-items: center;
-}
-
-/* Bluebikes add-on toggle: sits standalone below the result cards (not
-   inside the question grid), so it needs its own top margin rather than
-   inheriting one from a parent field-group. The hint line wraps onto its
-   own row underneath, indented to align with the label text past the
-   checkbox. */
-.abc-farecalc-bluebikes-field {
-  margin-top: var(--abc-space-lg);
-  flex-wrap: wrap;
-}
-
-.abc-farecalc-bluebikes-field .abc-field-hint {
-  flex-basis: 100%;
-  margin-top: 4px;
-  margin-left: 34px;
 }
 
 /* Subway & Bus: Reduced Fare slots in directly under the Local Bus /
@@ -1656,8 +1700,8 @@ label.abc-farecalc-toggle-label {
             <div class="abc-choice-grid abc-choice-grid-3">
               <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
               <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive">Personal Car</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry" data-abc-route-select="ferry">Ferry</button>
             </div>
           </div>
         </div>
@@ -1693,8 +1737,8 @@ label.abc-farecalc-toggle-label {
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Local Bus</button>
-              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway & Bus)</button>
+              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
             </div>
           </div>
         </div>
@@ -1730,7 +1774,7 @@ label.abc-farecalc-toggle-label {
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>Will you drive and park at this station?</span>
               </label>
-              <span class="abc-field-hint">BU's 50% parking subsidy requires a BU-subsidized Monthly Pass; it isn't available if you're comparing Pay-Per-Ride.</span>
+              <span class="abc-field-hint">BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</span>
             </div>
 
             <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
@@ -1785,7 +1829,7 @@ label.abc-farecalc-toggle-label {
         </div>
       </div>
 
-      <div class="abc-farecalc-field-group" data-mode-only="employee" data-abc-reduced-fare-field>
+      <div class="abc-farecalc-field-group" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-farecalc-toggle-field">
@@ -1793,6 +1837,13 @@ label.abc-farecalc-toggle-label {
                 <input type="checkbox" data-abc-reduced-fare-toggle />
                 <span class="abc-farecalc-toggle-box"></span>
                 <span>I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></span>
+              </label>
+            </div>
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-bluebikes-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Add a <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">BU discounted Bluebikes membership</a> to get to and from your station</span>
               </label>
             </div>
           </div>
@@ -1818,7 +1869,7 @@ label.abc-farecalc-toggle-label {
           <span data-abc-ride-station-parking-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line" data-abc-ride-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($133.50/yr)</span>
+          <span>Bluebikes membership ($75.50/yr)</span>
           <span data-abc-ride-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
@@ -1859,18 +1910,19 @@ label.abc-farecalc-toggle-label {
           <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line" data-abc-pass-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($133.50/yr)</span>
+          <span>Bluebikes membership ($75.50/yr)</span>
           <span data-abc-pass-bluebikes-amt>$0.00</span>
         </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
         </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy abc-farecalc-line-pretax" data-abc-pretax-line style="display: none;">
+          <span>Effective cost after est. pre-tax savings (<span data-abc-pretax-amt>$0</span>/mo)</span>
+          <span data-abc-pretax-final>$0.00</span>
+        </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus <span data-abc-savings-vs>paying per ride</span>.
-        </p>
-        <p class="abc-farecalc-savings-line abc-farecalc-pretax-line" data-abc-pretax-line style="display: none;">
-          Since this is deducted pre-tax, you also save an estimated <strong data-abc-pretax-amt>$0</strong> a month in taxes.
         </p>
       </div>
 
@@ -1893,11 +1945,13 @@ label.abc-farecalc-toggle-label {
 
       <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3 data-abc-drive-compare-title>Subway &amp; Bus Instead</h3>
+        <h3 data-abc-drive-compare-title>Link Pass Instead</h3>
 
         <div class="abc-choice-grid abc-farecalc-drive-compare-toggle">
-          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="subway">Subway & Bus</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="bus">Bus Pass</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="link">Link Pass</button>
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="ferry">Ferry</button>
         </div>
 
         <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
@@ -1916,10 +1970,34 @@ label.abc-farecalc-toggle-label {
           </div>
         </div>
 
-        <p class="abc-farecalc-line-note" data-abc-drive-compare-note>LinkPass, same number of weekly campus visits, BU's 50% subsidy applied.</p>
+        <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-ferry-field style="display: none;">
+          <p class="abc-farecalc-drive-compare-station-label">Which ferry route?</p>
+          <div class="abc-choice-grid">
+            <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-ferry-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-lynn">Lynn</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-hingham-hull">Hingham/Hull</button>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-line">
+          <span data-abc-drive-compare-total-label>Total monthly cost</span>
+          <span data-abc-drive-compare-total>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-reduced-row style="display: none;">
+          <span>Reduced Fare discount</span>
+          <span data-abc-drive-compare-reduced-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-drive-compare-promo-row style="display: none;">
+          <span data-abc-drive-compare-promo-label>Commuter Rail promo</span>
+          <span data-abc-drive-compare-promo-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
+          <span>BU subsidy (50%)</span>
+          <span data-abc-drive-compare-subsidy-amt>$0.00</span>
+        </div>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
-          <span data-abc-drive-compare-total>$0.00</span>
+          <span data-abc-drive-compare-final>$0.00</span>
         </div>
         <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
           You save <span data-abc-savings-amt>$0</span> a year versus driving.
@@ -1927,14 +2005,6 @@ label.abc-farecalc-toggle-label {
       </div>
     </div>
 
-    <div class="abc-farecalc-toggle-field abc-farecalc-bluebikes-field">
-      <label class="abc-farecalc-toggle-label">
-        <input type="checkbox" data-abc-bluebikes-toggle />
-        <span class="abc-farecalc-toggle-box"></span>
-        <span>Add a <a href="https://abctma.com/tdm-thought-leadership/bluebikes-corporate-membership-calculator" target="_blank" rel="noopener">Bluebikes membership</a> to get to/from the station</span>
-      </label>
-      <span class="abc-field-hint">$133.50/year, about $11/month, added to both cards.</span>
-    </div>
 
     <details class="abc-details">
       <summary>Where we got these numbers</summary>
@@ -1946,9 +2016,9 @@ label.abc-farecalc-toggle-label {
           <li>Round-trips per week can model any pattern (weekend-only, midday-only, more than 5 round-trips, an odd one-way errand counted as its own round-trip), not just a standard weekday commute.</li>
           <li>Monthly totals convert a weekly number using <strong>4.33 weeks per month</strong> (52 weeks a year &divide; 12). Pay-Per-Ride's total is your one-way fare &times; (round-trips &times; 2 one-way rides) &times; 4.33; Monthly Pass is simply MBTA's current sticker price. Reduced Fare and the Commuter Rail promo each use their own price schedule, broken out as their own line.</li>
           <li>Driving estimates use BU's published Charles River FLEX Permit and Medical Campus garage rates. Charles River Zone 1's weekend rate is lower ($10/day vs. $14); this tool uses the weekday rate. Crosstown Garage's daily rate is post-tax; both Charles River zones and the monthly permits are pre-tax.</li>
-          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. <strong>BU's 50% parking subsidy only applies alongside a BU-subsidized Monthly Pass</strong>, same as the fare subsidy above, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
+          <li>"Will you drive and park at this station?" uses that station's MBTA weekday parking rate (the largest lot when there's more than one) &times; the number of days a week you enter. BU offers an additional 50% parking subsidy if you already have a BU-subsidized Monthly Pass, so Pay-Per-Ride shows the full, unsubsidized parking cost. Only stations with MBTA parking show this option.</li>
           <li>Ferry one-way and monthly prices are confirmed from mbta.com/fares/ferry-fares. Winthrop/Quincy and Lynn's Reduced Fare prices match the Commuter Rail zones they're fare-integrated with (Zone 1 and Zone 2); Hingham/Hull's Reduced Fare monthly price has no official published figure, so it's estimated using the same ~50%-of-regular ratio the other routes follow.</li>
-          <li>Bluebikes membership, if added, is MBTA-independent: its $133.50/year retail price ($11.13/month) is simply added on top of whichever card you're comparing, unaffected by BU's subsidy or pre-tax savings.</li>
+          <li>Bluebikes membership, if added, is MBTA-independent: BU's discounted $75.50/year rate ($6.29/month) is simply added on top of whichever card you're comparing, unaffected by BU's transit subsidy or pre-tax savings.</li>
           <li>Every dollar amount on this page is rounded to the nearest whole dollar for readability. The math underneath is exact; rounding only changes what's displayed, not what's calculated.</li>
         </ul>
       </div>
@@ -2128,8 +2198,8 @@ const BU_CONFIG = {
   // selected. No Interzone entries — BU's own benefits page and the
   // station dataset both only cover the 11 standard zones (1A, 1-10).
   passOptions: [
-    { id: "local-bus", label: "Local Bus", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
-    { id: "linkpass", label: "LinkPass (Subway & Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "local-bus", label: "Bus Pass", group: "subway", oneWayFare: 1.70, monthlyPrice: 55.00, reducedOneWayFare: 0.85, reducedMonthlyPrice: 30.00 },
+    { id: "linkpass", label: "LinkPass (Subway + Bus)", group: "subway", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1a", label: "Zone 1A", group: "rail", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
     { id: "cr-zone-1", label: "Zone 1", group: "rail", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
     { id: "cr-zone-2", label: "Zone 2", group: "rail", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
@@ -2161,13 +2231,13 @@ const BU_CONFIG = {
 
   // Bluebikes membership add-on: optional, independent of transit choice,
   // folded as a flat line into both cards' monthly totals when checked.
-  // $133.50/year is this repo's own confirmed retail Annual Membership
-  // price (see bluebikes-membership-calculator/calculator.js,
-  // BIKE_CONFIG.retailAnnualPrice, re-verified 2026-08-25) — NOT the
-  // $75.50 figure Carl Larson's email cited, which is stale; Bluebikes has
-  // raised this price before and this repo's own source is the more
-  // current one.
-  bluebikesAnnualPrice: 133.50,
+  // $75.50+tax/year is NOT the generic retail price (that's $133.50/year,
+  // this repo's bluebikes-membership-calculator's BIKE_CONFIG.
+  // retailAnnualPrice) — it's BU's own discounted rate for faculty, staff,
+  // and students, confirmed on bu.edu/transportation/bicycling/
+  // bluebikes-discount/ (2026-10). Correction from an earlier round of
+  // this file, which had used the generic retail price by mistake.
+  bluebikesAnnualPrice: 75.50,
 };
 
 /* Charles River Campus: two flat daily-rate zones (not per-lot pricing —
@@ -2546,7 +2616,8 @@ function buInitCalculator(rootEl) {
   let crcZoneId = "crc-zone-1";
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
-  let driveCompareMode = "subway"; // "subway" | "rail" — Drive mode's comparison card
+  let driveCompareMode = "link"; // "bus" | "link" | "rail" | "ferry" — Drive mode's comparison card
+  let driveCompareFerryRouteId = "ferry-winthrop-quincy";
   let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
   let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
@@ -2853,21 +2924,37 @@ function buInitCalculator(rootEl) {
   }
   updateMedicalDailyFieldVisibility();
 
-  // ---- Drive card's "compare against" toggle (Subway & Bus vs Commuter
-  // Rail) — swaps the comparison card's numbers in place rather than
-  // adding a third card, with an inline station field for Commuter Rail
-  // using the same combobox pattern as the main CR station picker. ----
+  // ---- Drive card's "compare against" toggle (Bus Pass / Link Pass /
+  // Commuter Rail / Ferry) — swaps the comparison card's numbers in place
+  // rather than adding more cards, with an inline station field for
+  // Commuter Rail and an inline route picker for Ferry, same combobox/
+  // pop-out patterns as the main questions above. ----
   const driveCompareButtons = rootEl.querySelectorAll("[data-abc-drive-compare-select]");
   const driveCompareStationField = rootEl.querySelector("[data-abc-drive-compare-station-field]");
   const driveCompareStationInput = rootEl.querySelector("[data-abc-drive-compare-station-input]");
   const driveCompareStationListbox = rootEl.querySelector("[data-abc-drive-compare-listbox]");
+  const driveCompareFerryField = rootEl.querySelector("[data-abc-drive-compare-ferry-field]");
+  const driveCompareFerryButtons = rootEl.querySelectorAll("[data-abc-drive-compare-ferry-select]");
   initStationCombobox(driveCompareStationInput, driveCompareStationListbox, render);
+
+  function updateDriveCompareFieldVisibility() {
+    if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
+    if (driveCompareFerryField) driveCompareFerryField.style.display = driveCompareMode === "ferry" ? "block" : "none";
+  }
 
   driveCompareButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       driveCompareMode = btn.dataset.abcDriveCompareSelect;
       driveCompareButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
+      updateDriveCompareFieldVisibility();
+      render();
+    });
+  });
+
+  driveCompareFerryButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      driveCompareFerryRouteId = btn.dataset.abcDriveCompareFerrySelect;
+      driveCompareFerryButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
   });
@@ -2904,6 +2991,7 @@ function buInitCalculator(rootEl) {
     }
     rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
     rootEl.classList.toggle("abc-theme-drive", routeType === "drive");
+    rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
 
     // Swap the result cards themselves: Pay-Per-Ride/Monthly Pass for
     // transit routes, the two driving/comparison cards for Drive.
@@ -3112,13 +3200,19 @@ function buInitCalculator(rootEl) {
     // ride and pass still picks the actual cheaper option.
 
     // ---- Pre-tax savings: Monthly Pass only, estimated (see BU_CONFIG.
-    // preTaxSavingsPct's doc comment), shown as supplementary info rather
-    // than folded into "Your estimated monthly cost" above. ----
+    // preTaxSavingsPct's doc comment). Shown as its own line below "Your
+    // estimated monthly cost" rather than folded into it — that line
+    // stays the actual payroll deduction (the real cash flow), while this
+    // one answers "so what's my effective cost accounting for the tax
+    // break" as its own explicit number, using the already-rounded
+    // passRemaining so the two lines visibly subtract to the number shown. ----
     const pretaxLine = rootEl.querySelector("[data-abc-pretax-line]");
     if (pretaxLine) {
       if (result.preTaxSavingsAmt > 0.5) {
-        rootEl.querySelector("[data-abc-pretax-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(result.preTaxSavingsAmt));
-        pretaxLine.style.display = "block";
+        const pretaxSavingsRounded = abcRoundToDollar(result.preTaxSavingsAmt);
+        rootEl.querySelector("[data-abc-pretax-amt]").textContent = abcFormatCurrencyWhole(pretaxSavingsRounded);
+        rootEl.querySelector("[data-abc-pretax-final]").textContent = abcFormatCurrencyWhole(Math.max(0, passRemaining - pretaxSavingsRounded));
+        pretaxLine.style.display = "flex";
       } else {
         pretaxLine.style.display = "none";
       }
@@ -3164,29 +3258,31 @@ function buInitCalculator(rootEl) {
     const parking = buCalcParking(selection, tripsPerWeek);
 
     // Reference card: what transit would cost at the same frequency, so
-    // driving and transit sit side by side as asked. Defaults to Subway &
-    // Bus (LinkPass); the in-card toggle swaps this to a real Commuter
-    // Rail monthly pass priced from whichever station the user enters,
-    // same BU subsidy and promo logic as the main Commuter Rail cards.
-    let compareCost, compareTitle, compareNote;
-    if (driveCompareMode === "rail") {
+    // driving and transit sit side by side as asked. The in-card toggle
+    // swaps which pass this compares against — Bus Pass and Link Pass
+    // resolve directly, Commuter Rail and Ferry resolve from their own
+    // inline station/route pickers — then renders the exact same itemized
+    // waterfall (total, Reduced Fare, promo, BU subsidy, final) the main
+    // Pay-Per-Ride/Monthly Pass cards use, via buCalcAll().
+    let comparePassId, compareTitle;
+    if (driveCompareMode === "bus") {
+      comparePassId = "local-bus";
+      compareTitle = "Bus Pass Instead";
+    } else if (driveCompareMode === "rail") {
       const compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
+      comparePassId = compareStation ? compareStation.zoneId : "";
       compareTitle = "Commuter Rail Instead";
-      if (compareStation) {
-        const compareResult = buCalcAll(compareStation.zoneId, tripsPerWeek, reducedFare);
-        compareCost = compareResult.passBreakdown.finalCost;
-        compareNote = `Monthly Pass from ${compareStation.label}, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
-      } else {
-        compareCost = 0;
-        compareNote = "Enter a station above to see a Commuter Rail comparison.";
-      }
+    } else if (driveCompareMode === "ferry") {
+      comparePassId = driveCompareFerryRouteId;
+      compareTitle = "Ferry Instead";
     } else {
-      const compareTrips = tripsPerWeek * 2; // driving days -> round-trip transit rides
-      const compareResult = buCalcAll("linkpass", compareTrips, reducedFare);
-      compareCost = compareResult.passBreakdown.finalCost;
-      compareTitle = "Subway & Bus Instead";
-      compareNote = `LinkPass, same number of weekly campus visits, BU's 50% subsidy applied${reducedFare ? " with Reduced Fare" : ""}.`;
+      comparePassId = "linkpass";
+      compareTitle = "Link Pass Instead";
     }
+    // driving days -> one-way transit-equivalent trips, same conversion
+    // the main cards use for their round-trips/week question.
+    const compareTrips = tripsPerWeek * 2;
+    const compareResult = buCalcAll(comparePassId, compareTrips, reducedFare);
     const parkingCost = parking ? parking.monthlyCost : 0;
 
     const totalEl = rootEl.querySelector("[data-abc-drive-total]");
@@ -3228,12 +3324,38 @@ function buInitCalculator(rootEl) {
       rateAmtEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(parking.monthlyCost));
     }
 
-    const compareEl = rootEl.querySelector("[data-abc-drive-compare-total]");
-    if (compareEl) compareEl.textContent = abcFormatCurrencyWhole(abcRoundToDollar(compareCost));
     const compareTitleEl = rootEl.querySelector("[data-abc-drive-compare-title]");
     if (compareTitleEl) compareTitleEl.textContent = compareTitle;
-    const compareNoteEl = rootEl.querySelector("[data-abc-drive-compare-note]");
-    if (compareNoteEl) compareNoteEl.textContent = compareNote;
+
+    const compareTotalLabelEl = rootEl.querySelector("[data-abc-drive-compare-total-label]");
+    if (compareTotalLabelEl) {
+      compareTotalLabelEl.textContent = (driveCompareMode === "rail" || driveCompareMode === "ferry") && compareResult.pass
+        ? `Total monthly cost (${compareResult.pass.label})`
+        : "Total monthly cost";
+    }
+    let compareRemaining = roundAndShow("[data-abc-drive-compare-total]", compareResult.passRegularTotal, false);
+    const compareReducedRow = rootEl.querySelector("[data-abc-drive-compare-reduced-row]");
+    if (reducedFare && compareResult.reducedFareDiscount > 0.005) {
+      compareRemaining += roundAndShow("[data-abc-drive-compare-reduced-amt]", compareResult.reducedFareDiscount, true);
+      compareReducedRow.style.display = "flex";
+    } else {
+      compareReducedRow.style.display = "none";
+    }
+    const comparePromoRow = rootEl.querySelector("[data-abc-drive-compare-promo-row]");
+    if (compareResult.promoApplies) {
+      const promoAmt = compareResult.promoOriginalPrice - compareResult.passBreakdown.total;
+      rootEl.querySelector("[data-abc-drive-compare-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
+      compareRemaining += roundAndShow("[data-abc-drive-compare-promo-amt]", promoAmt, true);
+      comparePromoRow.style.display = "flex";
+    } else {
+      comparePromoRow.style.display = "none";
+    }
+    compareRemaining += roundAndShow("[data-abc-drive-compare-subsidy-amt]", compareResult.passBreakdown.subsidyAmt, true);
+    rootEl.querySelector("[data-abc-drive-compare-final]").textContent = abcFormatCurrencyWhole(compareRemaining);
+    // compareCost stays on the precise, unrounded math for the winner/
+    // savings comparison below, same "display rounds, math doesn't" rule
+    // the main cards follow.
+    const compareCost = compareResult.passBreakdown.finalCost;
 
     // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
     // driven by whichever option is actually cheaper at the chosen
@@ -3255,8 +3377,14 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
 
+      const driveCompareVsText = {
+        bus: "taking the bus",
+        link: "taking Subway & Bus",
+        rail: "taking Commuter Rail",
+        ferry: "taking the ferry",
+      }[driveCompareMode];
       const driveSavingsVsEl = driveCard.querySelector("[data-abc-savings-vs]");
-      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareMode === "rail" ? "taking Commuter Rail" : "taking Subway & Bus";
+      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareVsText;
     }
   }
 
