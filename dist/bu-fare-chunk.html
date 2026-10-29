@@ -885,18 +885,14 @@
 
 /* ---- Express Bus fare pilot callout: same .abc-callout shape as the CR
    promo above, MBTA's Bus mode yellow instead of green — this is an
-   MBTA-wide pilot, not a BU deal. The top-level instance (direct child of
-   .abc-farecalc-grid, see index.html) shares the CR promo's "promo"
-   full-width grid row — the two are mutually exclusive (rail promo vs.
-   Bus Pass pilot can never both be the active route/tier at once), so
-   reusing the row is safe. grid-area has no effect on the Drive-compare
-   card's own nested instance of this same class, since that one isn't a
-   direct grid child — it just stays card-width there, which is what that
-   context wants. Shown only while the pilot is active (see
-   mbtaBusPilotIsActive()) and Bus Pass is the selected/compared pass. ---- */
+   MBTA-wide pilot, not a BU deal. Sits above the route question itself
+   (direct child of the root, before .abc-farecalc-grid opens — see
+   index.html), not inside the grid, since it's relevant regardless of
+   which mode/route someone picks, not just Bus Pass. Shown whenever the
+   pilot is active (see mbtaBusPilotIsActive()), full stop. ---- */
 .abc-farecalc-bus-pilot-callout {
-  grid-area: promo;
   margin-top: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
   background: var(--mbta-yellow-tint);
   border-color: var(--mbta-yellow);
 }
@@ -925,26 +921,6 @@
   padding: 3px 9px;
   border-radius: var(--abc-radius-pill);
   white-space: nowrap;
-}
-
-/* ---- Ferry-to-campus transfer callout: none of the three ferry routes
-   land within walking distance of either campus, so every ferry rider
-   needs a subway/bus leg to finish the trip. MBTA's two-hour unlimited
-   transfer pilot (same payment method, started 2026-09-01, see
-   mbta.com/FallFarePilots) currently covers that connecting leg at no
-   extra charge, so this tool doesn't add a separate transfer cost for
-   now — same reasoning as the CR Pay-Per-Ride subway leg (see buCalcAll's
-   doc comment), just not priced in while the pilot covers it for free.
-   Ferry's own blue, same tokens the ferry route buttons use. ---- */
-.abc-farecalc-ferry-transfer-callout {
-  margin-top: var(--abc-space-md);
-  background: var(--mbta-ferry-blue-tint);
-  border-color: var(--mbta-ferry-blue);
-}
-
-.abc-farecalc-ferry-transfer-callout p {
-  margin: 0;
-  color: var(--bu-ink);
 }
 
 .abc-farecalc-promo-days {
@@ -1842,6 +1818,14 @@ label.abc-farecalc-toggle-label {
     <h2 class="abc-title abc-farecalc-title">Is an MBTA pass worth it for you?</h2>
     <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
 
+    <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+      <div class="abc-farecalc-bus-pilot-callout-head">
+        <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
+        <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+      </div>
+      <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
+    </div>
+
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-route-field>
         <p class="abc-question">How do you get to campus?</p>
@@ -1892,14 +1876,6 @@ label.abc-farecalc-toggle-label {
         </p>
       </div>
 
-      <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
-        <div class="abc-farecalc-bus-pilot-callout-head">
-          <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
-          <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
-        </div>
-        <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
-      </div>
-
       <div class="abc-farecalc-field-group" data-abc-subway-tier-field>
         <p class="abc-question">Which subway or bus pass do you want to compare?</p>
         <div class="abc-input-row">
@@ -1945,10 +1921,6 @@ label.abc-farecalc-toggle-label {
               <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
               <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
               <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
-            </div>
-
-            <div class="abc-callout abc-farecalc-ferry-transfer-callout">
-              <p>No ferry route lands within walking distance of campus, so you'll also need the subway or bus to finish the trip. MBTA's current two-hour transfer pilot covers that connection at no extra charge (same payment method, within 2 hours), so this estimate doesn't add a separate transfer cost, <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
             </div>
           </div>
         </div>
@@ -2155,10 +2127,6 @@ label.abc-farecalc-toggle-label {
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="ferry">Ferry</button>
         </div>
 
-        <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-drive-compare-bus-pilot-callout style="display: none;">
-          <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
-        </div>
-
         <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
           <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-station">Which station do you commute from?</label>
           <div class="abc-farecalc-combobox">
@@ -2173,10 +2141,6 @@ label.abc-farecalc-toggle-label {
             <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-ferry-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
             <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-lynn">Lynn</button>
             <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-hingham-hull">Hingham/Hull</button>
-          </div>
-
-          <div class="abc-callout abc-farecalc-ferry-transfer-callout">
-            <p>No ferry route lands within walking distance of campus, so you'll also need the subway or bus to finish the trip. MBTA's current two-hour transfer pilot covers that connection at no extra charge (same payment method, within 2 hours), so this estimate doesn't add a separate transfer cost, <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
           </div>
         </div>
 
@@ -3013,19 +2977,18 @@ function buInitCalculator(rootEl) {
 
   // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
   // active pass being compared, main card and Drive-compare card alike. ----
+  // Shown above the route question regardless of which mode is selected —
+  // this is relevant everywhere, not just when Bus Pass is the active
+  // pass. The only gate is whether the pilot itself is still running.
   function updateBusPilotUI() {
-    const pilotActive = mbtaBusPilotIsActive(BU_CONFIG);
     const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
-    if (mainCallout) {
-      const applies = pilotActive && routeType === "subway" && passTier === "local-bus";
-      mainCallout.style.display = applies ? "block" : "none";
-      if (applies) {
-        const days = mbtaBusPilotDaysLeft(BU_CONFIG);
-        rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
-      }
+    if (!mainCallout) return;
+    const applies = mbtaBusPilotIsActive(BU_CONFIG);
+    mainCallout.style.display = applies ? "block" : "none";
+    if (applies) {
+      const days = mbtaBusPilotDaysLeft(BU_CONFIG);
+      rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
     }
-    const compareCallout = rootEl.querySelector("[data-abc-drive-compare-bus-pilot-callout]");
-    if (compareCallout) compareCallout.style.display = pilotActive && routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
   }
 
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----

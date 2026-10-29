@@ -668,19 +668,18 @@ function buInitCalculator(rootEl) {
 
   // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
   // active pass being compared, main card and Drive-compare card alike. ----
+  // Shown above the route question regardless of which mode is selected —
+  // this is relevant everywhere, not just when Bus Pass is the active
+  // pass. The only gate is whether the pilot itself is still running.
   function updateBusPilotUI() {
-    const pilotActive = mbtaBusPilotIsActive(BU_CONFIG);
     const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
-    if (mainCallout) {
-      const applies = pilotActive && routeType === "subway" && passTier === "local-bus";
-      mainCallout.style.display = applies ? "block" : "none";
-      if (applies) {
-        const days = mbtaBusPilotDaysLeft(BU_CONFIG);
-        rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
-      }
+    if (!mainCallout) return;
+    const applies = mbtaBusPilotIsActive(BU_CONFIG);
+    mainCallout.style.display = applies ? "block" : "none";
+    if (applies) {
+      const days = mbtaBusPilotDaysLeft(BU_CONFIG);
+      rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
     }
-    const compareCallout = rootEl.querySelector("[data-abc-drive-compare-bus-pilot-callout]");
-    if (compareCallout) compareCallout.style.display = pilotActive && routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
   }
 
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----

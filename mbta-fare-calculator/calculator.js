@@ -778,10 +778,14 @@ function mbtaInitCalculator(rootEl) {
 
   // ---- Express Bus fare pilot callout: shown whenever Bus Pass is the
   // active pass, employee or employer mode alike. ----
+  // Shown above the route question regardless of which mode/route is
+  // selected — this is relevant everywhere, not just when Bus Pass is
+  // the active pass. The only gate is whether the pilot itself is still
+  // running.
   function updateBusPilotUI() {
     const callout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
     if (!callout) return;
-    const applies = mbtaBusPilotIsActive(MBTA_CONFIG) && routeType === "subway" && passTier === "local-bus";
+    const applies = mbtaBusPilotIsActive(MBTA_CONFIG);
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = mbtaBusPilotDaysLeft(MBTA_CONFIG);

@@ -932,15 +932,14 @@
 }
 
 /* ---- Express Bus fare pilot callout: same shape as the promo callout
-   above, MBTA's Bus mode yellow instead of blue. The top-level instance
-   is a sibling of .abc-farecalc-grid, same as the promo callout above it
-   (see index.html), so it spans the full width rather than being confined
-   to one grid column; the Drive-compare-style card use elsewhere (BU
-   only) stays card-width since it's nested inside a card, not the grid.
-   Shown only while the pilot is active (see mbtaBusPilotIsActive()) and
-   Bus Pass is the selected pass. ---- */
+   above, MBTA's Bus mode yellow instead of blue. Sits above the route
+   question itself (sibling of .abc-farecalc-grid, before it opens — see
+   index.html), not inside the grid, since it's relevant regardless of
+   which mode/route someone picks, not just Bus Pass. Shown whenever the
+   pilot is active (see mbtaBusPilotIsActive()), full stop. ---- */
 .abc-farecalc-bus-pilot-callout {
   margin-top: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
   background: var(--mbta-yellow-tint);
   border-color: var(--mbta-yellow);
 }
@@ -964,21 +963,6 @@
   padding: 3px 9px;
   border-radius: var(--abc-radius-pill);
   white-space: nowrap;
-}
-
-/* ---- Ferry-to-destination transfer callout: most ferry routes don't
-   land within walking distance of where someone's actually headed, so a
-   subway/bus leg is often still needed. MBTA's two-hour unlimited
-   transfer pilot (same payment method, started 2026-09-01, see
-   mbta.com/FallFarePilots) currently covers that connecting leg at no
-   extra charge, so this tool doesn't add a separate transfer cost for
-   now. Employee mode only — this is about an individual's own commute,
-   not something an employer subsidy line needs. Ferry's own blue, same
-   tokens the ferry route buttons use. ---- */
-.abc-farecalc-ferry-transfer-callout {
-  margin-top: var(--abc-space-md);
-  background: var(--mbta-ferry-blue-tint);
-  border-color: var(--mbta-ferry-blue);
 }
 
 /* Promo discount as its own emphasized line item on the Monthly Pass
@@ -1846,6 +1830,14 @@ label.abc-farecalc-toggle-label {
     <p class="abc-subtitle" data-mode-only="employee">Answer a few questions about your commute and we'll compare your real costs side by side.</p>
     <p class="abc-subtitle" data-mode-only="employer">Answer a few questions about your team, and we'll estimate what subsidizing MBTA passes would cost and what your employees would save.</p>
 
+    <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+      <div class="abc-farecalc-bus-pilot-callout-head">
+        <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
+        <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+      </div>
+      <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
+    </div>
+
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-route-field>
         <p class="abc-question" data-mode-only="employee">How do you get to work?</p>
@@ -1987,10 +1979,6 @@ label.abc-farecalc-toggle-label {
               <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
             </div>
 
-            <div class="abc-callout abc-farecalc-ferry-transfer-callout" data-mode-only="employee">
-              <p>Most ferry routes don't land within walking distance of your destination, so you'll likely also need the subway or bus to finish the trip. MBTA's current two-hour transfer pilot covers that connection at no extra charge (same payment method, within 2 hours), so this estimate doesn't add a separate transfer cost, <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
-            </div>
-
             <div class="abc-farecalc-zonerow" data-abc-ferry-zonerow data-mode-only="employer">
               <select class="abc-select" data-abc-ferry-zone-select aria-label="Which ferry route"></select>
               <input
@@ -2087,14 +2075,6 @@ label.abc-farecalc-toggle-label {
         Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded).
         <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">See the details on MBTA's&nbsp;site</a>.
       </p>
-    </div>
-
-    <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
-      <div class="abc-farecalc-bus-pilot-callout-head">
-        <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
-        <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
-      </div>
-      <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
     </div>
 
     <div class="abc-cards abc-farecalc-cards" data-mode-only="employee">
@@ -3062,10 +3042,14 @@ function mbtaInitCalculator(rootEl) {
 
   // ---- Express Bus fare pilot callout: shown whenever Bus Pass is the
   // active pass, employee or employer mode alike. ----
+  // Shown above the route question regardless of which mode/route is
+  // selected — this is relevant everywhere, not just when Bus Pass is
+  // the active pass. The only gate is whether the pilot itself is still
+  // running.
   function updateBusPilotUI() {
     const callout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
     if (!callout) return;
-    const applies = mbtaBusPilotIsActive(MBTA_CONFIG) && routeType === "subway" && passTier === "local-bus";
+    const applies = mbtaBusPilotIsActive(MBTA_CONFIG);
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = mbtaBusPilotDaysLeft(MBTA_CONFIG);

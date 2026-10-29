@@ -316,18 +316,14 @@
 
 /* ---- Express Bus fare pilot callout: same .abc-callout shape as the CR
    promo above, MBTA's Bus mode yellow instead of green — this is an
-   MBTA-wide pilot, not a BU deal. The top-level instance (direct child of
-   .abc-farecalc-grid, see index.html) shares the CR promo's "promo"
-   full-width grid row — the two are mutually exclusive (rail promo vs.
-   Bus Pass pilot can never both be the active route/tier at once), so
-   reusing the row is safe. grid-area has no effect on the Drive-compare
-   card's own nested instance of this same class, since that one isn't a
-   direct grid child — it just stays card-width there, which is what that
-   context wants. Shown only while the pilot is active (see
-   mbtaBusPilotIsActive()) and Bus Pass is the selected/compared pass. ---- */
+   MBTA-wide pilot, not a BU deal. Sits above the route question itself
+   (direct child of the root, before .abc-farecalc-grid opens — see
+   index.html), not inside the grid, since it's relevant regardless of
+   which mode/route someone picks, not just Bus Pass. Shown whenever the
+   pilot is active (see mbtaBusPilotIsActive()), full stop. ---- */
 .abc-farecalc-bus-pilot-callout {
-  grid-area: promo;
   margin-top: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
   background: var(--mbta-yellow-tint);
   border-color: var(--mbta-yellow);
 }
@@ -356,26 +352,6 @@
   padding: 3px 9px;
   border-radius: var(--abc-radius-pill);
   white-space: nowrap;
-}
-
-/* ---- Ferry-to-campus transfer callout: none of the three ferry routes
-   land within walking distance of either campus, so every ferry rider
-   needs a subway/bus leg to finish the trip. MBTA's two-hour unlimited
-   transfer pilot (same payment method, started 2026-09-01, see
-   mbta.com/FallFarePilots) currently covers that connecting leg at no
-   extra charge, so this tool doesn't add a separate transfer cost for
-   now — same reasoning as the CR Pay-Per-Ride subway leg (see buCalcAll's
-   doc comment), just not priced in while the pilot covers it for free.
-   Ferry's own blue, same tokens the ferry route buttons use. ---- */
-.abc-farecalc-ferry-transfer-callout {
-  margin-top: var(--abc-space-md);
-  background: var(--mbta-ferry-blue-tint);
-  border-color: var(--mbta-ferry-blue);
-}
-
-.abc-farecalc-ferry-transfer-callout p {
-  margin: 0;
-  color: var(--bu-ink);
 }
 
 .abc-farecalc-promo-days {
