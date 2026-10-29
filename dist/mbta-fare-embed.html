@@ -609,6 +609,8 @@
   --mbta-purple-tint: #F3E7F0;
   --mbta-ferry-blue: #5DA8EA;
   --mbta-ferry-blue-tint: #EAF4FC;
+  --mbta-yellow: #FFC72C; /* MBTA's official Bus mode color */
+  --mbta-yellow-tint: #FFF6DD;
 }
 
 .abc-farecalc {
@@ -927,6 +929,17 @@
    the shared .abc-callout p rule is margin:0, meant for a single paragraph. */
 .abc-farecalc-promo-callout p + p {
   margin-top: var(--abc-space-sm);
+}
+
+/* ---- Express Bus fare pilot callout: same shape as the promo callout
+   above, single line, MBTA's Bus mode yellow instead of blue. Shown only
+   while Bus Pass is the selected pass — see updateBusPilotUI(). No
+   published end date on mbta.com/FallFarePilots as of 2026-10, so no
+   countdown the way the CR promo callout has one. ---- */
+.abc-farecalc-bus-pilot-callout {
+  margin-top: var(--abc-space-md);
+  background: var(--mbta-yellow-tint);
+  border-color: var(--mbta-yellow);
 }
 
 /* Promo discount as its own emphasized line item on the Monthly Pass
@@ -1919,6 +1932,10 @@ label.abc-farecalc-toggle-label {
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
               <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
+            </div>
+
+            <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+              <p>MBTA's Express Bus pilot has eliminated the Express fare: every bus route now charges the Local Bus rate ($1.70 / $0.85 reduced), <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
             </div>
           </div>
         </div>
@@ -2971,6 +2988,14 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
+  // ---- Express Bus fare pilot callout: shown whenever Bus Pass is the
+  // active pass, employee or employer mode alike. ----
+  function updateBusPilotUI() {
+    const callout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
+    if (!callout) return;
+    callout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+  }
+
   // Populate a zone/route dropdown from config, starting on an unselected
   // placeholder rather than defaulting to a real option. excludeIds (zone
   // or route ids already picked in SIBLING rows) are left out entirely,
@@ -3342,6 +3367,7 @@ function mbtaInitCalculator(rootEl) {
 
   function render() {
     updatePromoUI();
+    updateBusPilotUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
   }

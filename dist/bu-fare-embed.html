@@ -620,6 +620,8 @@
   --mbta-purple-tint: #F3E7F0;
   --mbta-ferry-blue: #5DA8EA;
   --mbta-ferry-blue-tint: #EAF4FC;
+  --mbta-yellow: #FFC72C; /* MBTA's official Bus mode color */
+  --mbta-yellow-tint: #FFF6DD;
 
   /* --bu-mint is kept only as a legible-on-white fallback; every actual
      fill (pills, steppers, badges) uses --bu-mint-bright, the literal
@@ -888,6 +890,24 @@
 .abc-farecalc-promo-callout h4 {
   margin: 0;
   color: var(--mbta-green);
+}
+
+/* ---- Express Bus fare pilot callout: same .abc-callout shape as the CR
+   promo above, but a single line (no headline/countdown) and MBTA's Bus
+   mode yellow instead of green — this is an MBTA-wide pilot, not a BU
+   deal. Shown only while Bus Pass is the selected/compared pass (see
+   updateBusPilotUI()); no published end date on mbta.com/FallFarePilots
+   as of 2026-10, so this doesn't carry a countdown the way the CR promo
+   does. ---- */
+.abc-farecalc-bus-pilot-callout {
+  margin-top: var(--abc-space-md);
+  background: var(--mbta-yellow-tint);
+  border-color: var(--mbta-yellow);
+}
+
+.abc-farecalc-bus-pilot-callout p {
+  margin: 0;
+  color: var(--bu-ink);
 }
 
 .abc-farecalc-promo-days {
@@ -1652,6 +1672,7 @@ label.abc-farecalc-toggle-label {
    uses for its own day question. Reuses the shared stepper component. */
 .abc-farecalc-station-parking-days {
   margin-top: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
 }
 
 .abc-farecalc-drive-compare-station-label {
@@ -1841,6 +1862,10 @@ label.abc-farecalc-toggle-label {
             <div class="abc-choice-grid">
               <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
               <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
+            </div>
+
+            <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+              <p>MBTA's Express Bus pilot has eliminated the Express fare: every bus route now charges the Local Bus rate ($1.70 / $0.85 reduced), <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
             </div>
 
             <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-rapid-station-parking-field style="display: none;">
@@ -2083,6 +2108,10 @@ label.abc-farecalc-toggle-label {
           <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="link">Link Pass</button>
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
           <button type="button" class="abc-choice-button" data-abc-drive-compare-select="ferry">Ferry</button>
+        </div>
+
+        <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-drive-compare-bus-pilot-callout style="display: none;">
+          <p>MBTA's Express Bus pilot has eliminated the Express fare: every bus route now charges the Local Bus rate ($1.70 / $0.85 reduced), <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>.</p>
         </div>
 
         <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
@@ -2908,6 +2937,15 @@ function buInitCalculator(rootEl) {
     }
   }
 
+  // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
+  // active pass being compared, main card and Drive-compare card alike. ----
+  function updateBusPilotUI() {
+    const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
+    if (mainCallout) mainCallout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+    const compareCallout = rootEl.querySelector("[data-abc-drive-compare-bus-pilot-callout]");
+    if (compareCallout) compareCallout.style.display = routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
+  }
+
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
   const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
   ferryRouteButtons.forEach((btn) => {
@@ -3436,6 +3474,7 @@ function buInitCalculator(rootEl) {
 
   function render() {
     updatePromoUI();
+    updateBusPilotUI();
     if (routeType === "drive") renderDrive();
     else renderEmployee();
     scheduleAnalyticsFlush();

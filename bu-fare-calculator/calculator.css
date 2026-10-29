@@ -42,6 +42,8 @@
   --mbta-purple-tint: #F3E7F0;
   --mbta-ferry-blue: #5DA8EA;
   --mbta-ferry-blue-tint: #EAF4FC;
+  --mbta-yellow: #FFC72C; /* MBTA's official Bus mode color */
+  --mbta-yellow-tint: #FFF6DD;
 
   /* --bu-mint is kept only as a legible-on-white fallback; every actual
      fill (pills, steppers, badges) uses --bu-mint-bright, the literal
@@ -310,6 +312,24 @@
 .abc-farecalc-promo-callout h4 {
   margin: 0;
   color: var(--mbta-green);
+}
+
+/* ---- Express Bus fare pilot callout: same .abc-callout shape as the CR
+   promo above, but a single line (no headline/countdown) and MBTA's Bus
+   mode yellow instead of green — this is an MBTA-wide pilot, not a BU
+   deal. Shown only while Bus Pass is the selected/compared pass (see
+   updateBusPilotUI()); no published end date on mbta.com/FallFarePilots
+   as of 2026-10, so this doesn't carry a countdown the way the CR promo
+   does. ---- */
+.abc-farecalc-bus-pilot-callout {
+  margin-top: var(--abc-space-md);
+  background: var(--mbta-yellow-tint);
+  border-color: var(--mbta-yellow);
+}
+
+.abc-farecalc-bus-pilot-callout p {
+  margin: 0;
+  color: var(--bu-ink);
 }
 
 .abc-farecalc-promo-days {
@@ -1074,6 +1094,7 @@ label.abc-farecalc-toggle-label {
    uses for its own day question. Reuses the shared stepper component. */
 .abc-farecalc-station-parking-days {
   margin-top: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
 }
 
 .abc-farecalc-drive-compare-station-label {

@@ -641,6 +641,15 @@ function buInitCalculator(rootEl) {
     }
   }
 
+  // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
+  // active pass being compared, main card and Drive-compare card alike. ----
+  function updateBusPilotUI() {
+    const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
+    if (mainCallout) mainCallout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+    const compareCallout = rootEl.querySelector("[data-abc-drive-compare-bus-pilot-callout]");
+    if (compareCallout) compareCallout.style.display = routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
+  }
+
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
   const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
   ferryRouteButtons.forEach((btn) => {
@@ -1169,6 +1178,7 @@ function buInitCalculator(rootEl) {
 
   function render() {
     updatePromoUI();
+    updateBusPilotUI();
     if (routeType === "drive") renderDrive();
     else renderEmployee();
     scheduleAnalyticsFlush();

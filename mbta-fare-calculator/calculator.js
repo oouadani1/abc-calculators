@@ -751,6 +751,14 @@ function mbtaInitCalculator(rootEl) {
     }
   }
 
+  // ---- Express Bus fare pilot callout: shown whenever Bus Pass is the
+  // active pass, employee or employer mode alike. ----
+  function updateBusPilotUI() {
+    const callout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
+    if (!callout) return;
+    callout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+  }
+
   // Populate a zone/route dropdown from config, starting on an unselected
   // placeholder rather than defaulting to a real option. excludeIds (zone
   // or route ids already picked in SIBLING rows) are left out entirely,
@@ -1122,6 +1130,7 @@ function mbtaInitCalculator(rootEl) {
 
   function render() {
     updatePromoUI();
+    updateBusPilotUI();
     if (mode === "employer") renderEmployer();
     else renderEmployee();
   }
