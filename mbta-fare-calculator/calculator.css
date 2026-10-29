@@ -354,14 +354,53 @@
 }
 
 /* ---- Express Bus fare pilot callout: same shape as the promo callout
-   above, single line, MBTA's Bus mode yellow instead of blue. Shown only
-   while Bus Pass is the selected pass — see updateBusPilotUI(). No
-   published end date on mbta.com/FallFarePilots as of 2026-10, so no
-   countdown the way the CR promo callout has one. ---- */
+   above, MBTA's Bus mode yellow instead of blue. The top-level instance
+   is a sibling of .abc-farecalc-grid, same as the promo callout above it
+   (see index.html), so it spans the full width rather than being confined
+   to one grid column; the Drive-compare-style card use elsewhere (BU
+   only) stays card-width since it's nested inside a card, not the grid.
+   Shown only while the pilot is active (see mbtaBusPilotIsActive()) and
+   Bus Pass is the selected pass. ---- */
 .abc-farecalc-bus-pilot-callout {
   margin-top: var(--abc-space-md);
   background: var(--mbta-yellow-tint);
   border-color: var(--mbta-yellow);
+}
+
+.abc-farecalc-bus-pilot-callout-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--abc-space-sm);
+  margin-bottom: 6px;
+}
+
+.abc-farecalc-bus-pilot-badge,
+.abc-farecalc-bus-pilot-days {
+  flex-shrink: 0;
+  background: var(--mbta-yellow);
+  color: #0C2C50;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 3px 9px;
+  border-radius: var(--abc-radius-pill);
+  white-space: nowrap;
+}
+
+/* ---- Ferry-to-destination transfer callout: most ferry routes don't
+   land within walking distance of where someone's actually headed, so a
+   subway/bus leg is often still needed. MBTA's two-hour unlimited
+   transfer pilot (same payment method, started 2026-09-01, see
+   mbta.com/FallFarePilots) currently covers that connecting leg at no
+   extra charge, so this tool doesn't add a separate transfer cost for
+   now. Employee mode only — this is about an individual's own commute,
+   not something an employer subsidy line needs. Ferry's own blue, same
+   tokens the ferry route buttons use. ---- */
+.abc-farecalc-ferry-transfer-callout {
+  margin-top: var(--abc-space-md);
+  background: var(--mbta-ferry-blue-tint);
+  border-color: var(--mbta-ferry-blue);
 }
 
 /* Promo discount as its own emphasized line item on the Monthly Pass

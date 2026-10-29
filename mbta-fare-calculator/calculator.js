@@ -82,6 +82,18 @@ const MBTA_CONFIG = {
     infoUrl: "https://www.mbta.com/fares/commuter-rail-summer-promotions",
   },
 
+  // MBTA's Express Bus fare pilot: Express fares eliminated, every bus
+  // route now charges the Local Bus rate. Six months from its 2026-09-01
+  // start, per MBTA (mbta.com/FallFarePilots doesn't itself publish an
+  // end date, so this is computed from the stated pilot length, not
+  // quoted directly from MBTA). Same auto-expiring pattern as the
+  // Commuter Rail promo above — see mbtaBusPilotIsActive().
+  busPilot: {
+    startDate: "2026-09-01",
+    endDate: "2027-03-01",
+    infoUrl: "https://www.mbta.com/FallFarePilots",
+  },
+
   // Subsidy and pre-tax (Perq) are both modeled the same way, applied to
   // BOTH the pass and pay-per-ride totals — these are transit-benefit-
   // account features, not pass-specific ones.
@@ -353,6 +365,19 @@ function mbtaPromoIsActive(config, today) {
 /** Whole days remaining until the promo ends. Never negative; 0 on the last day. */
 function mbtaPromoDaysLeft(config, today) {
   const end = new Date(config.promo.endDate + "T23:59:59");
+  const ms = end.getTime() - (today || new Date()).getTime();
+  return Math.max(0, Math.ceil(ms / 86400000));
+}
+
+/** True while today is on or before the Express Bus pilot's end date. */
+function mbtaBusPilotIsActive(config, today) {
+  const end = new Date(config.busPilot.endDate + "T23:59:59");
+  return (today || new Date()).getTime() <= end.getTime();
+}
+
+/** Whole days remaining until the Express Bus pilot ends. Never negative. */
+function mbtaBusPilotDaysLeft(config, today) {
+  const end = new Date(config.busPilot.endDate + "T23:59:59");
   const ms = end.getTime() - (today || new Date()).getTime();
   return Math.max(0, Math.ceil(ms / 86400000));
 }
@@ -756,7 +781,12 @@ function mbtaInitCalculator(rootEl) {
   function updateBusPilotUI() {
     const callout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
     if (!callout) return;
-    callout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+    const applies = mbtaBusPilotIsActive(MBTA_CONFIG) && routeType === "subway" && passTier === "local-bus";
+    callout.style.display = applies ? "block" : "none";
+    if (applies) {
+      const days = mbtaBusPilotDaysLeft(MBTA_CONFIG);
+      rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
+    }
   }
 
   // Populate a zone/route dropdown from config, starting on an unselected

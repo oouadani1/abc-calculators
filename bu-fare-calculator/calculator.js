@@ -106,6 +106,19 @@ const BU_CONFIG = {
     infoUrl: "https://www.mbta.com/fares/commuter-rail-summer-promotions",
   },
 
+  // MBTA's Express Bus fare pilot: Express fares eliminated, every bus
+  // route now charges the Local Bus rate. Six months from its 2026-09-01
+  // start, per MBTA (mbta.com/FallFarePilots doesn't itself publish an
+  // end date, so this is computed from the stated pilot length, not
+  // quoted directly from MBTA). Same `enabled` choke-point pattern as
+  // the Commuter Rail promo above.
+  busPilot: {
+    enabled: true,
+    startDate: "2026-09-01",
+    endDate: "2027-03-01",
+    infoUrl: "https://www.mbta.com/FallFarePilots",
+  },
+
   // First two entries are the Subway & Bus tier choices (pop-out pills).
   // Everything else is Commuter Rail, shown only when that route is
   // selected. No Interzone entries — BU's own benefits page and the
@@ -466,6 +479,18 @@ function mbtaPromoIsActive(config, today) {
   return (today || new Date()).getTime() <= end.getTime();
 }
 
+function mbtaBusPilotIsActive(config, today) {
+  if (!config.busPilot.enabled) return false;
+  const end = new Date(config.busPilot.endDate + "T23:59:59");
+  return (today || new Date()).getTime() <= end.getTime();
+}
+
+function mbtaBusPilotDaysLeft(config, today) {
+  const now = today || new Date();
+  const end = new Date(config.busPilot.endDate + "T23:59:59");
+  return Math.max(0, Math.ceil((end.getTime() - now.getTime()) / 86400000));
+}
+
 /** Days left until the next Edenred order deadline (the 10th of this
  * month, or next month's if today is already past the 10th) — the
  * actionable countdown for the callout, rather than the promo's own
@@ -644,10 +669,18 @@ function buInitCalculator(rootEl) {
   // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
   // active pass being compared, main card and Drive-compare card alike. ----
   function updateBusPilotUI() {
+    const pilotActive = mbtaBusPilotIsActive(BU_CONFIG);
     const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
-    if (mainCallout) mainCallout.style.display = routeType === "subway" && passTier === "local-bus" ? "block" : "none";
+    if (mainCallout) {
+      const applies = pilotActive && routeType === "subway" && passTier === "local-bus";
+      mainCallout.style.display = applies ? "block" : "none";
+      if (applies) {
+        const days = mbtaBusPilotDaysLeft(BU_CONFIG);
+        rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
+      }
+    }
     const compareCallout = rootEl.querySelector("[data-abc-drive-compare-bus-pilot-callout]");
-    if (compareCallout) compareCallout.style.display = routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
+    if (compareCallout) compareCallout.style.display = pilotActive && routeType === "drive" && driveCompareMode === "bus" ? "block" : "none";
   }
 
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
