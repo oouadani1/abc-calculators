@@ -719,46 +719,39 @@
   letter-spacing: -0.02em;
 }
 
-/* ---- Question grid: pairs up into a compact, table-like 2-column
-   layout instead of stacking one after another — the goal is seeing the
-   whole tool without scrolling. Falls back to a single column
-   automatically (via the container query) once the widget is rendered
-   narrow, same mechanism as the narrow-layout rules further down this
-   file. ---- */
-/* ---- Carl Larson's whiteboard restructure (2026-11): Step 1
-   (topmode: Pay Per Ride vs Driving) replaces the old 4-way route
-   picker as the entry point; Step 2 (mode: Subway & Bus / Commuter
-   Rail / Ferry) is answered either way, since it determines Card 1 (the
-   BU-subsidized pass) regardless of topMode, and also the Pay-Per-Ride
-   fare when that's the branch taken. "driving" (Step 1a/1b, Charles
-   River/Medical campus + zone/garage) only ever shows when topMode is
-   Driving. "subquestion" holds whichever of subway-tier / rail-zone /
+/* ---- Question flow: always a single stacked column, at every
+   container width — deliberately NOT a responsive 2-column grid. The
+   2-column layout this tool had right after Carl Larson's whiteboard
+   restructure (2026-11) paired questions left/right, which meant
+   reading the flow required jumping left-right-then-down instead of a
+   straight top-to-bottom scan; the user explicitly asked for the
+   straight scan back once the restructure added enough new
+   steps/toggles that the jumping became noticeably tiring, even knowing
+   single-column runs taller. Still a CSS grid (not plain stacked
+   blocks) so each step keeps its own named `grid-area` — that's what
+   lets switching topMode/mode swap which named area is visible without
+   anything else reflowing, the grid's main value now, not column
+   pairing. Order matches the whiteboard's own step numbering:
+   topmode, driving, freq, mode, promo, subquestion, parkride, reduced.
+   "driving" only shows when topMode is Driving (Step 1a/1b). "mode"
+   (Step 2: Subway & Bus / Commuter Rail / Ferry) is answered either
+   way, since it determines Card 1 (the BU-subsidized pass) regardless
+   of topMode, and also the Pay-Per-Ride fare when that's the branch
+   taken. "subquestion" holds whichever of subway-tier / rail-zone /
    ferry-route applies to Step 2's answer (Step 3) — only one is ever
    visible at a time. "parkride" (Step 4) is the shared park-and-ride
-   question, keyed off `mode` the same way. "reduced" (Steps 5/6: Reduced
-   Fare + Bluebikes) is always visible now — Driving needs it too, to
-   price the pass Card 1 compares against.
-   Narrow (single-column) order matches the whiteboard's own numbering:
-   topmode, driving, freq, mode, promo, subquestion, parkride, reduced.
-   Wide (2-column) order:
-     topmode      | freq
-     driving      | driving      (full width, Driving only)
-     mode         | mode         (full width)
-     promo        | promo        (full width, Commuter Rail only)
-     subquestion  | parkride
-     reduced      | reduced      (full width)
-   "driving" and "mode" are each full width, not paired with a sibling,
-   specifically so that hiding "driving" (the common case — Pay-Per-Ride
-   is the default) collapses its row to zero height instead of leaving
-   a gap the height of whatever it would have shared a row with; a
-   hidden area sharing a row with an always-visible one does NOT
-   collapse, since the row's height still follows its visible sibling.
-   "subquestion" is always visible (always exactly one of subway-tier/
-   rail-zone/ferry-route), so pairing it with "parkride" only costs a
-   little empty space on Ferry (no park-and-ride data for it yet), not
-   on every Pay-Per-Ride load — an acceptable, narrower trade-off.
-   "promo" itself collapses to zero height outside the CR discount
-   window, same as before this restructure.
+   question, keyed off `mode` the same way. "reduced" (Steps 5/6:
+   Reduced Fare + Bluebikes) is always visible now — Driving needs it
+   too, to price the pass Card 1 compares against. Any area with no
+   visible element inside it (driving when Pay-Per-Ride, promo outside
+   the CR discount window, parkride for Ferry) collapses to zero height
+   rather than leaving a gap, same as "promo" always did.
+
+   The two result cards below this grid are a different layout question
+   (`.abc-farecalc-cards`, further down this file) — those stay
+   side-by-side at wide widths on purpose, since glancing between two
+   finished numbers to compare them isn't the same "eye has to jump
+   while still filling out fields" problem this grid was built to avoid.
 
    What "a trip" includes used to live here as a "hint" row/tooltip —
    dropped entirely in favor of folding it into the subtitle at the top
@@ -778,23 +771,9 @@
     "subquestion"
     "parkride"
     "reduced";
-  column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
   align-items: start;
-}
-
-@container abc-calc (min-width: 520px) {
-  .abc-farecalc-grid {
-    grid-template-columns: 1fr 1fr;
-    grid-template-areas:
-      "topmode freq"
-      "driving driving"
-      "mode mode"
-      "promo promo"
-      "subquestion parkride"
-      "reduced reduced";
-  }
 }
 
 [data-abc-top-mode-field] { grid-area: topmode; }
@@ -812,13 +791,10 @@
   min-width: 0;
 }
 
-/* Spacing between question groups now comes from the grid's row-gap,
-   not from each question's own top margin — otherwise a revealed field
-   (zone dropdown, Perq stepper) that stretches one grid row taller
-   would visually double up with the next row's top margin too. Both
-   field-groups start with a plain .abc-question with nothing else
-   above it, which is also what keeps their headers flush-aligned with
-   each other across the grid row. */
+/* Spacing between question groups comes from the grid's row-gap, not
+   from each question's own top margin — otherwise a revealed field
+   (zone dropdown, park-and-ride days) that stretches one row taller
+   would visually double up with the next row's top margin too. */
 .abc-farecalc-field-group .abc-question {
   margin-top: 0;
 }
