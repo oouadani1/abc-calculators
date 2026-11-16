@@ -75,11 +75,11 @@ const BU_CONFIG = {
   // Trip frequency is a direct numeric input (typed or +/-1 stepper), not a
   // button grid — wide enough to cover weekend-only, midday-only, or more-
   // than-5-round-trip patterns that a 1-5 day grid couldn't capture. This
-  // value is ROUND-TRIPS/week for Subway & Bus, Commuter Rail, and Ferry
-  // (doubled to one-way trips before it reaches buCalcAll — see
-  // renderEmployee()); the exact same shared variable is reused as literal
-  // DAYS DRIVEN for Drive mode, since the two route families never show at
-  // once. No upper bound for transit: unlike a day count, a ride count has
+  // value is ROUND-TRIPS/week when topMode is Pay-Per-Ride (doubled to
+  // one-way trips before it reaches buCalcAll — see renderResults()); the
+  // exact same shared variable is reused as literal DAYS DRIVEN when
+  // topMode is Driving, since the two never show at once. No upper bound
+  // for Pay-Per-Ride: unlike a day count, a ride count has
   // no real-world ceiling (multiple trips a day, business travel around
   // the city), so tripsMax is intentionally unbounded rather than an
   // arbitrary round number. Drive's day-based question is a separate, real
@@ -538,7 +538,7 @@ function buCalcStationParkingSubsidy(parkingRate, daysPerWeek) {
 
 /** Bundles every derived number the employee Pay-Per-Ride vs Monthly Pass
  * comparison needs. tripsPerWeek here is in ONE-WAY units (callers with a
- * round-trips/week input must double it first — see renderEmployee()).
+ * round-trips/week input must double it first — see renderResults()).
  * BU's 50% subsidy and the pre-tax savings estimate both apply ONLY to
  * Monthly Pass, never Pay-Per-Ride — confirmed by Carl Larson (BU
  * Transportation Services, 2026-10): BU does not subsidize single-ride
@@ -621,27 +621,29 @@ function buCalcParking(selection, daysPerWeek) {
    ------------------------------------------------------------ */
 
 function buInitCalculator(rootEl) {
-  let routeType = "subway"; // "subway" | "rail" | "ferry" | "drive"
+  // Carl Larson's whiteboard restructure (2026-11): Step 1 asks whether
+  // someone currently pays per ride or drives (topMode); Step 2 asks which
+  // mode (mode) regardless of topMode's answer — it's the fare basis when
+  // paying per ride, and the BU-subsidized comparison pass when driving.
+  // One shared mode picker instead of a second one buried in a result card.
+  let topMode = "pay-per-ride"; // "pay-per-ride" | "driving" — Step 1
+  let mode = "subway"; // "subway" | "rail" | "ferry" — Step 2
   let passTier = "linkpass"; // "local-bus" | "linkpass" — Subway & Bus sub-choice
   let ferryRouteId = "ferry-winthrop-quincy"; // Ferry sub-choice
   let reducedFare = false;
-  let tripsPerWeek = BU_CONFIG.defaultTripsPerWeek; // round-trips/week (transit) or days/week (drive) — see BU_CONFIG.tripsStep comment
-  let campus = "charles-river"; // "charles-river" | "medical", Drive mode only
+  let tripsPerWeek = BU_CONFIG.defaultTripsPerWeek; // round-trips/week (pay-per-ride) or days/week (driving) — see BU_CONFIG.tripsStep comment
+  let campus = "charles-river"; // "charles-river" | "medical", Driving only
   let crcZoneId = "crc-zone-1";
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
-  let driveCompareMode = "link"; // "bus" | "link" | "rail" | "ferry" — Drive mode's comparison card
-  let driveCompareFerryRouteId = "ferry-winthrop-quincy";
-  let driveCompareParking = false; // "Will you drive and park there, then ride the rest of the way?" — bus/link/rail only, no Ferry parking data
-  let driveCompareParkingDays = 3;
-  let driveCompareBluebikesAdded = false;
   let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
-  let stationParkingDays = 3; // its own direct 0-7 question, independent of tripsPerWeek
+  let stationParkingDays = 3; // capped at tripsPerWeek — see clampParkingDaysToTrips()
   let rapidStationParking = false; // Subway & Bus only — same question, MBTA_RAPID_STATIONS instead of BU_STATIONS
-  let rapidStationParkingDays = 3;
+  let rapidStationParkingDays = 3; // capped at tripsPerWeek — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
-  const routeButtons = rootEl.querySelectorAll("[data-abc-route-select]");
+  const topModeButtons = rootEl.querySelectorAll("[data-abc-top-mode-select]");
+  const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
   const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
@@ -658,7 +660,7 @@ function buInitCalculator(rootEl) {
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && routeType === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
+    const applies = promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     callout.style.display = applies ? "block" : "none";
     if (applies) {
       const days = buEdenredDeadlineDaysLeft();
@@ -834,15 +836,16 @@ function buInitCalculator(rootEl) {
   // and reset to unchecked whenever it's hidden, the same "don't let a
   // hidden control silently keep affecting the price" rule the rest of
   // this tool follows. The days question only appears once the checkbox
-  // itself is checked, and is fully independent of the trips/week number
-  // (which is intentionally unbounded and not a day count). ----
+  // itself is checked; its max is capped at tripsPerWeek (see
+  // clampParkingDaysToTrips()) since you can't park-and-ride more days a
+  // week than you actually make the trip. ----
   const stationParkingField = rootEl.querySelector("[data-abc-station-parking-field]");
   const stationParkingToggle = rootEl.querySelector("[data-abc-station-parking-toggle]");
   const stationParkingDaysField = rootEl.querySelector("[data-abc-station-parking-days-field]");
 
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
-    const station = routeType === "rail" ? buGetStation(currentStationLabel()) : null;
+    const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
     const hasParking = !!(station && station.parkingRate != null);
     stationParkingField.style.display = hasParking ? "flex" : "none";
     if (!hasParking && stationParking) {
@@ -862,7 +865,8 @@ function buInitCalculator(rootEl) {
   }
 
   const stationParkingDaysStepper = initStepper(
-    "data-abc-station-parking-days-stepper", 1, () => stationParkingDays, (v) => { stationParkingDays = v; }, 0, 7
+    "data-abc-station-parking-days-stepper", 1, () => stationParkingDays, (v) => { stationParkingDays = v; }, 0,
+    () => Math.min(7, tripsPerWeek)
   );
 
   // ---- Rapid-transit (Subway & Bus) park-and-ride: same BU parking
@@ -885,7 +889,7 @@ function buInitCalculator(rootEl) {
 
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
-    const show = routeType === "subway";
+    const show = mode === "subway";
     rapidStationParkingField.style.display = show ? "flex" : "none";
     if (!show && rapidStationParking) {
       rapidStationParking = false;
@@ -905,12 +909,29 @@ function buInitCalculator(rootEl) {
   }
 
   const rapidStationParkingDaysStepper = initStepper(
-    "data-abc-rapid-station-parking-days-stepper", 1, () => rapidStationParkingDays, (v) => { rapidStationParkingDays = v; }, 0, 7
+    "data-abc-rapid-station-parking-days-stepper", 1, () => rapidStationParkingDays, (v) => { rapidStationParkingDays = v; }, 0,
+    () => Math.min(7, tripsPerWeek)
   );
 
+  /** Keeps both park-and-ride days steppers from outliving the trip
+   * frequency they depend on — you can't park-and-ride more days a week
+   * than you actually make the trip. Called whenever tripsPerWeek itself
+   * changes, from any of its three entry points (its own stepper, or the
+   * topMode switch forcing it down to BU_CONFIG.driveTripsMax). */
+  function clampParkingDaysToTrips() {
+    if (stationParkingDays > tripsPerWeek) stationParkingDays = Math.max(0, tripsPerWeek);
+    if (rapidStationParkingDays > tripsPerWeek) rapidStationParkingDays = Math.max(0, tripsPerWeek);
+    // Repaint unconditionally, not just when a value actually got clamped —
+    // otherwise each stepper's own `max` attribute (and native spinner/
+    // validity state) can go stale when tripsPerWeek only RISES, since
+    // nothing else touches these two steppers in that case.
+    if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
+    if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
+  }
+
   function currentPassId() {
-    if (routeType === "subway") return passTier;
-    if (routeType === "ferry") return ferryRouteId;
+    if (mode === "subway") return passTier;
+    if (mode === "ferry") return ferryRouteId;
     return employeeRailPassId();
   }
 
@@ -925,29 +946,22 @@ function buInitCalculator(rootEl) {
   });
 
   // ---- Reduced Fare toggle: applies across Subway & Bus, Commuter Rail,
-  // and Drive mode's transit-comparison card (MBTA's reduced program
-  // spans all of them). Two physical checkboxes share one state —
-  // the main one (reparented by route, see updateReducedFarePlacement)
-  // and a compact one inside the Drive comparison card, since that card
-  // has no other Reduced Fare control visible. Both stay in sync no
-  // matter which one someone actually clicks. Subway & Bus resolves to
-  // the same $30 reduced product regardless of which tier pill is
+  // and Ferry alike (MBTA's reduced program spans all of them), and now
+  // feeds Card 1 (the BU-subsidized pass) regardless of topMode, since
+  // Driving still needs Reduced Fare to price the pass it's compared
+  // against. One shared checkbox, always visible. Subway & Bus resolves
+  // to the same $30 reduced product regardless of which tier pill is
   // selected (MBTA doesn't sell a separate reduced bus-only pass), but
   // the pills stay fully interactive — nothing about checking this
   // disables them. ----
   const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-toggle]");
-  const driveReducedFareCheckbox = rootEl.querySelector("[data-abc-drive-reduced-fare-toggle]");
   function setReducedFare(value) {
     reducedFare = value;
     if (reducedFareCheckbox) reducedFareCheckbox.checked = value;
-    if (driveReducedFareCheckbox) driveReducedFareCheckbox.checked = value;
     render();
   }
   if (reducedFareCheckbox) {
     reducedFareCheckbox.addEventListener("change", () => setReducedFare(reducedFareCheckbox.checked));
-  }
-  if (driveReducedFareCheckbox) {
-    driveReducedFareCheckbox.addEventListener("change", () => setReducedFare(driveReducedFareCheckbox.checked));
   }
 
   // ---- Drive mode: campus -> lot/garage fields ----
@@ -1005,159 +1019,86 @@ function buInitCalculator(rootEl) {
   }
   updateMedicalDailyFieldVisibility();
 
-  // ---- Drive card's "compare against" toggle (Bus Pass / Link Pass /
-  // Commuter Rail / Ferry) — swaps the comparison card's numbers in place
-  // rather than adding more cards, with an inline station field for
-  // Commuter Rail and an inline route picker for Ferry, same combobox/
-  // pop-out patterns as the main questions above. ----
-  const driveCompareButtons = rootEl.querySelectorAll("[data-abc-drive-compare-select]");
-  const driveCompareStationField = rootEl.querySelector("[data-abc-drive-compare-station-field]");
-  const driveCompareStationInput = rootEl.querySelector("[data-abc-drive-compare-station-input]");
-  const driveCompareStationListbox = rootEl.querySelector("[data-abc-drive-compare-listbox]");
-  const driveCompareFerryField = rootEl.querySelector("[data-abc-drive-compare-ferry-field]");
-  const driveCompareFerryButtons = rootEl.querySelectorAll("[data-abc-drive-compare-ferry-select]");
-  initStationCombobox(driveCompareStationInput, driveCompareStationListbox, render);
-
-  // ---- "Driving to the station" park-and-ride, same BU subsidy as the
-  // main cards: useful for comparing "drive all the way" vs "drive to a
-  // station and ride the rest of the way" per Carl Larson's suggestion.
-  // Bus Pass/Link Pass use MBTA_RAPID_STATIONS via their own station
-  // search (fare doesn't depend on station there, so there's no existing
-  // one to reuse); Commuter Rail reuses driveCompareStationInput, already
-  // resolved for fare purposes. No parking option for Ferry — no station
-  // dataset sourced for it. ----
-  const driveCompareParkingField = rootEl.querySelector("[data-abc-drive-compare-parking-field]");
-  const driveCompareParkingToggle = rootEl.querySelector("[data-abc-drive-compare-parking-toggle]");
-  const driveCompareRapidStationField = rootEl.querySelector("[data-abc-drive-compare-rapid-station-field]");
-  const driveCompareRapidStationInput = rootEl.querySelector("[data-abc-drive-compare-rapid-station-input]");
-  const driveCompareRapidStationListbox = rootEl.querySelector("[data-abc-drive-compare-rapid-listbox]");
-  const driveCompareParkingDaysField = rootEl.querySelector("[data-abc-drive-compare-parking-days-field]");
-  initStationCombobox(driveCompareRapidStationInput, driveCompareRapidStationListbox, render, MBTA_RAPID_STATIONS);
-
-  function currentDriveCompareRapidStationLabel() {
-    return driveCompareRapidStationInput ? driveCompareRapidStationInput.value.trim() : "";
-  }
-
-  function updateDriveCompareFieldVisibility() {
-    if (driveCompareStationField) driveCompareStationField.style.display = driveCompareMode === "rail" ? "block" : "none";
-    if (driveCompareFerryField) driveCompareFerryField.style.display = driveCompareMode === "ferry" ? "block" : "none";
-
-    const isRapidMode = driveCompareMode === "bus" || driveCompareMode === "link";
-    const parkingApplies = driveCompareMode !== "ferry";
-    if (driveCompareParkingField) driveCompareParkingField.style.display = parkingApplies ? "flex" : "none";
-    if (!parkingApplies && driveCompareParking) {
-      driveCompareParking = false;
-      if (driveCompareParkingToggle) driveCompareParkingToggle.checked = false;
-    }
-    if (driveCompareRapidStationField) driveCompareRapidStationField.style.display = isRapidMode && driveCompareParking ? "block" : "none";
-    if (driveCompareParkingDaysField) driveCompareParkingDaysField.style.display = parkingApplies && driveCompareParking ? "block" : "none";
-  }
-
-  if (driveCompareParkingToggle) {
-    driveCompareParkingToggle.addEventListener("change", () => {
-      driveCompareParking = driveCompareParkingToggle.checked;
-      updateDriveCompareFieldVisibility();
-      if (driveCompareParkingDaysStepper) driveCompareParkingDaysStepper.repaint();
-      render();
-    });
-  }
-
-  const driveCompareParkingDaysStepper = initStepper(
-    "data-abc-drive-compare-parking-days-stepper", 1, () => driveCompareParkingDays, (v) => { driveCompareParkingDays = v; }, 0, 7
-  );
-
-  // ---- Bluebikes add-on, same as the main cards ----
-  const driveCompareBluebikesToggle = rootEl.querySelector("[data-abc-drive-compare-bluebikes-toggle]");
-  if (driveCompareBluebikesToggle) {
-    driveCompareBluebikesToggle.addEventListener("change", () => {
-      driveCompareBluebikesAdded = driveCompareBluebikesToggle.checked;
-      render();
-    });
-  }
-
-  driveCompareButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      driveCompareMode = btn.dataset.abcDriveCompareSelect;
-      driveCompareButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      updateDriveCompareFieldVisibility();
-      render();
-    });
-  });
-  // Default compare mode is "link", which should show the parking toggle
-  // right away — without this, it stays hidden (the HTML default) until
-  // someone clicks a compare-mode button once.
-  updateDriveCompareFieldVisibility();
-
-  driveCompareFerryButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      driveCompareFerryRouteId = btn.dataset.abcDriveCompareFerrySelect;
-      driveCompareFerryButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      render();
-    });
-  });
-
   /** Reduced Fare's checkbox sits in its own grid slot beside the "which
    * pass/station" question, left-aligned under the trips stepper above
    * it — same position for Subway & Bus and Commuter Rail alike (the
    * subway-specific nested-under-the-pills placement from an earlier
    * round was dropped in favor of this, for visual consistency between
-   * the two transit modes). Hidden entirely for Drive, same as before. */
+   * the two transit modes). Always visible now, regardless of topMode —
+   * Driving needs it too, to price the pass Card 1 compares against. */
   function updateReducedFarePlacement() {
     if (!reducedFareToggleField) return;
-    if (reducedFareField) reducedFareField.style.display = routeType === "drive" ? "none" : "";
     if (reducedFareHomeMount && reducedFareToggleField.parentElement !== reducedFareHomeMount) {
       reducedFareHomeMount.appendChild(reducedFareToggleField);
     }
-    reducedFareToggleField.classList.toggle("abc-farecalc-toggle-field-rail", routeType !== "drive");
+    reducedFareToggleField.classList.add("abc-farecalc-toggle-field-rail");
   }
 
-  function updateRouteVisibility() {
-    if (subwayTierField) subwayTierField.style.display = routeType === "subway" ? "" : "none";
-    if (railZoneField) railZoneField.style.display = routeType === "rail" ? "" : "none";
-    if (ferryRouteField) ferryRouteField.style.display = routeType === "ferry" ? "" : "none";
-    if (driveFields) driveFields.style.display = routeType === "drive" ? "" : "none";
+  function updateFieldVisibility() {
+    if (driveFields) driveFields.style.display = topMode === "driving" ? "" : "none";
+    if (subwayTierField) subwayTierField.style.display = mode === "subway" ? "" : "none";
+    if (railZoneField) railZoneField.style.display = mode === "rail" ? "" : "none";
+    if (ferryRouteField) ferryRouteField.style.display = mode === "ferry" ? "" : "none";
     updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();
     if (tripsField) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
-        label.textContent = routeType === "drive"
+        label.textContent = topMode === "driving"
           ? "How many days a week do you drive?"
           : "How many round-trips do you take per week?";
       }
     }
-    rootEl.classList.toggle("abc-theme-rail", routeType === "rail");
-    rootEl.classList.toggle("abc-theme-drive", routeType === "drive");
-    rootEl.classList.toggle("abc-theme-ferry", routeType === "ferry");
+    const modeLabel = rootEl.querySelector("[data-abc-mode-label]");
+    if (modeLabel) {
+      modeLabel.textContent = topMode === "driving"
+        ? "Which MBTA pass would you compare against?"
+        : "Which mode do you take?";
+    }
+    // Theme tracks mode (the pass being priced or compared against), not
+    // topMode — Driving while comparing against Commuter Rail should still
+    // pick up the rail accent, same as Pay-Per-Ride does.
+    rootEl.classList.toggle("abc-theme-rail", mode === "rail");
+    rootEl.classList.toggle("abc-theme-ferry", mode === "ferry");
 
-    // Swap the result cards themselves: Pay-Per-Ride/Monthly Pass for
-    // transit routes, the two driving/comparison cards for Drive.
+    // Card 1 (BU Subsidized MBTA Pass) has no mode-card attribute, so it's
+    // always visible. Card 2 swaps between Pay-Per-Ride and Driving.
     rootEl.querySelectorAll('[data-abc-mode-card="transit"]').forEach((el) => {
-      el.style.display = routeType === "drive" ? "none" : "";
+      el.style.display = topMode === "pay-per-ride" ? "" : "none";
     });
     rootEl.querySelectorAll('[data-abc-mode-card="drive"]').forEach((el) => {
-      el.style.display = routeType === "drive" ? "" : "none";
+      el.style.display = topMode === "driving" ? "" : "none";
     });
   }
 
-  routeButtons.forEach((btn) => {
+  topModeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-      routeType = btn.dataset.abcRouteSelect;
-      routeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      // A value valid for transit (round-trips/week, uncapped) can be
-      // invalid the moment Drive is selected (at most 7 days/week) — clamp
+      topMode = btn.dataset.abcTopModeSelect;
+      topModeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      // A value valid for Pay-Per-Ride (round-trips/week, uncapped) can be
+      // invalid the moment Driving is selected (at most 7 days/week) — clamp
       // it down immediately rather than leaving a stale over-the-cap number
       // sitting in the field.
-      if (routeType === "drive" && tripsPerWeek > BU_CONFIG.driveTripsMax) {
+      if (topMode === "driving" && tripsPerWeek > BU_CONFIG.driveTripsMax) {
         tripsPerWeek = BU_CONFIG.driveTripsMax;
       }
+      clampParkingDaysToTrips();
       if (tripsStepper) tripsStepper.repaint();
-      updateRouteVisibility();
+      updateFieldVisibility();
       render();
     });
   });
-  updateRouteVisibility();
+
+  modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      mode = btn.dataset.abcModeSelect;
+      modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateFieldVisibility();
+      render();
+    });
+  });
+  updateFieldVisibility();
 
   // ---- Generic stepper (trips/week, parking days): typed or +/- ----
   // max can be a plain number or a function, so the trips stepper's cap
@@ -1188,8 +1129,9 @@ function buInitCalculator(rootEl) {
   }
 
   const tripsStepper = initStepper(
-    "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek, (v) => { tripsPerWeek = v; }, 0,
-    () => (routeType === "drive" ? BU_CONFIG.driveTripsMax : BU_CONFIG.tripsMax)
+    "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek,
+    (v) => { tripsPerWeek = v; clampParkingDaysToTrips(); }, 0,
+    () => (topMode === "driving" ? BU_CONFIG.driveTripsMax : BU_CONFIG.tripsMax)
   );
 
   /** Rounds one line to a whole dollar, writes it (with an optional "-"
@@ -1211,31 +1153,40 @@ function buInitCalculator(rootEl) {
   function render() {
     updatePromoUI();
     updateBusPilotUI();
-    if (routeType === "drive") renderDrive();
-    else renderEmployee();
+    renderResults();
     scheduleAnalyticsFlush();
   }
 
-  function renderEmployee() {
-    // tripsPerWeek is round-trips/week for every non-Drive route; buCalcAll
-    // (and the Pay-Per-Ride fare math inside it) needs ONE-WAY trips, so it
-    // gets doubled right here, the single place that conversion happens.
+  function renderResults() {
+    // tripsPerWeek is round-trips/week for Pay-Per-Ride and days/week for
+    // Driving; either way, Card 1 (the comparison pass) needs ONE-WAY
+    // trips, so it gets doubled right here, the single place that
+    // conversion happens — "driving N days/week" is treated as "would make
+    // N round trips/week if using transit instead", same conversion the
+    // old Drive-compare card used.
     const oneWayTripsPerWeek = tripsPerWeek * 2;
-    // CR Pay-Per-Ride needs an added subway/bus leg unless this station is
-    // on the Framingham/Worcester Line (see BU_STATIONS' "line: 'fw'" doc
+    // CR needs an added subway/bus leg unless this station is on the
+    // Framingham/Worcester Line (see BU_STATIONS' "line: 'fw'" doc
     // comment) — not relevant for Subway & Bus or Ferry, which have no
-    // transfer-to-campus question to begin with.
-    const currentStation = routeType === "rail" ? buGetStation(currentStationLabel()) : null;
-    const includeSubwayLeg = routeType === "rail" && !!currentStation && currentStation.line !== "fw";
+    // transfer-to-campus question to begin with. Only affects the ride
+    // (Pay-Per-Ride) side of buCalcAll, never the pass side, so it's safe
+    // to always compute regardless of topMode.
+    const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
+    const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
+
+    // ---- Card 1: BU Subsidized MBTA Pass — always computed from the
+    // shared mode/passTier/ferryRouteId picks, regardless of topMode. This
+    // is the comparison pass whether someone's paying per ride on this
+    // exact mode, or driving and sizing up what they'd pay on it instead. ----
     const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare, includeSubwayLeg);
     // Station parking subsidy: BU_STATIONS for Commuter Rail, or
     // MBTA_RAPID_STATIONS for Subway & Bus — same subsidy either way,
-    // just a different dataset depending on route (see
+    // just a different dataset depending on mode (see
     // buCalcStationParkingSubsidy's doc comment).
     let parkingSubsidy = null;
-    if (routeType === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
+    if (mode === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
       parkingSubsidy = buCalcStationParkingSubsidy(currentStation.parkingRate, stationParkingDays);
-    } else if (routeType === "subway" && rapidStationParking) {
+    } else if (mode === "subway" && rapidStationParking) {
       const rapidStation = buGetRapidStation(currentRapidStationLabel());
       if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
     }
@@ -1253,37 +1204,15 @@ function buInitCalculator(rootEl) {
     // that the final line is set from — so what's on screen always adds
     // up exactly, even though none of the underlying math (the 4.33
     // weeks/month conversion, 50% splits, promo percentages) produces
-    // round numbers on its own. "Total monthly cost" also spells out its
-    // own formula inline for Pay-Per-Ride, where that conversion actually
-    // happens; Monthly Pass is just the flat sticker price, no formula
-    // needed there.
+    // round numbers on its own.
 
-    // ---- Pay-Per-Ride card. No BU subsidy here, ever — BU doesn't
-    // subsidize single-ride fares (see buCalcAll's doc comment). ----
-    const rideTotalLabelEl = rootEl.querySelector("[data-abc-ride-total-label]");
-    if (rideTotalLabelEl && result.pass) {
-      const fareDescription = includeSubwayLeg
-        ? `${abcFormatCurrency(result.pass.oneWayFare)} CR + ${abcFormatCurrency(buGetPassOption("linkpass").oneWayFare)} subway`
-        : abcFormatCurrency(result.pass.oneWayFare);
-      rideTotalLabelEl.textContent =
-        `Total monthly cost (${fareDescription}/trip × ${oneWayTripsPerWeek} one-way trip${oneWayTripsPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
-    }
-    let rideRemaining = roundAndShow("[data-abc-ride-total]", result.rideRegularTotal, false);
-    const rideReducedRow = rootEl.querySelector("[data-abc-ride-reduced-row]");
-    if (reducedFare && result.rideReducedFareDiscount > 0.005) {
-      rideRemaining += roundAndShow("[data-abc-ride-reduced-amt]", result.rideReducedFareDiscount, true);
-      rideReducedRow.style.display = "flex";
-    } else {
-      rideReducedRow.style.display = "none";
-    }
-
-    // ---- Monthly Pass card ----
-    // Card title names the actual pass, e.g. "Monthly Local Bus Pass" or
+    // Subtitle names the actual pass, e.g. "Monthly Local Bus Pass" or
     // "Monthly LinkPass (Subway & Bus)" — the latter skips the trailing
-    // "Pass" since LinkPass already has one in its own name.
-    const titleEl = rootEl.querySelector("[data-abc-pass-title]");
-    if (titleEl) {
-      titleEl.textContent = result.pass
+    // "Pass" since LinkPass already has one in its own name. The card's
+    // own h3 is the static "BU Subsidized MBTA Pass" (see index.html).
+    const subtitleEl = rootEl.querySelector("[data-abc-pass-subtitle]");
+    if (subtitleEl) {
+      subtitleEl.textContent = result.pass
         ? (result.pass.label.toLowerCase().includes("pass") ? `Monthly ${result.pass.label}` : `Monthly ${result.pass.label} Pass`)
         : "Monthly Pass";
     }
@@ -1292,7 +1221,7 @@ function buInitCalculator(rootEl) {
     // still see it's billed as Zone 1A.
     const totalLabelEl = rootEl.querySelector("[data-abc-pass-total-label]");
     if (totalLabelEl) {
-      totalLabelEl.textContent = (routeType === "rail" && result.pass) ? `Total monthly cost (${result.pass.label})` : "Total monthly cost";
+      totalLabelEl.textContent = (mode === "rail" && result.pass) ? `Total monthly cost (${result.pass.label})` : "Total monthly cost";
     }
     let passRemaining = roundAndShow("[data-abc-pass-total]", result.passRegularTotal, false);
     const passReducedRow = rootEl.querySelector("[data-abc-pass-reduced-row]");
@@ -1326,75 +1255,187 @@ function buInitCalculator(rootEl) {
       pretaxLine.style.display = "none";
     }
 
-    // ---- MBTA station parking: an ADD-ON to the pass/ride cost (not a
+    // ---- MBTA station parking: an ADD-ON to the pass cost (not a
     // discount on it), only applied when the checkbox is on. BU's 50%
     // parking subsidy requires a BU-subsidized Monthly Pass (confirmed by
-    // Carl Larson, BU Transportation Services, 2026-10), so Pay-Per-Ride
-    // gets the full, unsubsidized parking line while Monthly Pass gets the
-    // full cost plus the subsidy deducted from it, same two-line itemized
-    // shape as everything else. ----
-    const rideParkingRow = rootEl.querySelector("[data-abc-ride-station-parking-row]");
+    // Carl Larson, BU Transportation Services, 2026-10), so the pass gets
+    // the full cost plus the subsidy deducted from it. ----
     const passParkingRow = rootEl.querySelector("[data-abc-pass-station-parking-row]");
     const passParkingSubsidyRow = rootEl.querySelector("[data-abc-pass-station-parking-subsidy-row]");
+    let parkingLabel = "";
     if (parkingSubsidy) {
-      const parkingLabel = `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
-
-      rootEl.querySelector("[data-abc-ride-station-parking-label]").textContent = parkingLabel;
-      rideRemaining += roundAndShow("[data-abc-ride-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
-      if (rideParkingRow) rideParkingRow.style.display = "flex";
-
+      parkingLabel = `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
       rootEl.querySelector("[data-abc-pass-station-parking-label]").textContent = parkingLabel;
       passRemaining += roundAndShow("[data-abc-pass-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
       passRemaining += roundAndShow("[data-abc-pass-station-parking-subsidy-amt]", parkingSubsidy.subsidyAmt, true);
       if (passParkingRow) passParkingRow.style.display = "flex";
       if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "flex";
     } else {
-      if (rideParkingRow) rideParkingRow.style.display = "none";
       if (passParkingRow) passParkingRow.style.display = "none";
       if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "none";
     }
 
-    // ---- Bluebikes membership add-on: MBTA-independent, so the same flat
-    // monthly cost is added to both cards equally (unaffected by BU's
-    // subsidy or pre-tax savings, which only apply to the transit pass). ----
-    const rideBikeRow = rootEl.querySelector("[data-abc-ride-bluebikes-row]");
+    // ---- Bluebikes membership add-on: MBTA-independent flat monthly cost. ----
     const passBikeRow = rootEl.querySelector("[data-abc-pass-bluebikes-row]");
     if (bluebikesAdded) {
-      rideRemaining += roundAndShow("[data-abc-ride-bluebikes-amt]", bluebikesMonthlyCost, false);
       passRemaining += roundAndShow("[data-abc-pass-bluebikes-amt]", bluebikesMonthlyCost, false);
-      if (rideBikeRow) rideBikeRow.style.display = "flex";
       if (passBikeRow) passBikeRow.style.display = "flex";
     } else {
-      if (rideBikeRow) rideBikeRow.style.display = "none";
       if (passBikeRow) passBikeRow.style.display = "none";
     }
 
-    rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
     rootEl.querySelector("[data-abc-pass-final]").textContent = abcFormatCurrencyWhole(passRemaining);
-    // finalCost used below (winner/savings calc) stays on the precise,
-    // unrounded math — only display is rounded, so a photo-finish between
-    // ride and pass still picks the actual cheaper option. Parking and
-    // Bluebikes addons are folded in here too, since they're part of
-    // what's actually on screen for each card.
-    const rideFinalCost = result.rideFinalCost + rideParkingAddon + bluebikesMonthlyCost;
+    // Unrounded, addon-inclusive — same "display rounds, the winner/
+    // savings math underneath doesn't" rule every card in this tool follows.
     const passFinalCost = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
-    const winner = passFinalCost <= rideFinalCost ? "pass" : "ride";
-    const annualSavings = Math.abs(passFinalCost - rideFinalCost) * 12;
-
-    const rideCard = rootEl.querySelector("[data-abc-card-ride]");
     const passCard = rootEl.querySelector("[data-abc-card-pass]");
-    rideCard.classList.toggle("abc-card-winner", winner === "ride");
-    passCard.classList.toggle("abc-card-winner", winner === "pass");
-    rideCard.querySelector("[data-abc-badge]").style.visibility = winner === "ride" ? "visible" : "hidden";
-    passCard.querySelector("[data-abc-badge]").style.visibility = winner === "pass" ? "visible" : "hidden";
 
-    const winnerCard = winner === "ride" ? rideCard : passCard;
-    const loserCard = winner === "ride" ? passCard : rideCard;
-    const otherOptionLabel = winner === "ride" ? "purchasing a monthly pass" : "paying per ride";
-    winnerCard.querySelector("[data-abc-savings-line]").style.display = annualSavings > 0.5 ? "block" : "none";
-    winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(annualSavings));
-    winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
-    loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+    // ---- Card 2: Pay-Per-Ride (same mode as Card 1) when topMode is
+    // "pay-per-ride", or Driving to Campus when topMode is "driving". ----
+    let card2FinalCost, card2Card, card2WinLabel, card1WinLabel;
+
+    if (topMode === "pay-per-ride") {
+      // No BU subsidy here, ever — BU doesn't subsidize single-ride fares
+      // (see buCalcAll's doc comment).
+      const rideTotalLabelEl = rootEl.querySelector("[data-abc-ride-total-label]");
+      if (rideTotalLabelEl && result.pass) {
+        const fareDescription = includeSubwayLeg
+          ? `${abcFormatCurrency(result.pass.oneWayFare)} CR + ${abcFormatCurrency(buGetPassOption("linkpass").oneWayFare)} subway`
+          : abcFormatCurrency(result.pass.oneWayFare);
+        rideTotalLabelEl.textContent =
+          `Total monthly cost (${fareDescription}/trip × ${oneWayTripsPerWeek} one-way trip${oneWayTripsPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+      }
+      let rideRemaining = roundAndShow("[data-abc-ride-total]", result.rideRegularTotal, false);
+      const rideReducedRow = rootEl.querySelector("[data-abc-ride-reduced-row]");
+      if (reducedFare && result.rideReducedFareDiscount > 0.005) {
+        rideRemaining += roundAndShow("[data-abc-ride-reduced-amt]", result.rideReducedFareDiscount, true);
+        rideReducedRow.style.display = "flex";
+      } else {
+        rideReducedRow.style.display = "none";
+      }
+      const rideParkingRow = rootEl.querySelector("[data-abc-ride-station-parking-row]");
+      if (parkingSubsidy) {
+        rootEl.querySelector("[data-abc-ride-station-parking-label]").textContent = parkingLabel;
+        rideRemaining += roundAndShow("[data-abc-ride-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
+        if (rideParkingRow) rideParkingRow.style.display = "flex";
+      } else if (rideParkingRow) {
+        rideParkingRow.style.display = "none";
+      }
+      const rideBikeRow = rootEl.querySelector("[data-abc-ride-bluebikes-row]");
+      if (bluebikesAdded) {
+        rideRemaining += roundAndShow("[data-abc-ride-bluebikes-amt]", bluebikesMonthlyCost, false);
+        if (rideBikeRow) rideBikeRow.style.display = "flex";
+      } else if (rideBikeRow) {
+        rideBikeRow.style.display = "none";
+      }
+      rootEl.querySelector("[data-abc-ride-final]").textContent = abcFormatCurrencyWhole(rideRemaining);
+
+      card2FinalCost = result.rideFinalCost + rideParkingAddon + bluebikesMonthlyCost;
+      card2Card = rootEl.querySelector("[data-abc-card-ride]");
+      card2WinLabel = "purchasing a monthly pass";
+      card1WinLabel = "paying per ride";
+    } else {
+      let selection;
+      if (campus === "charles-river") {
+        const zone = currentCrcZone();
+        selection = zone ? { label: `Charles River Campus, ${zone.label.replace(/ \(.*\)$/, "")}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
+      } else {
+        const location = currentMedicalLocation();
+        if (location) {
+          const useDaily = medicalDaily && location.daily;
+          const rateInfo = useDaily ? location.daily : location.monthly;
+          selection = { label: `Medical Campus, ${location.label}`, rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
+        }
+      }
+
+      const parking = buCalcParking(selection, tripsPerWeek);
+      // On-campus parking isn't BU-subsidized, but the monthly permits
+      // (and Crosstown's monthly option) ARE pre-tax, same payroll-
+      // deduction mechanism Monthly Pass benefits from — per Carl
+      // Larson's explicit ask, parking gets the same pre-tax treatment
+      // transit does, so the two sides of this comparison stay apples-
+      // to-apples. Crosstown's daily rate is post-tax (parking.preTax is
+      // false there), so no pre-tax line shows for that specific option.
+      const parkingPreTaxSavings = parking && parking.preTax ? parking.monthlyCost * (BU_CONFIG.preTaxSavingsPct / 100) : 0;
+
+      const labelEl = rootEl.querySelector("[data-abc-drive-label]");
+      const contextNoteEl = rootEl.querySelector("[data-abc-drive-context-note]");
+      const rateLabelEl = rootEl.querySelector("[data-abc-drive-rate-label]");
+      if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
+
+      // Context bullets: pre-tax/post-tax and the weekend-rate note (when
+      // it applies) are two distinct facts, each its own bullet rather
+      // than one run-on paragraph — easier to scan than undifferentiated
+      // gray text.
+      if (contextNoteEl && parking) {
+        contextNoteEl.innerHTML = "";
+        const notes = [
+          parking.preTax
+            ? "Pre-tax: deducted from your paycheck before taxes are withheld."
+            : "Post-tax: paid after taxes are withheld.",
+        ];
+        const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
+        if (showWeekend) notes.push(`Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`);
+        notes.forEach((text) => {
+          const li = document.createElement("li");
+          li.textContent = text;
+          contextNoteEl.appendChild(li);
+        });
+      }
+
+      // Itemized rate line, then (when pre-tax) the savings deduction,
+      // same running-remainder waterfall every other card in this tool
+      // uses, so the final bold number always equals exactly what's
+      // printed above it.
+      let driveRemaining = 0;
+      if (rateLabelEl && parking) {
+        if (parking.isFlat) {
+          rateLabelEl.textContent = "Monthly permit rate";
+        } else {
+          rateLabelEl.textContent = `Daily rate (${abcFormatCurrency(parking.rate)}/day × ${parking.daysPerWeek} day${parking.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+        }
+        driveRemaining += roundAndShow("[data-abc-drive-rate-amt]", parking.monthlyCost, false);
+      }
+      const drivePretaxRow = rootEl.querySelector("[data-abc-drive-pretax-row]");
+      if (parking && parking.preTax && parkingPreTaxSavings > 0.5) {
+        driveRemaining += roundAndShow("[data-abc-drive-pretax-amt]", parkingPreTaxSavings, true);
+        drivePretaxRow.style.display = "flex";
+      } else {
+        drivePretaxRow.style.display = "none";
+      }
+      rootEl.querySelector("[data-abc-drive-total]").textContent = abcFormatCurrencyWhole(driveRemaining);
+
+      const parkingCost = parking ? parking.monthlyCost : 0;
+      card2FinalCost = parkingCost - parkingPreTaxSavings;
+      card2Card = rootEl.querySelector('[data-abc-mode-card="drive"]');
+      card2WinLabel = {
+        subway: passTier === "local-bus" ? "taking the bus" : "taking Subway & Bus",
+        rail: "taking Commuter Rail",
+        ferry: "taking the ferry",
+      }[mode];
+      card1WinLabel = "driving";
+    }
+
+    // ---- Shared winner/savings highlight between Card 1 and Card 2.
+    // finalCost on both sides stays on the precise, unrounded math — only
+    // display is rounded, so a photo-finish still picks the actual
+    // cheaper option. ----
+    if (passCard && card2Card) {
+      const passWins = passFinalCost <= card2FinalCost;
+      passCard.classList.toggle("abc-card-winner", passWins);
+      card2Card.classList.toggle("abc-card-winner", !passWins);
+      passCard.querySelector("[data-abc-badge]").style.visibility = passWins ? "visible" : "hidden";
+      card2Card.querySelector("[data-abc-badge]").style.visibility = !passWins ? "visible" : "hidden";
+
+      const winnerCard = passWins ? passCard : card2Card;
+      const loserCard = passWins ? card2Card : passCard;
+      const diff = Math.abs(passFinalCost - card2FinalCost);
+      const otherOptionLabel = passWins ? card1WinLabel : card2WinLabel;
+      winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
+      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
+      winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
+      loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+    }
   }
 
   function currentCrcZone() {
@@ -1404,222 +1445,6 @@ function buInitCalculator(rootEl) {
     return BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
   }
 
-  function renderDrive() {
-    let selection;
-    if (campus === "charles-river") {
-      const zone = currentCrcZone();
-      selection = zone ? { label: `Charles River Campus, ${zone.label.replace(/ \(.*\)$/, "")}`, rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax, weekendRate: zone.weekendRate } : null;
-    } else {
-      const location = currentMedicalLocation();
-      if (location) {
-        const useDaily = medicalDaily && location.daily;
-        const rateInfo = useDaily ? location.daily : location.monthly;
-        selection = { label: `Medical Campus, ${location.label}`, rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
-      }
-    }
-
-    const parking = buCalcParking(selection, tripsPerWeek);
-    // On-campus parking isn't BU-subsidized, but the monthly permits (and
-    // Crosstown's monthly option) ARE pre-tax, same payroll-deduction
-    // mechanism Monthly Pass benefits from — per Carl Larson's explicit
-    // ask, parking gets the same pre-tax treatment transit does, so the
-    // two sides of this comparison stay apples-to-apples. Crosstown's
-    // daily rate is post-tax (parking.preTax is false there), so no
-    // pre-tax line shows for that specific option.
-    const parkingPreTaxSavings = parking && parking.preTax ? parking.monthlyCost * (BU_CONFIG.preTaxSavingsPct / 100) : 0;
-
-    // Reference card: what transit would cost at the same frequency, so
-    // driving and transit sit side by side as asked. The in-card toggle
-    // swaps which pass this compares against — Bus Pass and Link Pass
-    // resolve directly, Commuter Rail and Ferry resolve from their own
-    // inline station/route pickers — then renders the exact same itemized
-    // waterfall (total, Reduced Fare, promo, BU subsidy, final) the main
-    // Pay-Per-Ride/Monthly Pass cards use, via buCalcAll().
-    let comparePassId, compareTitle, compareStation;
-    if (driveCompareMode === "bus") {
-      comparePassId = "local-bus";
-      compareTitle = "Bus Pass Instead";
-    } else if (driveCompareMode === "rail") {
-      compareStation = driveCompareStationInput ? buGetStation(driveCompareStationInput.value.trim()) : null;
-      comparePassId = compareStation ? compareStation.zoneId : "";
-      compareTitle = "Commuter Rail Instead";
-    } else if (driveCompareMode === "ferry") {
-      comparePassId = driveCompareFerryRouteId;
-      compareTitle = "Ferry Instead";
-    } else {
-      comparePassId = "linkpass";
-      compareTitle = "Link Pass Instead";
-    }
-    // driving days -> one-way transit-equivalent trips, same conversion
-    // the main cards use for their round-trips/week question.
-    const compareTrips = tripsPerWeek * 2;
-    const compareResult = buCalcAll(comparePassId, compareTrips, reducedFare);
-    const parkingCost = parking ? parking.monthlyCost : 0;
-    const parkingEffectiveCost = parkingCost - parkingPreTaxSavings;
-
-    const labelEl = rootEl.querySelector("[data-abc-drive-label]");
-    const contextNoteEl = rootEl.querySelector("[data-abc-drive-context-note]");
-    const rateLabelEl = rootEl.querySelector("[data-abc-drive-rate-label]");
-    if (labelEl) labelEl.textContent = parking ? parking.label : "Driving to Campus";
-
-    // Context bullets: pre-tax/post-tax and the weekend-rate note (when it
-    // applies) are two distinct facts, each its own bullet rather than one
-    // run-on paragraph — easier to scan than undifferentiated gray text.
-    if (contextNoteEl && parking) {
-      contextNoteEl.innerHTML = "";
-      const notes = [
-        parking.preTax
-          ? "Pre-tax: deducted from your paycheck before taxes are withheld."
-          : "Post-tax: paid after taxes are withheld.",
-      ];
-      const showWeekend = campus === "charles-river" && selection && selection.weekendRate != null && selection.weekendRate !== selection.rate;
-      if (showWeekend) notes.push(`Weekend rate is lower (${abcFormatCurrency(selection.weekendRate)}/day); this estimate uses the weekday rate.`);
-      notes.forEach((text) => {
-        const li = document.createElement("li");
-        li.textContent = text;
-        contextNoteEl.appendChild(li);
-      });
-    }
-
-    // Itemized rate line, then (when pre-tax) the savings deduction, same
-    // running-remainder waterfall every other card in this tool uses, so
-    // the final bold number always equals exactly what's printed above it.
-    let driveRemaining = 0;
-    if (rateLabelEl && parking) {
-      if (parking.isFlat) {
-        rateLabelEl.textContent = "Monthly permit rate";
-      } else {
-        rateLabelEl.textContent = `Daily rate (${abcFormatCurrency(parking.rate)}/day × ${parking.daysPerWeek} day${parking.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
-      }
-      driveRemaining += roundAndShow("[data-abc-drive-rate-amt]", parking.monthlyCost, false);
-    }
-    const drivePretaxRow = rootEl.querySelector("[data-abc-drive-pretax-row]");
-    if (parking && parking.preTax && parkingPreTaxSavings > 0.5) {
-      driveRemaining += roundAndShow("[data-abc-drive-pretax-amt]", parkingPreTaxSavings, true);
-      drivePretaxRow.style.display = "flex";
-    } else {
-      drivePretaxRow.style.display = "none";
-    }
-    rootEl.querySelector("[data-abc-drive-total]").textContent = abcFormatCurrencyWhole(driveRemaining);
-
-    const compareTitleEl = rootEl.querySelector("[data-abc-drive-compare-title]");
-    if (compareTitleEl) compareTitleEl.textContent = compareTitle;
-
-    const compareTotalLabelEl = rootEl.querySelector("[data-abc-drive-compare-total-label]");
-    if (compareTotalLabelEl) {
-      compareTotalLabelEl.textContent = (driveCompareMode === "rail" || driveCompareMode === "ferry") && compareResult.pass
-        ? `Total monthly cost (${compareResult.pass.label})`
-        : "Total monthly cost";
-    }
-    let compareRemaining = roundAndShow("[data-abc-drive-compare-total]", compareResult.passRegularTotal, false);
-    const compareReducedRow = rootEl.querySelector("[data-abc-drive-compare-reduced-row]");
-    if (reducedFare && compareResult.reducedFareDiscount > 0.005) {
-      compareRemaining += roundAndShow("[data-abc-drive-compare-reduced-amt]", compareResult.reducedFareDiscount, true);
-      compareReducedRow.style.display = "flex";
-    } else {
-      compareReducedRow.style.display = "none";
-    }
-    const comparePromoRow = rootEl.querySelector("[data-abc-drive-compare-promo-row]");
-    if (compareResult.promoApplies) {
-      const promoAmt = compareResult.promoOriginalPrice - compareResult.passBreakdown.total;
-      rootEl.querySelector("[data-abc-drive-compare-promo-label]").textContent = `Commuter Rail promo (${BU_CONFIG.promo.discountPct}%)`;
-      compareRemaining += roundAndShow("[data-abc-drive-compare-promo-amt]", promoAmt, true);
-      comparePromoRow.style.display = "flex";
-    } else {
-      comparePromoRow.style.display = "none";
-    }
-    compareRemaining += roundAndShow("[data-abc-drive-compare-subsidy-amt]", compareResult.passBreakdown.subsidyAmt, true);
-    const comparePretaxRow = rootEl.querySelector("[data-abc-drive-compare-pretax-row]");
-    if (compareResult.preTaxSavingsAmt > 0.5) {
-      compareRemaining += roundAndShow("[data-abc-drive-compare-pretax-amt]", compareResult.preTaxSavingsAmt, true);
-      comparePretaxRow.style.display = "flex";
-    } else {
-      comparePretaxRow.style.display = "none";
-    }
-
-    // ---- "Drive to the station" park-and-ride: this compare card always
-    // represents a Monthly Pass scenario, so it gets the full BU subsidy
-    // treatment (full cost + subsidy deducted), same as the main Monthly
-    // Pass card. Rate source depends on mode — rail reuses compareStation
-    // (already resolved above), bus/link resolve their own rapid-transit
-    // station search. ----
-    let compareParkingRate = null;
-    if (driveCompareParking) {
-      if (driveCompareMode === "rail" && compareStation && compareStation.parkingRate != null) {
-        compareParkingRate = compareStation.parkingRate;
-      } else if (driveCompareMode === "bus" || driveCompareMode === "link") {
-        const rapidStation = buGetRapidStation(currentDriveCompareRapidStationLabel());
-        if (rapidStation) compareParkingRate = rapidStation.parkingRate;
-      }
-    }
-    const compareParkingSubsidy = compareParkingRate != null ? buCalcStationParkingSubsidy(compareParkingRate, driveCompareParkingDays) : null;
-    const compareParkingRow = rootEl.querySelector("[data-abc-drive-compare-parking-row]");
-    const compareParkingSubsidyRow = rootEl.querySelector("[data-abc-drive-compare-parking-subsidy-row]");
-    if (compareParkingSubsidy) {
-      rootEl.querySelector("[data-abc-drive-compare-parking-label]").textContent =
-        `MBTA station parking (${abcFormatCurrency(compareParkingSubsidy.rate)}/day × ${compareParkingSubsidy.daysPerWeek} day${compareParkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
-      compareRemaining += roundAndShow("[data-abc-drive-compare-parking-amt]", compareParkingSubsidy.fullMonthlyCost, false);
-      compareRemaining += roundAndShow("[data-abc-drive-compare-parking-subsidy-amt]", compareParkingSubsidy.subsidyAmt, true);
-      compareParkingRow.style.display = "flex";
-      compareParkingSubsidyRow.style.display = "flex";
-    } else {
-      compareParkingRow.style.display = "none";
-      compareParkingSubsidyRow.style.display = "none";
-    }
-
-    // ---- Bluebikes add-on, same flat line the main cards use ----
-    const compareBluebikesRow = rootEl.querySelector("[data-abc-drive-compare-bluebikes-row]");
-    if (driveCompareBluebikesAdded) {
-      compareRemaining += roundAndShow("[data-abc-drive-compare-bluebikes-amt]", BU_CONFIG.bluebikesAnnualPrice / 12, false);
-      compareBluebikesRow.style.display = "flex";
-    } else {
-      compareBluebikesRow.style.display = "none";
-    }
-
-    rootEl.querySelector("[data-abc-drive-compare-final]").textContent = abcFormatCurrencyWhole(compareRemaining);
-    // compareCost stays on the precise, unrounded math for the winner/
-    // savings comparison below, same "display rounds, math doesn't" rule
-    // the main cards follow. Pre-tax-adjusted on both sides (parking and
-    // the compared pass alike), per Carl Larson's explicit request that
-    // this comparison stay apples-to-apples. Station parking (net of its
-    // own subsidy) and Bluebikes are also folded in here, since both are
-    // already part of what compareRemaining shows on screen — leaving
-    // them out made a cheaper-looking card lose, and made the park-and-
-    // ride days stepper have no effect on "you save $X a year".
-    const compareParkingNetCost = compareParkingSubsidy ? compareParkingSubsidy.netCost : 0;
-    const compareBluebikesCost = driveCompareBluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
-    const compareCost = compareResult.passEffectiveCost + compareParkingNetCost + compareBluebikesCost;
-
-    // Same winner highlight the Pay-Per-Ride/Monthly Pass cards use,
-    // driven by whichever option is actually cheaper at the chosen
-    // frequency.
-    const driveModeCards = rootEl.querySelectorAll('[data-abc-mode-card="drive"]');
-    const driveCard = driveModeCards[0];
-    const compareCard = driveModeCards[1];
-    if (driveCard && compareCard) {
-      const driveWins = parkingEffectiveCost <= compareCost;
-      driveCard.classList.toggle("abc-card-winner", driveWins);
-      compareCard.classList.toggle("abc-card-winner", !driveWins);
-      driveCard.querySelector("[data-abc-badge]").style.visibility = driveWins ? "visible" : "hidden";
-      compareCard.querySelector("[data-abc-badge]").style.visibility = !driveWins ? "visible" : "hidden";
-
-      const winnerCard = driveWins ? driveCard : compareCard;
-      const loserCard = driveWins ? compareCard : driveCard;
-      const diff = Math.abs(parkingEffectiveCost - compareCost);
-      winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
-      winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
-      loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
-
-      const driveCompareVsText = {
-        bus: "taking the bus",
-        link: "taking Subway & Bus",
-        rail: "taking Commuter Rail",
-        ferry: "taking the ferry",
-      }[driveCompareMode];
-      const driveSavingsVsEl = driveCard.querySelector("[data-abc-savings-vs]");
-      if (driveSavingsVsEl) driveSavingsVsEl.textContent = driveCompareVsText;
-    }
-  }
 
   // ---- Analytics: hardcoded to Boston University, no visible org field.
   // Session starts on first render (debounced) rather than on typing an
@@ -1630,14 +1455,14 @@ function buInitCalculator(rootEl) {
   let analyticsTimer = null;
 
   function currentTransitLabel() {
-    if (routeType === "subway") {
+    if (topMode === "driving") {
+      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalLocationId}${medicalDaily ? " (daily)" : ""}`;
+    }
+    if (mode === "subway") {
       const opt = buGetPassOption(passTier);
       return opt ? opt.label : "Subway & Bus";
     }
-    if (routeType === "drive") {
-      return campus === "charles-river" ? `Drive: Charles River ${crcZoneId}` : `Drive: Medical ${medicalLocationId}${medicalDaily ? " (daily)" : ""}`;
-    }
-    if (routeType === "ferry") {
+    if (mode === "ferry") {
       const opt = buGetPassOption(ferryRouteId);
       return "Ferry: " + (opt ? opt.label : "");
     }

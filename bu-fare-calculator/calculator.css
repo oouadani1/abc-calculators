@@ -67,12 +67,6 @@
   --abc-farecalc-accent-text: #fff;
 }
 
-.abc-farecalc.abc-theme-drive {
-  --abc-farecalc-accent: var(--bu-mint-bright);
-  --abc-farecalc-accent-tint: var(--bu-mint-tint);
-  --abc-farecalc-accent-text: var(--bu-ink);
-}
-
 /* Ferry blue (#5DA8EA) is too light for white text at the contrast ratios
    the purple/mint accents use (2.5:1 — fails WCAG AA even at large text
    sizes), so this theme uses dark ink text instead, same treatment as the
@@ -156,25 +150,46 @@
   letter-spacing: -0.02em;
 }
 
-/* ---- Question grid: the four questions pair up into a compact,
-   table-like 2-column layout instead of stacking one after another —
-   the goal is seeing the whole tool without scrolling. Falls back to a
-   single column automatically (via the container query) once the
-   widget is rendered narrow, same mechanism as the narrow-layout rules
-   further down this file. ---- */
-/* ---- Stable quadrant layout: every question has a fixed, named slot
-   regardless of which route/mode is currently showing content there, so
-   switching between Subway & Bus / Commuter Rail / Personal Car never
-   reshuffles anything — only the content WITHIN a slot changes. Narrow
-   (single-column) order: route, trips/count, promo, subquestion, reduced.
+/* ---- Question grid: pairs up into a compact, table-like 2-column
+   layout instead of stacking one after another — the goal is seeing the
+   whole tool without scrolling. Falls back to a single column
+   automatically (via the container query) once the widget is rendered
+   narrow, same mechanism as the narrow-layout rules further down this
+   file. ---- */
+/* ---- Carl Larson's whiteboard restructure (2026-11): Step 1
+   (topmode: Pay Per Ride vs Driving) replaces the old 4-way route
+   picker as the entry point; Step 2 (mode: Subway & Bus / Commuter
+   Rail / Ferry) is answered either way, since it determines Card 1 (the
+   BU-subsidized pass) regardless of topMode, and also the Pay-Per-Ride
+   fare when that's the branch taken. "driving" (Step 1a/1b, Charles
+   River/Medical campus + zone/garage) only ever shows when topMode is
+   Driving. "subquestion" holds whichever of subway-tier / rail-zone /
+   ferry-route applies to Step 2's answer (Step 3) — only one is ever
+   visible at a time. "parkride" (Step 4) is the shared park-and-ride
+   question, keyed off `mode` the same way. "reduced" (Steps 5/6: Reduced
+   Fare + Bluebikes) is always visible now — Driving needs it too, to
+   price the pass Card 1 compares against.
+   Narrow (single-column) order matches the whiteboard's own numbering:
+   topmode, driving, freq, mode, promo, subquestion, parkride, reduced.
    Wide (2-column) order:
-     route        | trips/count
+     topmode      | freq
+     driving      | driving      (full width, Driving only)
+     mode         | mode         (full width)
      promo        | promo        (full width, Commuter Rail only)
-     subquestion  | reduced
-   "subquestion" holds whichever of subway-tier / rail-zone / drive-fields
-   applies to the current route — only one is ever visible at a time.
-   "reduced" (Reduced Fare) is employee-mode only; when it's hidden the
-   row simply collapses, it doesn't leave a gap.
+     subquestion  | parkride
+     reduced      | reduced      (full width)
+   "driving" and "mode" are each full width, not paired with a sibling,
+   specifically so that hiding "driving" (the common case — Pay-Per-Ride
+   is the default) collapses its row to zero height instead of leaving
+   a gap the height of whatever it would have shared a row with; a
+   hidden area sharing a row with an always-visible one does NOT
+   collapse, since the row's height still follows its visible sibling.
+   "subquestion" is always visible (always exactly one of subway-tier/
+   rail-zone/ferry-route), so pairing it with "parkride" only costs a
+   little empty space on Ferry (no park-and-ride data for it yet), not
+   on every Pay-Per-Ride load — an acceptable, narrower trade-off.
+   "promo" itself collapses to zero height outside the CR discount
+   window, same as before this restructure.
 
    What "a trip" includes used to live here as a "hint" row/tooltip —
    dropped entirely in favor of folding it into the subtitle at the top
@@ -186,10 +201,13 @@
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
-    "route"
+    "topmode"
+    "driving"
     "freq"
+    "mode"
     "promo"
     "subquestion"
+    "parkride"
     "reduced";
   column-gap: var(--abc-space-xl);
   row-gap: var(--abc-space-md);
@@ -201,19 +219,24 @@
   .abc-farecalc-grid {
     grid-template-columns: 1fr 1fr;
     grid-template-areas:
-      "route freq"
+      "topmode freq"
+      "driving driving"
+      "mode mode"
       "promo promo"
-      "subquestion reduced";
+      "subquestion parkride"
+      "reduced reduced";
   }
 }
 
-[data-abc-route-field] { grid-area: route; }
+[data-abc-top-mode-field] { grid-area: topmode; }
+[data-abc-drive-fields] { grid-area: driving; }
 [data-abc-trips-field] { grid-area: freq; }
+[data-abc-mode-field] { grid-area: mode; }
 .abc-farecalc-promo-callout { grid-area: promo; }
 [data-abc-subway-tier-field],
 [data-abc-rail-zone-field],
-[data-abc-ferry-route-field],
-[data-abc-drive-fields] { grid-area: subquestion; }
+[data-abc-ferry-route-field] { grid-area: subquestion; }
+[data-abc-park-ride-field] { grid-area: parkride; }
 [data-abc-reduced-fare-field] { grid-area: reduced; }
 
 .abc-farecalc-field-group {
@@ -410,12 +433,11 @@
   color: var(--bu-ink);
 }
 
-/* Ferry route sub-pickers (main question + Drive's compare card) get the
-   same ferry blue as the route button itself, so the whole ferry "module"
-   reads as one color, the same way Commuter Rail's purple carries through
-   its own controls via the theme variables above. */
-[data-abc-ferry-route-select].abc-active,
-[data-abc-drive-compare-ferry-select].abc-active {
+/* Ferry route sub-picker gets the same ferry blue as the route button
+   itself, so the whole ferry "module" reads as one color, the same way
+   Commuter Rail's purple carries through its own controls via the theme
+   variables above. */
+[data-abc-ferry-route-select].abc-active {
   background: var(--mbta-ferry-blue);
   border-color: var(--mbta-ferry-blue);
   color: var(--bu-ink);
@@ -657,6 +679,22 @@
   color: var(--abc-navy-deep);
 }
 
+/* Card 1's h3 is the static "BU Subsidized MBTA Pass" (the pitch this
+   restructure is built around); this subtitle names the specific
+   product underneath it — "Monthly LinkPass (Subway + Bus)", "Zone 2",
+   a ferry route — the same text the h3 itself used to carry before
+   Carl Larson's whiteboard restructure (2026-11) split card framing
+   from product naming. Empty and collapses (no margin) if unset. */
+.abc-farecalc-card-subtitle {
+  margin: -4px 0 10px;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-card-subtitle:empty {
+  margin: 0;
+}
+
 .abc-farecalc-line {
   display: flex;
   justify-content: space-between;
@@ -846,7 +884,7 @@
    own rule above. One rule covers Subway & Bus / Drive route pills, the
    pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
    there's a single color to change later rather than five. ---- */
-.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]) {
+.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]) {
   background: var(--bu-mint-bright);
   border-color: var(--bu-mint-bright);
   color: var(--bu-ink);
@@ -857,7 +895,7 @@
     animation: abc-farecalc-line-swipe-bu 0.9s cubic-bezier(0.4, 0, 0.2, 1) forwards;
     color: var(--bu-ink);
   }
-  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):not([data-abc-drive-compare-ferry-select]):hover {
+  .abc-farecalc .abc-choice-button:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]):hover {
     border-color: var(--bu-mint-bright);
   }
 }
@@ -1006,30 +1044,6 @@
   margin-top: var(--abc-space-sm);
 }
 
-/* Drive mode's comparison card: a smaller-scale Reduced Fare toggle for
-   inside a card, where the full-size version (sized for top-level
-   quadrant questions) would read as oversized next to the card's already
-   compact line items. Same checked/unchecked mechanics, just smaller. */
-.abc-farecalc-toggle-field-compact {
-  margin: 0 0 var(--abc-space-md);
-}
-
-.abc-farecalc-toggle-field-compact label.abc-farecalc-toggle-label {
-  font-size: var(--abc-font-size-sm);
-  gap: 8px;
-}
-
-.abc-farecalc-toggle-field-compact .abc-farecalc-toggle-box {
-  width: 18px;
-  height: 18px;
-  border-width: 2px;
-}
-
-.abc-farecalc-toggle-field-compact .abc-farecalc-toggle-box::after {
-  width: 9px;
-  height: 9px;
-}
-
 /* label.abc-farecalc-toggle-label (tag+class) rather than a bare class,
    so this reliably beats the generic .abc-field label rule (also a
    tag+class selector, but declared later in base.css) regardless of
@@ -1099,17 +1113,6 @@ label.abc-farecalc-toggle-label {
   font-weight: 700;
 }
 
-/* ---- Drive card's in-card "compare against" toggle: a small pill pair
-   so the comparison card can swap between Subway & Bus and Commuter Rail
-   without adding a third card or moving anything else on the page. ---- */
-.abc-farecalc-drive-compare-toggle {
-  margin: var(--abc-space-sm) 0 var(--abc-space-md);
-}
-
-.abc-farecalc-drive-compare-station {
-  margin-bottom: var(--abc-space-md);
-}
-
 /* Station parking's own direct day question — decoupled from the main
    trips/week number entirely (no more inferring "days" by dividing an
    intentionally unbounded ride count), same pattern Drive mode already
@@ -1119,7 +1122,7 @@ label.abc-farecalc-toggle-label {
   margin-bottom: var(--abc-space-md);
 }
 
-.abc-farecalc-drive-compare-station-label {
+.abc-farecalc-field-sublabel {
   display: block;
   font-size: var(--abc-font-size-sm);
   font-weight: 600;
