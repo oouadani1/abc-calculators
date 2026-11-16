@@ -642,6 +642,23 @@ function buInitCalculator(rootEl) {
   let rapidStationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
+  // ---- True step-by-step reveal (2026-11, "still too much to take in at
+  // once" follow-up): button-grid steps all start on a pre-picked default
+  // (so there's always something to look at), but that default no longer
+  // counts as "answered" for the purpose of unlocking the NEXT step — the
+  // user has to actually click a button in a step (even re-clicking the
+  // one that's already active) before anything below it appears. Once
+  // true, these never reset back to false; switching an earlier answer
+  // doesn't re-hide already-unlocked steps, it only updates their content.
+  // Non-button steps (steppers, checkboxes, the CR station combobox) need
+  // no separate flag — becoming visible IS being answered for those, since
+  // an unchecked box or an empty field is already a legitimate, deliberate
+  // state, not a competing default the way a button grid's highlight is. ----
+  let topModeConfirmed = false;
+  let modeConfirmed = false;
+  let subwayTierConfirmed = false;
+  let ferryRouteConfirmed = false;
+
   /** Sets an element's display, and — if it's newly becoming visible
    * (was hidden a moment ago, now shown) — plays a short fade/slide-in
    * animation once via the .abc-farecalc-reveal class (see
@@ -670,6 +687,7 @@ function buInitCalculator(rootEl) {
 
   const topModeButtons = rootEl.querySelectorAll("[data-abc-top-mode-select]");
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
+  const modeField = rootEl.querySelector("[data-abc-mode-field]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
   const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
@@ -748,7 +766,9 @@ function buInitCalculator(rootEl) {
   ferryRouteButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       ferryRouteId = btn.dataset.abcFerryRouteSelect;
+      ferryRouteConfirmed = true;
       ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateFieldVisibility();
       render();
     });
   });
@@ -875,7 +895,7 @@ function buInitCalculator(rootEl) {
   // combobox above. ----
   const stationInput = rootEl.querySelector("[data-abc-station-input]");
   const stationListbox = rootEl.querySelector("[data-abc-station-listbox]");
-  initStationCombobox(stationInput, stationListbox, () => { updateStationParkingFieldVisibility(); render(); });
+  initStationCombobox(stationInput, stationListbox, () => { updateFieldVisibility(); render(); });
 
   function currentStationLabel() {
     return stationInput ? stationInput.value.trim() : "";
@@ -948,7 +968,7 @@ function buInitCalculator(rootEl) {
 
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
-    const show = mode === "subway";
+    const show = mode === "subway" && subwayTierConfirmed;
     setStepVisible(rapidStationParkingField, show, "flex");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
@@ -1010,7 +1030,9 @@ function buInitCalculator(rootEl) {
   tierButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       passTier = btn.dataset.abcPassTierSelect;
+      subwayTierConfirmed = true;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateFieldVisibility();
       render();
     });
   });
@@ -1104,11 +1126,33 @@ function buInitCalculator(rootEl) {
     reducedFareToggleField.classList.add("abc-farecalc-toggle-field-rail");
   }
 
+  /** Whether Step 3 (the mode's own sub-choice) has been answered.
+   * Subway/Ferry are button grids with a pre-picked default, so they
+   * need their own explicit "was this actually clicked" flag — a
+   * Commuter Rail station has no default at all, so simply having
+   * typed a real one already counts, no separate flag needed. */
+  function subChoiceConfirmed() {
+    if (mode === "subway") return subwayTierConfirmed;
+    if (mode === "ferry") return ferryRouteConfirmed;
+    return !!buGetStation(currentStationLabel());
+  }
+
   function updateFieldVisibility() {
-    setStepVisible(driveFields, topMode === "driving");
-    setStepVisible(subwayTierField, mode === "subway");
-    setStepVisible(railZoneField, mode === "rail");
-    setStepVisible(ferryRouteField, mode === "ferry");
+    // ---- The reveal chain: each step stays hidden until the button-
+    // grid step before it has been explicitly clicked at least once.
+    // Non-button steps (steppers, checkboxes, the CR combobox) cascade
+    // through immediately once unlocked — see subChoiceConfirmed()'s
+    // doc comment for why those don't need their own click. ----
+    setStepVisible(driveFields, topModeConfirmed && topMode === "driving");
+    setStepVisible(tripsField, topModeConfirmed, "");
+    setStepVisible(modeField, topModeConfirmed, "");
+
+    const choiceMade = subChoiceConfirmed();
+    setStepVisible(subwayTierField, modeConfirmed && mode === "subway");
+    setStepVisible(railZoneField, modeConfirmed && mode === "rail");
+    setStepVisible(ferryRouteField, modeConfirmed && mode === "ferry");
+    setStepVisible(reducedFareField, modeConfirmed && choiceMade, "");
+
     updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();
@@ -1132,8 +1176,15 @@ function buInitCalculator(rootEl) {
     rootEl.classList.toggle("abc-theme-rail", mode === "rail");
     rootEl.classList.toggle("abc-theme-ferry", mode === "ferry");
 
-    // Card 1 (BU Subsidized MBTA Pass) has no mode-card attribute, so it's
-    // always visible. Card 2 swaps between Pay-Per-Ride and Driving.
+    // Cards only appear once the sub-choice is answered — showing a
+    // dollar figure before that would be estimating off an unconfirmed
+    // default, the exact "too much at once, half of it not even chosen
+    // yet" feeling this whole reveal chain is meant to avoid. Card 1 (BU
+    // Subsidized MBTA Pass) has no mode-card attribute, so once unlocked
+    // it's always visible; Card 2 still swaps between Pay-Per-Ride and
+    // Driving underneath that.
+    const cardsEl = rootEl.querySelector(".abc-farecalc-cards");
+    setStepVisible(cardsEl, modeConfirmed && choiceMade, "flex");
     rootEl.querySelectorAll('[data-abc-mode-card="transit"]').forEach((el) => {
       el.style.display = topMode === "pay-per-ride" ? "" : "none";
     });
@@ -1145,6 +1196,7 @@ function buInitCalculator(rootEl) {
   topModeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       topMode = btn.dataset.abcTopModeSelect;
+      topModeConfirmed = true;
       topModeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       // A value valid for Pay-Per-Ride (round-trips/week, uncapped) can be
       // invalid the moment Driving is selected (at most 7 days/week) — clamp
@@ -1163,6 +1215,7 @@ function buInitCalculator(rootEl) {
   modeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
       mode = btn.dataset.abcModeSelect;
+      modeConfirmed = true;
       modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       updateFieldVisibility();
       render();
