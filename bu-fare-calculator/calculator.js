@@ -642,6 +642,32 @@ function buInitCalculator(rootEl) {
   let rapidStationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
+  /** Sets an element's display, and — if it's newly becoming visible
+   * (was hidden a moment ago, now shown) — plays a short fade/slide-in
+   * animation once via the .abc-farecalc-reveal class (see
+   * calculator.css for the keyframes). This is the "semi-pagination"
+   * feel asked for (2026-11): each step visibly arrives as it becomes
+   * relevant, without removing the sensible defaults that let every
+   * card show an instant ballpark estimate from first render — every
+   * step is still technically "answered" by its default the moment
+   * it appears, this just makes that appearance a real visual event
+   * instead of silently popping into place. Tracked via a data
+   * attribute rather than reading style.display back, since the
+   * attribute is cheap and exact where a style/computed-style read
+   * would force a layout. Re-entrant: calling this every render with
+   * the same visible=true does nothing after the first time. */
+  function setStepVisible(el, visible, display) {
+    if (!el) return;
+    const wasVisible = el.dataset.abcRevealed === "1";
+    el.style.display = visible ? (display || "") : "none";
+    if (visible && !wasVisible) {
+      el.classList.remove("abc-farecalc-reveal");
+      void el.offsetWidth; // restart the animation even if it's mid-run from a rapid toggle
+      el.classList.add("abc-farecalc-reveal");
+    }
+    el.dataset.abcRevealed = visible ? "1" : "0";
+  }
+
   const topModeButtons = rootEl.querySelectorAll("[data-abc-top-mode-select]");
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
@@ -661,28 +687,61 @@ function buInitCalculator(rootEl) {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
     const applies = promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
-    callout.style.display = applies ? "block" : "none";
+    setStepVisible(callout, applies, "block");
     if (applies) {
       const days = buEdenredDeadlineDaysLeft();
       rootEl.querySelector("[data-abc-promo-days]").textContent = `${days} day${days === 1 ? "" : "s"} left to order`;
     }
   }
 
-  // ---- Express Bus fare pilot callout: shown only while Bus Pass is the
-  // active pass being compared, main card and Drive-compare card alike. ----
-  // Shown above the route question regardless of which mode is selected —
-  // this is relevant everywhere, not just when Bus Pass is the active
-  // pass. The only gate is whether the pilot itself is still running.
+  // ---- Express Bus fare pilot: collapsed into a lightbulb icon beside
+  // the title (2026-11, "calm and clean" direction) rather than a
+  // full-width banner. The icon itself is gated purely on whether the
+  // pilot is still running; the message panel underneath it is a
+  // separate open/closed state the user controls (click to open, the
+  // X or clicking outside to close) — relevant everywhere regardless of
+  // which mode/topMode is selected, so neither gate depends on those. ----
+  const busPilotToggle = rootEl.querySelector("[data-abc-bus-pilot-toggle]");
+  const busPilotPanel = rootEl.querySelector("[data-abc-bus-pilot-callout]");
+  const busPilotClose = rootEl.querySelector("[data-abc-bus-pilot-close]");
+  let busPilotOpen = false;
+
   function updateBusPilotUI() {
-    const mainCallout = rootEl.querySelector("[data-abc-bus-pilot-callout]");
-    if (!mainCallout) return;
+    if (!busPilotToggle || !busPilotPanel) return;
     const applies = mbtaBusPilotIsActive(BU_CONFIG);
-    mainCallout.style.display = applies ? "block" : "none";
+    busPilotToggle.style.display = applies ? "flex" : "none";
+    if (!applies) busPilotOpen = false;
+    busPilotPanel.style.display = applies && busPilotOpen ? "block" : "none";
+    busPilotToggle.setAttribute("aria-expanded", busPilotOpen ? "true" : "false");
     if (applies) {
       const days = mbtaBusPilotDaysLeft(BU_CONFIG);
       rootEl.querySelector("[data-abc-bus-pilot-days]").textContent = `${days} day${days === 1 ? "" : "s"} left`;
     }
   }
+
+  if (busPilotToggle) {
+    busPilotToggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      busPilotOpen = !busPilotOpen;
+      updateBusPilotUI();
+    });
+  }
+  if (busPilotClose) {
+    busPilotClose.addEventListener("click", () => {
+      busPilotOpen = false;
+      updateBusPilotUI();
+    });
+  }
+  // Click-outside-to-close: only wires up when the panel is actually
+  // open, so it never fights the toggle button's own click (which also
+  // bubbles to document, but by the time this fires busPilotOpen/the
+  // display style already reflect the NEW state from the handler above).
+  document.addEventListener("click", (e) => {
+    if (!busPilotOpen || !busPilotPanel) return;
+    if (busPilotPanel.contains(e.target) || e.target === busPilotToggle || (busPilotToggle && busPilotToggle.contains(e.target))) return;
+    busPilotOpen = false;
+    updateBusPilotUI();
+  });
 
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
   const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
@@ -847,12 +906,12 @@ function buInitCalculator(rootEl) {
     if (!stationParkingField) return;
     const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
     const hasParking = !!(station && station.parkingRate != null);
-    stationParkingField.style.display = hasParking ? "flex" : "none";
+    setStepVisible(stationParkingField, hasParking, "flex");
     if (!hasParking && stationParking) {
       stationParking = false;
       if (stationParkingToggle) stationParkingToggle.checked = false;
     }
-    if (stationParkingDaysField) stationParkingDaysField.style.display = hasParking && stationParking ? "block" : "none";
+    setStepVisible(stationParkingDaysField, hasParking && stationParking, "block");
   }
 
   if (stationParkingToggle) {
@@ -890,13 +949,13 @@ function buInitCalculator(rootEl) {
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
     const show = mode === "subway";
-    rapidStationParkingField.style.display = show ? "flex" : "none";
+    setStepVisible(rapidStationParkingField, show, "flex");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
       if (rapidStationParkingToggle) rapidStationParkingToggle.checked = false;
     }
-    if (rapidStationField) rapidStationField.style.display = show && rapidStationParking ? "block" : "none";
-    if (rapidStationParkingDaysField) rapidStationParkingDaysField.style.display = show && rapidStationParking ? "block" : "none";
+    setStepVisible(rapidStationField, show && rapidStationParking, "block");
+    setStepVisible(rapidStationParkingDaysField, show && rapidStationParking, "block");
   }
 
   if (rapidStationParkingToggle) {
@@ -1046,10 +1105,10 @@ function buInitCalculator(rootEl) {
   }
 
   function updateFieldVisibility() {
-    if (driveFields) driveFields.style.display = topMode === "driving" ? "" : "none";
-    if (subwayTierField) subwayTierField.style.display = mode === "subway" ? "" : "none";
-    if (railZoneField) railZoneField.style.display = mode === "rail" ? "" : "none";
-    if (ferryRouteField) ferryRouteField.style.display = mode === "ferry" ? "" : "none";
+    setStepVisible(driveFields, topMode === "driving");
+    setStepVisible(subwayTierField, mode === "subway");
+    setStepVisible(railZoneField, mode === "rail");
+    setStepVisible(ferryRouteField, mode === "ferry");
     updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();

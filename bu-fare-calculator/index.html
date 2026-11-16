@@ -35,16 +35,28 @@
       </defs>
     </svg>
 
-    <h2 class="abc-title abc-farecalc-title">Is BU's MBTA pass worth it for you?</h2>
-    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
+    <div class="abc-farecalc-title-row">
+      <h2 class="abc-title abc-farecalc-title">Is BU's MBTA pass worth it for you?</h2>
+      <div class="abc-farecalc-lightbulb-wrap">
+        <button type="button" class="abc-farecalc-lightbulb-btn" data-abc-bus-pilot-toggle aria-label="Did you know?" aria-expanded="false" aria-haspopup="true" style="display: none;">
+          <svg class="abc-farecalc-lightbulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 18h6" />
+            <path d="M10 22h4" />
+            <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3v1h6v-1c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z" />
+          </svg>
+        </button>
 
-    <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
-      <div class="abc-farecalc-bus-pilot-callout-head">
-        <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
-        <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+        <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+          <button type="button" class="abc-farecalc-bus-pilot-close" data-abc-bus-pilot-close aria-label="Close">&times;</button>
+          <div class="abc-farecalc-bus-pilot-callout-head">
+            <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
+            <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+          </div>
+          <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
+        </div>
       </div>
-      <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
     </div>
+    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
 
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-top-mode-field>
