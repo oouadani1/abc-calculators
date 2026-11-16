@@ -779,6 +779,36 @@ function buInitCalculator(rootEl) {
     updateBusPilotUI();
   });
 
+  // ---- Per-question hint lightbulbs (2026-11): same open/close
+  // mechanics as the title's "Did you know?" bulb above, generalized
+  // to however many [data-abc-hint] wrappers exist in the page — each
+  // one gets its own independent open state via its own closure, so
+  // opening one never affects any other. Replaces the plain gray
+  // .abc-field-hint caption text everywhere it used to appear. ----
+  rootEl.querySelectorAll("[data-abc-hint]").forEach((wrap) => {
+    const toggle = wrap.querySelector("[data-abc-hint-toggle]");
+    const popover = wrap.querySelector("[data-abc-hint-popover]");
+    const close = wrap.querySelector("[data-abc-hint-close]");
+    if (!toggle || !popover) return;
+    let open = false;
+    function renderHint() {
+      popover.style.display = open ? "block" : "none";
+      toggle.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    toggle.addEventListener("click", (e) => {
+      e.stopPropagation();
+      open = !open;
+      renderHint();
+    });
+    if (close) close.addEventListener("click", () => { open = false; renderHint(); });
+    document.addEventListener("click", (e) => {
+      if (!open) return;
+      if (wrap.contains(e.target)) return;
+      open = false;
+      renderHint();
+    });
+  });
+
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
   const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
   ferryRouteButtons.forEach((btn) => {
@@ -1366,6 +1396,7 @@ function buInitCalculator(rootEl) {
     stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     if (rapidStationInput) rapidStationInput.value = "";
+    setStepVisible(tripsHint, false);
     updateMedicalDailyFieldVisibility();
     if (tripsStepper) tripsStepper.repaint();
     if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
@@ -1394,6 +1425,10 @@ function buInitCalculator(rootEl) {
       }
       clampParkingDaysToTrips();
       if (tripsStepper) tripsStepper.repaint();
+      // Hide the round-trips hint the moment Driving is picked — it only
+      // gets revealed again by actually using the stepper (see
+      // tripsStepper's setValue above), never just by switching back.
+      if (topMode === "driving") setStepVisible(tripsHint, false);
       advanceStep();
       render();
     });
@@ -1438,9 +1473,21 @@ function buInitCalculator(rootEl) {
     return { repaint: paint };
   }
 
+  // "When adding your round-trips, include any trips you take..." used
+  // to sit permanently in the page subtitle; now it only appears once
+  // someone actually starts using this stepper (2026-11 ask), via the
+  // same one-time slide-up reveal every conditional field in this tool
+  // uses — see setStepVisible()'s doc comment. Round-trip-specific
+  // wording, so it only makes sense for Pay-Per-Ride, not Driving's
+  // "days a week" framing.
+  const tripsHint = rootEl.querySelector("[data-abc-trips-hint]");
   const tripsStepper = initStepper(
     "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek,
-    (v) => { tripsPerWeek = v; clampParkingDaysToTrips(); }, 0,
+    (v) => {
+      tripsPerWeek = v;
+      clampParkingDaysToTrips();
+      setStepVisible(tripsHint, topMode !== "driving");
+    }, 0,
     () => (topMode === "driving" ? BU_CONFIG.driveTripsMax : BU_CONFIG.tripsMax)
   );
 

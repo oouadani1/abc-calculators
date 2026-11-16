@@ -238,7 +238,20 @@
    this cost. */
 .abc-farecalc-field-group {
   min-width: 0;
-  min-height: 220px;
+  min-height: 180px;
+}
+
+/* A page with nothing but the frequency stepper (and, later, Driving's
+   campus/zone picker) is the shortest content on any step — center it
+   vertically in the space above instead of letting it sit flush at the
+   top with a tall gap of nothing below (2026-11, "oddly placed"
+   follow-up). Scoped to just the trips field specifically, not every
+   field-group, since multi-question pages already fill most of their
+   own height and don't have this problem. */
+[data-abc-trips-field] .abc-input-row {
+  min-height: 140px;
+  display: flex;
+  align-items: center;
 }
 
 /* ---- "Semi-pagination" reveal (2026-11): played once by JS
@@ -280,6 +293,7 @@
    as a real section header down the single column, not just a
    slightly-bold label. */
 .abc-farecalc-field-group .abc-question {
+  display: block;
   margin-top: 0;
   font-family: "Sora", "IBM Plex Sans", sans-serif;
   font-weight: 600;
@@ -586,6 +600,75 @@
   animation: abc-farecalc-lightbulb-shake 0.5s ease-in-out, abc-farecalc-lightbulb-flicker 0.7s ease-in-out;
 }
 
+/* ---- Per-question hint lightbulb (2026-11) — the same identical
+   lightbulb component the title's "Did you know?" uses, just smaller
+   and sitting beside a question instead of beside the page title. The
+   gray caption text this replaces ("BU subsidizes 50%...", "Not sure
+   which zone?...") read as visual clutter sitting right under a big
+   bold question; now it's tucked behind a click, same interaction
+   everywhere a question needs a bit more explanation. ---- */
+.abc-farecalc-question-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--abc-space-sm);
+}
+
+.abc-farecalc-question-row .abc-question {
+  margin-bottom: 0;
+}
+
+.abc-farecalc-hint-wrap {
+  position: relative;
+  flex: none;
+  margin-top: 2px;
+}
+
+.abc-farecalc-lightbulb-btn-sm {
+  width: 30px;
+  height: 30px;
+}
+
+.abc-farecalc-lightbulb-btn-sm .abc-farecalc-lightbulb-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.abc-farecalc-hint-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: min(300px, 85vw);
+  padding: var(--abc-space-sm) var(--abc-space-md);
+  background: var(--mbta-yellow-tint);
+  border-color: var(--mbta-yellow);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.abc-farecalc-hint-popover p {
+  margin: 0;
+  color: var(--bu-ink);
+  font-size: var(--abc-font-size-sm);
+}
+
+.abc-farecalc-hint-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  border: none;
+  background: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: var(--abc-ink-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.abc-farecalc-hint-close:hover {
+  color: var(--bu-ink);
+}
+
 .abc-farecalc-bus-pilot-callout {
   position: absolute;
   top: calc(100% + 10px);
@@ -812,10 +895,10 @@
 
 .abc-farecalc-stepper-btn {
   font-family: var(--abc-font-mono);
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 700;
-  width: 52px;
-  height: 52px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   border: none;
   background: var(--abc-farecalc-accent);
@@ -842,13 +925,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 64px;
-  height: 52px;
+  min-width: 72px;
+  height: 60px;
 }
 
 .abc-farecalc-stepper-input {
   font-family: var(--abc-font-mono);
-  font-size: 2.1rem;
+  font-size: 2.4rem;
   font-weight: 700;
   color: var(--abc-navy-deep);
   text-align: center;
@@ -898,11 +981,16 @@
    whenever a question is answered or a reveal opens. box-sizing: border-box
    makes the border differences between these control types (none / 1.5px /
    2px) a non-issue — the outer height stays exactly 44px either way. ---- */
+/* Sized to match the choice buttons (2026-11 — was 44px/0.875rem, which
+   read as noticeably smaller/thinner next to the 76px pills everywhere
+   else on the same page). */
 .abc-farecalc .abc-select {
-  height: 44px;
+  height: 64px;
   box-sizing: border-box;
-  padding: 0 var(--abc-space-md);
-  font-size: var(--abc-font-size-sm);
+  padding: 0 var(--abc-space-lg);
+  font-size: 1.05rem;
+  border-width: 2px;
+  border-radius: var(--abc-radius-pill);
 }
 
 /* Sized up substantially (2026-11, true one-step-per-tile pagination)
@@ -1309,13 +1397,6 @@
   margin-bottom: var(--abc-space-md);
 }
 
-.abc-farecalc-field-sublabel {
-  display: block;
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-  margin-bottom: var(--abc-space-xs);
-}
 
 /* ---- CRC zone pills: only the zone name is bold, the price in
    parentheses is a lighter secondary detail. ---- */
@@ -1373,7 +1454,7 @@
    width so it reads as a credit line, not a banner. ---- */
 .abc-farecalc-bu-logo {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--abc-space-md);
   margin-top: var(--abc-space-lg);
