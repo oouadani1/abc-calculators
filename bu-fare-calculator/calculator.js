@@ -642,22 +642,32 @@ function buInitCalculator(rootEl) {
   let rapidStationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
-  // ---- True step-by-step reveal (2026-11, "still too much to take in at
-  // once" follow-up): button-grid steps all start on a pre-picked default
-  // (so there's always something to look at), but that default no longer
-  // counts as "answered" for the purpose of unlocking the NEXT step — the
-  // user has to actually click a button in a step (even re-clicking the
-  // one that's already active) before anything below it appears. Once
-  // true, these never reset back to false; switching an earlier answer
-  // doesn't re-hide already-unlocked steps, it only updates their content.
-  // Non-button steps (steppers, checkboxes, the CR station combobox) need
-  // no separate flag — becoming visible IS being answered for those, since
-  // an unchecked box or an empty field is already a legitimate, deliberate
-  // state, not a competing default the way a button grid's highlight is. ----
+  // ---- True one-step-at-a-time pagination (2026-11, "I want to see each
+  // step replace the one before it" follow-up) — supersedes the earlier
+  // "everything confirmed so far stays stacked" reveal. Only the step
+  // named by WIZARD_STEPS[currentStepIndex] is ever visible; Back/
+  // Continue move between them (see advanceStep()/goBackStep()/
+  // renderWizardStep() further down). Button-grid steps (topMode, mode,
+  // the subway tier or ferry route pick) are a single unambiguous click,
+  // so that click both answers the step AND advances past it; a default-
+  // active button still needs an actual click before it counts, so these
+  // flags start false and are set true only inside a real click handler,
+  // never by the default alone. They never reset back to false — going
+  // Back and changing an earlier answer updates content, it doesn't
+  // un-confirm anything. Non-button steps (the frequency stepper, the
+  // park-ride/Reduced Fare/Bluebikes checkboxes) have no flag at all and
+  // use an explicit Continue button instead, since there's no single
+  // click to hang "I'm done with this one" off of; the Commuter Rail
+  // combobox is the one exception that's checked live (station resolved
+  // or not) rather than flagged, since typing is itself an action with
+  // no pre-existing default to need confirming. ----
   let topModeConfirmed = false;
   let modeConfirmed = false;
   let subwayTierConfirmed = false;
   let ferryRouteConfirmed = false;
+
+  const WIZARD_STEPS = ["topmode", "driving", "freq", "mode", "subquestion", "parkride", "reduced", "results"];
+  let currentStepIndex = 0;
 
   /** Sets an element's display, and — if it's newly becoming visible
    * (was hidden a moment ago, now shown) — plays a short fade/slide-in
@@ -686,8 +696,16 @@ function buInitCalculator(rootEl) {
   }
 
   const topModeButtons = rootEl.querySelectorAll("[data-abc-top-mode-select]");
+  const topModeField = rootEl.querySelector("[data-abc-top-mode-field]");
   const modeButtons = rootEl.querySelectorAll("[data-abc-mode-select]");
   const modeField = rootEl.querySelector("[data-abc-mode-field]");
+  const resetBtn = rootEl.querySelector("[data-abc-reset-btn]");
+  const backBtn = rootEl.querySelector("[data-abc-back-btn]");
+  const continueBtn = rootEl.querySelector("[data-abc-continue-btn]");
+  const printBtn = rootEl.querySelector("[data-abc-print-btn]");
+  const resultsActions = rootEl.querySelector("[data-abc-results-actions]");
+  const cardsEl = rootEl.querySelector(".abc-farecalc-cards");
+  const parkRideField = rootEl.querySelector("[data-abc-park-ride-field]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
   const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
@@ -704,7 +722,8 @@ function buInitCalculator(rootEl) {
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const applies = promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
+    const onSubquestionStep = WIZARD_STEPS[currentStepIndex] === "subquestion";
+    const applies = onSubquestionStep && promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     setStepVisible(callout, applies, "block");
     if (applies) {
       const days = buEdenredDeadlineDaysLeft();
@@ -768,7 +787,7 @@ function buInitCalculator(rootEl) {
       ferryRouteId = btn.dataset.abcFerryRouteSelect;
       ferryRouteConfirmed = true;
       ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      updateFieldVisibility();
+      advanceStep();
       render();
     });
   });
@@ -895,7 +914,7 @@ function buInitCalculator(rootEl) {
   // combobox above. ----
   const stationInput = rootEl.querySelector("[data-abc-station-input]");
   const stationListbox = rootEl.querySelector("[data-abc-station-listbox]");
-  initStationCombobox(stationInput, stationListbox, () => { updateFieldVisibility(); render(); });
+  initStationCombobox(stationInput, stationListbox, () => { renderWizardStep(); render(); });
 
   function currentStationLabel() {
     return stationInput ? stationInput.value.trim() : "";
@@ -924,8 +943,9 @@ function buInitCalculator(rootEl) {
 
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
+    const onParkRideStep = WIZARD_STEPS[currentStepIndex] === "parkride";
     const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
-    const hasParking = !!(station && station.parkingRate != null);
+    const hasParking = onParkRideStep && !!(station && station.parkingRate != null);
     setStepVisible(stationParkingField, hasParking, "flex");
     if (!hasParking && stationParking) {
       stationParking = false;
@@ -968,7 +988,7 @@ function buInitCalculator(rootEl) {
 
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
-    const show = mode === "subway" && subwayTierConfirmed;
+    const show = WIZARD_STEPS[currentStepIndex] === "parkride" && mode === "subway" && subwayTierConfirmed;
     setStepVisible(rapidStationParkingField, show, "flex");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
@@ -1032,7 +1052,7 @@ function buInitCalculator(rootEl) {
       passTier = btn.dataset.abcPassTierSelect;
       subwayTierConfirmed = true;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      updateFieldVisibility();
+      advanceStep();
       render();
     });
   });
@@ -1126,36 +1146,74 @@ function buInitCalculator(rootEl) {
     reducedFareToggleField.classList.add("abc-farecalc-toggle-field-rail");
   }
 
-  /** Whether Step 3 (the mode's own sub-choice) has been answered.
-   * Subway/Ferry are button grids with a pre-picked default, so they
-   * need their own explicit "was this actually clicked" flag — a
-   * Commuter Rail station has no default at all, so simply having
-   * typed a real one already counts, no separate flag needed. */
-  function subChoiceConfirmed() {
+  /** Whether the park-and-ride step applies at all for the current mode
+   * — no Ferry branch yet (no park-and-ride data for ferry stations),
+   * Subway needs its tier confirmed first (so the step list has
+   * something to key off), Rail needs an actual parking-capable station
+   * resolved (same check the step's own visibility already uses). */
+  function parkRideStepApplies() {
+    if (mode === "ferry") return false;
     if (mode === "subway") return subwayTierConfirmed;
-    if (mode === "ferry") return ferryRouteConfirmed;
-    return !!buGetStation(currentStationLabel());
+    const station = buGetStation(currentStationLabel());
+    return !!(station && station.parkingRate != null);
   }
 
-  function updateFieldVisibility() {
-    // ---- The reveal chain: each step stays hidden until the button-
-    // grid step before it has been explicitly clicked at least once.
-    // Non-button steps (steppers, checkboxes, the CR combobox) cascade
-    // through immediately once unlocked — see subChoiceConfirmed()'s
-    // doc comment for why those don't need their own click. ----
-    setStepVisible(driveFields, topModeConfirmed && topMode === "driving");
-    setStepVisible(tripsField, topModeConfirmed, "");
-    setStepVisible(modeField, topModeConfirmed, "");
+  function wizardStepApplies(id) {
+    if (id === "driving") return topMode === "driving";
+    if (id === "parkride") return parkRideStepApplies();
+    return true; // topmode, freq, mode, subquestion, reduced, results always apply once reached
+  }
 
-    const choiceMade = subChoiceConfirmed();
-    setStepVisible(subwayTierField, modeConfirmed && mode === "subway");
-    setStepVisible(railZoneField, modeConfirmed && mode === "rail");
-    setStepVisible(ferryRouteField, modeConfirmed && mode === "ferry");
-    setStepVisible(reducedFareField, modeConfirmed && choiceMade, "");
+  function clampStepIndex(i) {
+    return Math.max(0, Math.min(WIZARD_STEPS.length - 1, i));
+  }
+
+  /** Walks from fromIndex in `direction` (+1/-1), skipping any step
+   * whose wizardStepApplies() is currently false — e.g. "driving" when
+   * Pay-Per-Ride, or "parkride" for Ferry — in either direction, so
+   * Back and Continue land on the same set of real steps. */
+  function nextApplicableIndex(fromIndex, direction) {
+    let i = clampStepIndex(fromIndex + direction);
+    while (i > 0 && i < WIZARD_STEPS.length - 1 && !wizardStepApplies(WIZARD_STEPS[i])) {
+      i = clampStepIndex(i + direction);
+    }
+    return i;
+  }
+
+  function advanceStep() {
+    currentStepIndex = nextApplicableIndex(currentStepIndex, 1);
+    renderWizardStep();
+  }
+
+  function goBackStep() {
+    currentStepIndex = nextApplicableIndex(currentStepIndex, -1);
+    renderWizardStep();
+  }
+
+  /** Shows only the single step named by WIZARD_STEPS[currentStepIndex]
+   * — true one-step-at-a-time pagination (2026-11), each step replacing
+   * the one before it rather than stacking underneath it. See the big
+   * comment above topModeConfirmed's declaration for the button-grid
+   * vs. Continue-button distinction this relies on. */
+  function renderWizardStep() {
+    const stepId = WIZARD_STEPS[currentStepIndex];
+
+    setStepVisible(topModeField, stepId === "topmode", "");
+    setStepVisible(driveFields, stepId === "driving", "");
+    setStepVisible(tripsField, stepId === "freq", "");
+    setStepVisible(modeField, stepId === "mode", "");
+    setStepVisible(subwayTierField, stepId === "subquestion" && mode === "subway");
+    setStepVisible(railZoneField, stepId === "subquestion" && mode === "rail");
+    setStepVisible(ferryRouteField, stepId === "subquestion" && mode === "ferry");
+    setStepVisible(parkRideField, stepId === "parkride", "");
+    setStepVisible(reducedFareField, stepId === "reduced", "");
+    setStepVisible(cardsEl, stepId === "results", "flex");
 
     updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();
+    updatePromoUI();
+
     if (tripsField) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
@@ -1175,23 +1233,88 @@ function buInitCalculator(rootEl) {
     // pick up the rail accent, same as Pay-Per-Ride does.
     rootEl.classList.toggle("abc-theme-rail", mode === "rail");
     rootEl.classList.toggle("abc-theme-ferry", mode === "ferry");
-
-    // Cards only appear once the sub-choice is answered — showing a
-    // dollar figure before that would be estimating off an unconfirmed
-    // default, the exact "too much at once, half of it not even chosen
-    // yet" feeling this whole reveal chain is meant to avoid. Card 1 (BU
-    // Subsidized MBTA Pass) has no mode-card attribute, so once unlocked
-    // it's always visible; Card 2 still swaps between Pay-Per-Ride and
-    // Driving underneath that.
-    const cardsEl = rootEl.querySelector(".abc-farecalc-cards");
-    setStepVisible(cardsEl, modeConfirmed && choiceMade, "flex");
     rootEl.querySelectorAll('[data-abc-mode-card="transit"]').forEach((el) => {
       el.style.display = topMode === "pay-per-ride" ? "" : "none";
     });
     rootEl.querySelectorAll('[data-abc-mode-card="drive"]').forEach((el) => {
       el.style.display = topMode === "driving" ? "" : "none";
     });
+
+    // ---- Wizard chrome: Back / Continue / Reset / Print ----
+    // Button-grid steps advance themselves (the click handler calls
+    // advanceStep() directly), so Continue would be redundant there;
+    // every other step needs it since there's no single click to hang
+    // "I'm done" off of (see the big comment above topModeConfirmed).
+    const isButtonGridStep = stepId === "topmode" || stepId === "mode"
+      || (stepId === "subquestion" && (mode === "subway" || mode === "ferry"));
+    if (backBtn) backBtn.style.display = currentStepIndex > 0 ? "" : "none";
+    if (continueBtn) {
+      continueBtn.style.display = (!isButtonGridStep && stepId !== "results") ? "" : "none";
+      // Commuter Rail's sub-question has no button click to advance on,
+      // but also has no default — don't let Continue move past it with
+      // nothing actually picked yet.
+      continueBtn.disabled = stepId === "subquestion" && mode === "rail" && !buGetStation(currentStationLabel());
+    }
+    if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
+    if (resultsActions) resultsActions.style.display = stepId === "results" ? "flex" : "none";
   }
+
+  /** Puts every answer back to its initial default and returns to Step
+   * 1 — the "start over" the Reset button offers once you've moved past
+   * it. Rebuilds DOM state (checked boxes, active pills, input text)
+   * to match, not just the underlying JS variables, since nothing else
+   * in this tool ever needs to un-set a control once it's been touched. */
+  function resetWizard() {
+    topMode = "pay-per-ride";
+    mode = "subway";
+    passTier = "linkpass";
+    ferryRouteId = "ferry-winthrop-quincy";
+    reducedFare = false;
+    tripsPerWeek = BU_CONFIG.defaultTripsPerWeek;
+    campus = "charles-river";
+    crcZoneId = "crc-zone-1";
+    medicalLocationId = "crosstown";
+    medicalDaily = false;
+    stationParking = false;
+    stationParkingDays = 3;
+    rapidStationParking = false;
+    rapidStationParkingDays = 3;
+    bluebikesAdded = false;
+    topModeConfirmed = false;
+    modeConfirmed = false;
+    subwayTierConfirmed = false;
+    ferryRouteConfirmed = false;
+    currentStepIndex = 0;
+
+    topModeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcTopModeSelect === topMode));
+    modeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcModeSelect === mode));
+    tierButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcPassTierSelect === passTier));
+    ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryRouteSelect === ferryRouteId));
+    campusButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcCampusSelect === campus));
+    crcZoneButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcCrcZoneSelect === crcZoneId));
+    medicalLocationButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalLocationSelect === medicalLocationId));
+    if (crcFields) crcFields.style.display = "block";
+    if (medicalFields) medicalFields.style.display = "none";
+    if (medicalDailyToggle) medicalDailyToggle.checked = false;
+    if (stationInput) stationInput.value = "";
+    if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
+    if (bluebikesToggle) bluebikesToggle.checked = false;
+    if (stationParkingToggle) stationParkingToggle.checked = false;
+    if (rapidStationParkingToggle) rapidStationParkingToggle.checked = false;
+    if (rapidStationInput) rapidStationInput.value = "";
+    updateMedicalDailyFieldVisibility();
+    if (tripsStepper) tripsStepper.repaint();
+    if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
+    if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
+
+    renderWizardStep();
+    render();
+  }
+
+  if (resetBtn) resetBtn.addEventListener("click", resetWizard);
+  if (backBtn) backBtn.addEventListener("click", goBackStep);
+  if (continueBtn) continueBtn.addEventListener("click", () => { advanceStep(); render(); });
+  if (printBtn) printBtn.addEventListener("click", () => window.print());
 
   topModeButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -1207,7 +1330,7 @@ function buInitCalculator(rootEl) {
       }
       clampParkingDaysToTrips();
       if (tripsStepper) tripsStepper.repaint();
-      updateFieldVisibility();
+      advanceStep();
       render();
     });
   });
@@ -1217,11 +1340,11 @@ function buInitCalculator(rootEl) {
       mode = btn.dataset.abcModeSelect;
       modeConfirmed = true;
       modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      updateFieldVisibility();
+      advanceStep();
       render();
     });
   });
-  updateFieldVisibility();
+  renderWizardStep();
 
   // ---- Generic stepper (trips/week, parking days): typed or +/- ----
   // max can be a plain number or a function, so the trips stepper's cap

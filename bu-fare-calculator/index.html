@@ -37,22 +37,30 @@
 
     <div class="abc-farecalc-title-row">
       <h2 class="abc-title abc-farecalc-title">Is BU's MBTA pass worth it for you?</h2>
-      <div class="abc-farecalc-lightbulb-wrap">
-        <button type="button" class="abc-farecalc-lightbulb-btn" data-abc-bus-pilot-toggle aria-label="Did you know?" aria-expanded="false" aria-haspopup="true" style="display: none;">
-          <svg class="abc-farecalc-lightbulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 18h6" />
-            <path d="M10 22h4" />
-            <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3v1h6v-1c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z" />
+      <div class="abc-farecalc-title-actions">
+        <button type="button" class="abc-farecalc-icon-btn" data-abc-reset-btn aria-label="Start over" title="Start over" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 1 0 3-6.7" />
+            <path d="M3 4v5h5" />
           </svg>
         </button>
+        <div class="abc-farecalc-lightbulb-wrap">
+          <button type="button" class="abc-farecalc-lightbulb-btn" data-abc-bus-pilot-toggle aria-label="Did you know?" aria-expanded="false" aria-haspopup="true" style="display: none;">
+            <svg class="abc-farecalc-lightbulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M9 18h6" />
+              <path d="M10 22h4" />
+              <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3v1h6v-1c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z" />
+            </svg>
+          </button>
 
-        <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
-          <button type="button" class="abc-farecalc-bus-pilot-close" data-abc-bus-pilot-close aria-label="Close">&times;</button>
-          <div class="abc-farecalc-bus-pilot-callout-head">
-            <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
-            <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+          <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+            <button type="button" class="abc-farecalc-bus-pilot-close" data-abc-bus-pilot-close aria-label="Close">&times;</button>
+            <div class="abc-farecalc-bus-pilot-callout-head">
+              <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
+              <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+            </div>
+            <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
           </div>
-          <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
         </div>
       </div>
     </div>
@@ -274,6 +282,22 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <div class="abc-farecalc-wizard-nav" data-abc-wizard-nav>
+      <button type="button" class="abc-farecalc-nav-btn abc-farecalc-nav-back" data-abc-back-btn style="display: none;">&larr; Back</button>
+      <button type="button" class="abc-farecalc-nav-btn abc-farecalc-nav-continue" data-abc-continue-btn style="display: none;">Continue &rarr;</button>
+    </div>
+
+    <div class="abc-farecalc-results-actions" data-abc-results-actions style="display: none;">
+      <button type="button" class="abc-farecalc-icon-btn abc-farecalc-print-btn" data-abc-print-btn aria-label="Print your estimate" title="Print your estimate">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9V3h12v6" />
+          <rect x="4" y="9" width="16" height="8" rx="1.5" />
+          <path d="M6 14h12v7H6z" />
+        </svg>
+        <span>Print</span>
+      </button>
     </div>
 
     <div class="abc-cards abc-farecalc-cards">
