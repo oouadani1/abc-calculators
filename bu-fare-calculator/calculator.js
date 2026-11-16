@@ -666,7 +666,7 @@ function buInitCalculator(rootEl) {
   let subwayTierConfirmed = false;
   let ferryRouteConfirmed = false;
 
-  const WIZARD_STEPS = ["topmode", "driving", "freq", "mode", "subquestion", "parkride", "reduced", "results"];
+  const WIZARD_STEPS = ["topmode", "driving", "freq", "mode", "subquestion", "reduced", "results"];
   let currentStepIndex = 0;
 
   /** Sets an element's display, and — if it's newly becoming visible
@@ -704,16 +704,15 @@ function buInitCalculator(rootEl) {
   const continueBtn = rootEl.querySelector("[data-abc-continue-btn]");
   const printBtn = rootEl.querySelector("[data-abc-print-btn]");
   const resultsActions = rootEl.querySelector("[data-abc-results-actions]");
+  const assumptionsDetails = rootEl.querySelector("[data-abc-assumptions-details]");
+  const printSummaryList = rootEl.querySelector("[data-abc-print-summary-list]");
   const cardsEl = rootEl.querySelector(".abc-farecalc-cards");
-  const parkRideField = rootEl.querySelector("[data-abc-park-ride-field]");
   const railZoneField = rootEl.querySelector("[data-abc-rail-zone-field]");
   const subwayTierField = rootEl.querySelector("[data-abc-subway-tier-field]");
   const ferryRouteField = rootEl.querySelector("[data-abc-ferry-route-field]");
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
-  const reducedFareToggleField = reducedFareField ? reducedFareField.querySelector(".abc-farecalc-toggle-field") : null;
-  const reducedFareHomeMount = reducedFareField ? reducedFareField.querySelector(".abc-field") : null;
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -792,14 +791,18 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  // ---- Bluebikes membership add-on toggle ----
-  const bluebikesToggle = rootEl.querySelector("[data-abc-bluebikes-toggle]");
-  if (bluebikesToggle) {
-    bluebikesToggle.addEventListener("change", () => {
-      bluebikesAdded = bluebikesToggle.checked;
+  // ---- Bluebikes membership add-on: Yes/No pill pair, same component
+  // every other question in this tool uses (2026-11 — replaced the
+  // checkbox here and on every other toggle question, for one
+  // consistent look instead of two different input styles). ----
+  const bluebikesButtons = rootEl.querySelectorAll("[data-abc-bluebikes-select]");
+  bluebikesButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      bluebikesAdded = btn.dataset.abcBluebikesSelect === "yes";
+      bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
-  }
+  });
 
   /** W3C ARIA "combobox with list autocomplete" pattern — the documented
    * accessible way to build a type-ahead search field with a popup list
@@ -927,41 +930,43 @@ function buInitCalculator(rootEl) {
     return station ? station.zoneId : "";
   }
 
-  // ---- Station parking checkbox + its own direct "how many days a
+  // ---- Station parking Yes/No pair + its own direct "how many days a
   // week" question: only shown for a station that actually has an MBTA
-  // park-and-ride lot. Hidden whenever that's not true (wrong route/
-  // mode, no station picked, or a station with no lot in the dataset) —
-  // and reset to unchecked whenever it's hidden, the same "don't let a
-  // hidden control silently keep affecting the price" rule the rest of
-  // this tool follows. The days question only appears once the checkbox
-  // itself is checked; its max is capped by parkRideDaysCap() (see
-  // clampParkingDaysToTrips()) since you can't park-and-ride more days a
-  // week than you actually make the trip. ----
+  // park-and-ride lot — nested inside [data-abc-rail-zone-field] now
+  // (2026-11: rides along on the same page as "which station," not a
+  // separate step), so it's automatically hidden whenever that field
+  // is (wrong mode, wrong wizard step) without needing its own check.
+  // Reset to "No" whenever the station itself stops having parking —
+  // the same "don't let a hidden control silently keep affecting the
+  // price" rule the rest of this tool follows. The days question only
+  // appears once "Yes" is picked; its max is capped by parkRideDaysCap()
+  // (see clampParkingDaysToTrips()) since you can't park-and-ride more
+  // days a week than you actually make the trip. ----
   const stationParkingField = rootEl.querySelector("[data-abc-station-parking-field]");
-  const stationParkingToggle = rootEl.querySelector("[data-abc-station-parking-toggle]");
+  const stationParkingButtons = rootEl.querySelectorAll("[data-abc-station-parking-select]");
   const stationParkingDaysField = rootEl.querySelector("[data-abc-station-parking-days-field]");
 
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
-    const onParkRideStep = WIZARD_STEPS[currentStepIndex] === "parkride";
     const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
-    const hasParking = onParkRideStep && !!(station && station.parkingRate != null);
-    setStepVisible(stationParkingField, hasParking, "flex");
+    const hasParking = !!(station && station.parkingRate != null);
+    setStepVisible(stationParkingField, hasParking, "block");
     if (!hasParking && stationParking) {
       stationParking = false;
-      if (stationParkingToggle) stationParkingToggle.checked = false;
+      stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     }
     setStepVisible(stationParkingDaysField, hasParking && stationParking, "block");
   }
 
-  if (stationParkingToggle) {
-    stationParkingToggle.addEventListener("change", () => {
-      stationParking = stationParkingToggle.checked;
+  stationParkingButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      stationParking = btn.dataset.abcStationParkingSelect === "yes";
+      stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       updateStationParkingFieldVisibility();
       if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
       render();
     });
-  }
+  });
 
   const stationParkingDaysStepper = initStepper(
     "data-abc-station-parking-days-stepper", 1, () => stationParkingDays, (v) => { stationParkingDays = v; }, 0,
@@ -971,11 +976,12 @@ function buInitCalculator(rootEl) {
   // ---- Rapid-transit (Subway & Bus) park-and-ride: same BU parking
   // subsidy, same two-line itemization, but MBTA_RAPID_STATIONS instead
   // of BU_STATIONS, and no fare to resolve (Local Bus/LinkPass pricing
-  // doesn't depend on which station you park at), so the checkbox shows
-  // unconditionally under Subway & Bus rather than waiting on a station
-  // pick first the way the Commuter Rail version does. ----
+  // doesn't depend on which station you park at). Nested inside
+  // [data-abc-subway-tier-field] (2026-11 — rides along on the same
+  // page as the Bus/Link pick), visible unconditionally once Subway &
+  // Bus is the mode, independent of which tier is picked. ----
   const rapidStationParkingField = rootEl.querySelector("[data-abc-rapid-station-parking-field]");
-  const rapidStationParkingToggle = rootEl.querySelector("[data-abc-rapid-station-parking-toggle]");
+  const rapidStationParkingButtons = rootEl.querySelectorAll("[data-abc-rapid-station-parking-select]");
   const rapidStationField = rootEl.querySelector("[data-abc-rapid-station-field]");
   const rapidStationInput = rootEl.querySelector("[data-abc-rapid-station-input]");
   const rapidStationListbox = rootEl.querySelector("[data-abc-rapid-station-listbox]");
@@ -988,24 +994,25 @@ function buInitCalculator(rootEl) {
 
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
-    const show = WIZARD_STEPS[currentStepIndex] === "parkride" && mode === "subway" && subwayTierConfirmed;
-    setStepVisible(rapidStationParkingField, show, "flex");
+    const show = mode === "subway";
+    setStepVisible(rapidStationParkingField, show, "block");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
-      if (rapidStationParkingToggle) rapidStationParkingToggle.checked = false;
+      rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     }
     setStepVisible(rapidStationField, show && rapidStationParking, "block");
     setStepVisible(rapidStationParkingDaysField, show && rapidStationParking, "block");
   }
 
-  if (rapidStationParkingToggle) {
-    rapidStationParkingToggle.addEventListener("change", () => {
-      rapidStationParking = rapidStationParkingToggle.checked;
+  rapidStationParkingButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      rapidStationParking = btn.dataset.abcRapidStationParkingSelect === "yes";
+      rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       updateRapidStationParkingFieldVisibility();
       if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
       render();
     });
-  }
+  });
 
   const rapidStationParkingDaysStepper = initStepper(
     "data-abc-rapid-station-parking-days-stepper", 1, () => rapidStationParkingDays, (v) => { rapidStationParkingDays = v; }, 0,
@@ -1052,36 +1059,39 @@ function buInitCalculator(rootEl) {
       passTier = btn.dataset.abcPassTierSelect;
       subwayTierConfirmed = true;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      advanceStep();
+      // No advanceStep() here — park-and-ride now rides along on this
+      // same page (2026-11), so picking a tier just unlocks Continue
+      // (see the "Wizard chrome" comment in renderWizardStep()) rather
+      // than moving to the next page by itself.
+      renderWizardStep();
       render();
     });
   });
 
-  // ---- Reduced Fare toggle: applies across Subway & Bus, Commuter Rail,
-  // and Ferry alike (MBTA's reduced program spans all of them), and now
-  // feeds Card 1 (the BU-subsidized pass) regardless of topMode, since
+  // ---- Reduced Fare: applies across Subway & Bus, Commuter Rail, and
+  // Ferry alike (MBTA's reduced program spans all of them), and feeds
+  // Card 1 (the BU-subsidized pass) regardless of topMode, since
   // Driving still needs Reduced Fare to price the pass it's compared
-  // against. One shared checkbox, always visible. Subway & Bus resolves
-  // to the same $30 reduced product regardless of which tier pill is
-  // selected (MBTA doesn't sell a separate reduced bus-only pass), but
-  // the pills stay fully interactive — nothing about checking this
-  // disables them. ----
-  const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-toggle]");
+  // against. Yes/No pill pair, always on the "reduced" step. Subway &
+  // Bus resolves to the same $30 reduced product regardless of which
+  // tier pill was picked (MBTA doesn't sell a separate reduced bus-only
+  // pass), but that pick stays fully independent of this one either way. ----
+  const reducedFareButtons = rootEl.querySelectorAll("[data-abc-reduced-fare-select]");
   function setReducedFare(value) {
     reducedFare = value;
-    if (reducedFareCheckbox) reducedFareCheckbox.checked = value;
+    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", (b.dataset.abcReducedFareSelect === "yes") === value));
     render();
   }
-  if (reducedFareCheckbox) {
-    reducedFareCheckbox.addEventListener("change", () => setReducedFare(reducedFareCheckbox.checked));
-  }
+  reducedFareButtons.forEach((btn) => {
+    btn.addEventListener("click", () => setReducedFare(btn.dataset.abcReducedFareSelect === "yes"));
+  });
 
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
   const crcZoneButtons = rootEl.querySelectorAll("[data-abc-crc-zone-select]");
   const medicalLocationButtons = rootEl.querySelectorAll("[data-abc-medical-location-select]");
   const medicalDailyField = rootEl.querySelector("[data-abc-medical-daily-field]");
-  const medicalDailyToggle = rootEl.querySelector("[data-abc-medical-daily-toggle]");
+  const medicalDailyButtons = rootEl.querySelectorAll("[data-abc-medical-daily-select]");
   const crcFields = rootEl.querySelector("[data-abc-crc-fields]");
   const medicalFields = rootEl.querySelector("[data-abc-medical-fields]");
 
@@ -1110,8 +1120,11 @@ function buInitCalculator(rootEl) {
     if (!medicalDailyField) return;
     const location = BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
     const hasDailyOption = !!(location && location.daily);
-    medicalDailyField.style.display = hasDailyOption ? "flex" : "none";
-    if (!hasDailyOption) medicalDaily = false;
+    setStepVisible(medicalDailyField, hasDailyOption, "block");
+    if (!hasDailyOption) {
+      medicalDaily = false;
+      medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalDailySelect === "monthly"));
+    }
   }
 
   medicalLocationButtons.forEach((btn) => {
@@ -1123,44 +1136,17 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  if (medicalDailyToggle) {
-    medicalDailyToggle.addEventListener("change", () => {
-      medicalDaily = medicalDailyToggle.checked;
+  medicalDailyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      medicalDaily = btn.dataset.abcMedicalDailySelect === "daily";
+      medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
       render();
     });
-  }
+  });
   updateMedicalDailyFieldVisibility();
-
-  /** Reduced Fare's checkbox sits in its own grid slot beside the "which
-   * pass/station" question, left-aligned under the trips stepper above
-   * it — same position for Subway & Bus and Commuter Rail alike (the
-   * subway-specific nested-under-the-pills placement from an earlier
-   * round was dropped in favor of this, for visual consistency between
-   * the two transit modes). Always visible now, regardless of topMode —
-   * Driving needs it too, to price the pass Card 1 compares against. */
-  function updateReducedFarePlacement() {
-    if (!reducedFareToggleField) return;
-    if (reducedFareHomeMount && reducedFareToggleField.parentElement !== reducedFareHomeMount) {
-      reducedFareHomeMount.appendChild(reducedFareToggleField);
-    }
-    reducedFareToggleField.classList.add("abc-farecalc-toggle-field-rail");
-  }
-
-  /** Whether the park-and-ride step applies at all for the current mode
-   * — no Ferry branch yet (no park-and-ride data for ferry stations),
-   * Subway needs its tier confirmed first (so the step list has
-   * something to key off), Rail needs an actual parking-capable station
-   * resolved (same check the step's own visibility already uses). */
-  function parkRideStepApplies() {
-    if (mode === "ferry") return false;
-    if (mode === "subway") return subwayTierConfirmed;
-    const station = buGetStation(currentStationLabel());
-    return !!(station && station.parkingRate != null);
-  }
 
   function wizardStepApplies(id) {
     if (id === "driving") return topMode === "driving";
-    if (id === "parkride") return parkRideStepApplies();
     return true; // topmode, freq, mode, subquestion, reduced, results always apply once reached
   }
 
@@ -1190,6 +1176,73 @@ function buInitCalculator(rootEl) {
     renderWizardStep();
   }
 
+  /** Plain-text recap of every answer that led to the cards — printed
+   * (see @media print in calculator.css), never shown on screen, so a
+   * printed page stands on its own instead of being just two cards
+   * with no context (2026-11, "print should show all the options they
+   * selected" ask). Reuses the exact same state the cards themselves
+   * are computed from, so it can never drift out of sync with them. */
+  function buildSelectionSummary() {
+    const rows = [];
+    rows.push(["How do you currently get to campus?", topMode === "driving" ? "I drive" : "I take transit"]);
+
+    if (topMode === "driving") {
+      rows.push(["Which campus?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
+      if (campus === "charles-river") {
+        const zone = currentCrcZone();
+        rows.push(["Which zone?", zone ? zone.label : ""]);
+      } else {
+        const location = currentMedicalLocation();
+        rows.push(["Which garage?", location ? location.label : ""]);
+        if (location && location.daily) {
+          rows.push(["Monthly permit or daily rate?", medicalDaily ? "Daily Rate" : "Monthly Permit"]);
+        }
+      }
+      rows.push(["How many days a week do you drive?", String(tripsPerWeek)]);
+    } else {
+      rows.push(["How many round-trips do you take per week?", String(tripsPerWeek)]);
+    }
+
+    const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
+    rows.push([topMode === "driving" ? "Which MBTA pass do you want to compare driving to?" : "Which mode do you take?", modeLabel]);
+
+    if (mode === "subway") {
+      const tier = buGetPassOption(passTier);
+      rows.push(["Which subway or bus pass do you want to compare?", tier ? tier.label : ""]);
+      rows.push(["Will you drive to and park at a T station?", rapidStationParking
+        ? `Yes — ${currentRapidStationLabel()} (${rapidStationParkingDays} day${rapidStationParkingDays === 1 ? "" : "s"}/week)`
+        : "No"]);
+    } else if (mode === "rail") {
+      rows.push(["Which station do you commute from?", currentStationLabel()]);
+      const station = buGetStation(currentStationLabel());
+      if (station && station.parkingRate != null) {
+        rows.push(["Will you drive to and park at this station?", stationParking
+          ? `Yes (${stationParkingDays} day${stationParkingDays === 1 ? "" : "s"}/week)`
+          : "No"]);
+      }
+    } else {
+      const route = buGetPassOption(ferryRouteId);
+      rows.push(["Which ferry route do you take?", route ? route.label : ""]);
+    }
+
+    rows.push(["I qualify for Reduced Fare", reducedFare ? "Yes" : "No"]);
+    rows.push(["I also want BU's discounted Bluebikes membership", bluebikesAdded ? "Yes" : "No"]);
+    return rows;
+  }
+
+  function renderPrintSummary() {
+    if (!printSummaryList) return;
+    printSummaryList.innerHTML = "";
+    buildSelectionSummary().forEach(([label, value]) => {
+      const li = document.createElement("li");
+      const strong = document.createElement("strong");
+      strong.textContent = `${label}: `;
+      li.appendChild(strong);
+      li.appendChild(document.createTextNode(value));
+      printSummaryList.appendChild(li);
+    });
+  }
+
   /** Shows only the single step named by WIZARD_STEPS[currentStepIndex]
    * — true one-step-at-a-time pagination (2026-11), each step replacing
    * the one before it rather than stacking underneath it. See the big
@@ -1205,11 +1258,9 @@ function buInitCalculator(rootEl) {
     setStepVisible(subwayTierField, stepId === "subquestion" && mode === "subway");
     setStepVisible(railZoneField, stepId === "subquestion" && mode === "rail");
     setStepVisible(ferryRouteField, stepId === "subquestion" && mode === "ferry");
-    setStepVisible(parkRideField, stepId === "parkride", "");
     setStepVisible(reducedFareField, stepId === "reduced", "");
     setStepVisible(cardsEl, stepId === "results", "flex");
 
-    updateReducedFarePlacement();
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();
     updatePromoUI();
@@ -1241,22 +1292,35 @@ function buInitCalculator(rootEl) {
     });
 
     // ---- Wizard chrome: Back / Continue / Reset / Print ----
-    // Button-grid steps advance themselves (the click handler calls
-    // advanceStep() directly), so Continue would be redundant there;
-    // every other step needs it since there's no single click to hang
-    // "I'm done" off of (see the big comment above topModeConfirmed).
+    // Button-grid steps that are FULLY answered by one click (topMode,
+    // mode, and Ferry's route pick, which has nothing else on its page)
+    // advance themselves, so Continue would be redundant there. Subway
+    // & Bus and Commuter Rail's sub-questions now also carry the park-
+    // and-ride follow-up on the same page (2026-11), so picking a tier
+    // or typing a station no longer finishes the page — both need an
+    // explicit Continue, same as any other step with more than one
+    // thing to answer.
     const isButtonGridStep = stepId === "topmode" || stepId === "mode"
-      || (stepId === "subquestion" && (mode === "subway" || mode === "ferry"));
+      || (stepId === "subquestion" && mode === "ferry");
     if (backBtn) backBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (continueBtn) {
       continueBtn.style.display = (!isButtonGridStep && stepId !== "results") ? "" : "none";
-      // Commuter Rail's sub-question has no button click to advance on,
-      // but also has no default — don't let Continue move past it with
+      // Neither Subway & Bus's tier pills nor Commuter Rail's station
+      // field have been explicitly answered until a real click/valid
+      // station happens — don't let Continue move past either with
       // nothing actually picked yet.
-      continueBtn.disabled = stepId === "subquestion" && mode === "rail" && !buGetStation(currentStationLabel());
+      continueBtn.disabled = stepId === "subquestion" && (
+        (mode === "subway" && !subwayTierConfirmed) ||
+        (mode === "rail" && !buGetStation(currentStationLabel()))
+      );
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (resultsActions) resultsActions.style.display = stepId === "results" ? "flex" : "none";
+    // "Where we got these numbers" explains the figures in the cards,
+    // so it only makes sense once they're actually showing (2026-11 —
+    // was previously visible the whole time, even on Step 1).
+    if (assumptionsDetails) assumptionsDetails.style.display = stepId === "results" ? "block" : "none";
+    if (stepId === "results") renderPrintSummary();
   }
 
   /** Puts every answer back to its initial default and returns to Step
@@ -1295,12 +1359,12 @@ function buInitCalculator(rootEl) {
     medicalLocationButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalLocationSelect === medicalLocationId));
     if (crcFields) crcFields.style.display = "block";
     if (medicalFields) medicalFields.style.display = "none";
-    if (medicalDailyToggle) medicalDailyToggle.checked = false;
+    medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalDailySelect === "monthly"));
     if (stationInput) stationInput.value = "";
-    if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
-    if (bluebikesToggle) bluebikesToggle.checked = false;
-    if (stationParkingToggle) stationParkingToggle.checked = false;
-    if (rapidStationParkingToggle) rapidStationParkingToggle.checked = false;
+    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcReducedFareSelect === "no"));
+    bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcBluebikesSelect === "no"));
+    stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
+    rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     if (rapidStationInput) rapidStationInput.value = "";
     updateMedicalDailyFieldVisibility();
     if (tripsStepper) tripsStepper.repaint();
