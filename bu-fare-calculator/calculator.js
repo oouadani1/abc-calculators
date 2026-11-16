@@ -1228,13 +1228,13 @@ function buInitCalculator(rootEl) {
           rows.push(["Monthly permit or daily rate?", medicalDaily ? "Daily Rate" : "Monthly Permit"]);
         }
       }
-      rows.push(["How many days a week do you drive?", String(tripsPerWeek)]);
+      rows.push(["How many days a week do you drive to campus?", String(tripsPerWeek)]);
     } else {
       rows.push(["How many round-trips do you take per week?", String(tripsPerWeek)]);
     }
 
     const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
-    rows.push([topMode === "driving" ? "Which MBTA pass do you want to compare driving to?" : "Which mode do you take?", modeLabel]);
+    rows.push([topMode === "driving" ? "Which BU transit pass do you want to compare driving to?" : "Which mode do you take?", modeLabel]);
 
     if (mode === "subway") {
       const tier = buGetPassOption(passTier);
@@ -1299,14 +1299,14 @@ function buInitCalculator(rootEl) {
       const label = tripsField.querySelector("[data-abc-trips-label]");
       if (label) {
         label.textContent = topMode === "driving"
-          ? "How many days a week do you drive?"
+          ? "How many days a week do you drive to campus?"
           : "How many round-trips do you take per week?";
       }
     }
     const modeLabel = rootEl.querySelector("[data-abc-mode-label]");
     if (modeLabel) {
       modeLabel.textContent = topMode === "driving"
-        ? "Which MBTA pass do you want to compare driving to?"
+        ? "Which BU transit pass do you want to compare driving to?"
         : "Which mode do you take?";
     }
     // Theme tracks mode (the pass being priced or compared against), not
