@@ -1827,7 +1827,7 @@ label.abc-farecalc-toggle-label {
       </defs>
     </svg>
 
-    <h2 class="abc-title abc-farecalc-title">Is an MBTA pass worth it for you?</h2>
+    <h2 class="abc-title abc-farecalc-title">Is BU's MBTA pass worth it for you?</h2>
     <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
 
     <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
@@ -1844,8 +1844,8 @@ label.abc-farecalc-toggle-label {
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-active" data-abc-top-mode-select="pay-per-ride">Pay Per Ride</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-top-mode-select="driving">Driving</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-top-mode-select="pay-per-ride">I take transit</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-top-mode-select="driving">I drive</button>
             </div>
           </div>
         </div>
@@ -2875,9 +2875,9 @@ function buInitCalculator(rootEl) {
   let medicalLocationId = "crosstown";
   let medicalDaily = false; // only meaningful when medicalLocationId === "crosstown"
   let stationParking = false; // Commuter Rail only — "Will you drive and park at this station?"
-  let stationParkingDays = 3; // capped at tripsPerWeek — see clampParkingDaysToTrips()
+  let stationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let rapidStationParking = false; // Subway & Bus only — same question, MBTA_RAPID_STATIONS instead of BU_STATIONS
-  let rapidStationParkingDays = 3; // capped at tripsPerWeek — see clampParkingDaysToTrips()
+  let rapidStationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
   const topModeButtons = rootEl.querySelectorAll("[data-abc-top-mode-select]");
@@ -3074,7 +3074,7 @@ function buInitCalculator(rootEl) {
   // and reset to unchecked whenever it's hidden, the same "don't let a
   // hidden control silently keep affecting the price" rule the rest of
   // this tool follows. The days question only appears once the checkbox
-  // itself is checked; its max is capped at tripsPerWeek (see
+  // itself is checked; its max is capped by parkRideDaysCap() (see
   // clampParkingDaysToTrips()) since you can't park-and-ride more days a
   // week than you actually make the trip. ----
   const stationParkingField = rootEl.querySelector("[data-abc-station-parking-field]");
@@ -3104,7 +3104,7 @@ function buInitCalculator(rootEl) {
 
   const stationParkingDaysStepper = initStepper(
     "data-abc-station-parking-days-stepper", 1, () => stationParkingDays, (v) => { stationParkingDays = v; }, 0,
-    () => Math.min(7, tripsPerWeek)
+    parkRideDaysCap
   );
 
   // ---- Rapid-transit (Subway & Bus) park-and-ride: same BU parking
@@ -3148,21 +3148,32 @@ function buInitCalculator(rootEl) {
 
   const rapidStationParkingDaysStepper = initStepper(
     "data-abc-rapid-station-parking-days-stepper", 1, () => rapidStationParkingDays, (v) => { rapidStationParkingDays = v; }, 0,
-    () => Math.min(7, tripsPerWeek)
+    parkRideDaysCap
   );
 
-  /** Keeps both park-and-ride days steppers from outliving the trip
-   * frequency they depend on — you can't park-and-ride more days a week
-   * than you actually make the trip. Called whenever tripsPerWeek itself
-   * changes, from any of its three entry points (its own stepper, or the
-   * topMode switch forcing it down to BU_CONFIG.driveTripsMax). */
+  /** Max days/week you could plausibly need to drive-and-park at a
+   * station. Driving's own trips field is already a direct day count
+   * (0-7), used as-is. Pay-Per-Ride's is round-trips/week, which doesn't
+   * map 1:1 to days — per the user's explicit call, each park-and-ride
+   * day is assumed to cover up to 2 round-trips, rounded up (e.g. 3
+   * round-trips -> a 2-day cap, 4 round-trips -> a 2-day cap). */
+  function parkRideDaysCap() {
+    return topMode === "driving" ? Math.min(7, tripsPerWeek) : Math.min(7, Math.ceil(tripsPerWeek / 2));
+  }
+
+  /** Keeps both park-and-ride days steppers from outliving the cap above —
+   * you can't park-and-ride more days a week than parkRideDaysCap() allows.
+   * Called whenever tripsPerWeek or topMode changes, from any of their
+   * entry points (the trips stepper itself, or the topMode switch forcing
+   * tripsPerWeek down to BU_CONFIG.driveTripsMax). */
   function clampParkingDaysToTrips() {
-    if (stationParkingDays > tripsPerWeek) stationParkingDays = Math.max(0, tripsPerWeek);
-    if (rapidStationParkingDays > tripsPerWeek) rapidStationParkingDays = Math.max(0, tripsPerWeek);
+    const cap = parkRideDaysCap();
+    if (stationParkingDays > cap) stationParkingDays = Math.max(0, cap);
+    if (rapidStationParkingDays > cap) rapidStationParkingDays = Math.max(0, cap);
     // Repaint unconditionally, not just when a value actually got clamped —
     // otherwise each stepper's own `max` attribute (and native spinner/
-    // validity state) can go stale when tripsPerWeek only RISES, since
-    // nothing else touches these two steppers in that case.
+    // validity state) can go stale when the cap only RISES, since nothing
+    // else touches these two steppers in that case.
     if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
     if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
   }
@@ -3291,7 +3302,7 @@ function buInitCalculator(rootEl) {
     const modeLabel = rootEl.querySelector("[data-abc-mode-label]");
     if (modeLabel) {
       modeLabel.textContent = topMode === "driving"
-        ? "Which MBTA pass would you compare against?"
+        ? "Which MBTA pass do you want to compare driving to?"
         : "Which mode do you take?";
     }
     // Theme tracks mode (the pass being priced or compared against), not
