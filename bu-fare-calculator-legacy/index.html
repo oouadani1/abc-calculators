@@ -1,15 +1,19 @@
 <!doctype html>
 <!--
   ARCHIVED REFERENCE BUILD (2026-11-21) — frozen snapshot of the
-  "reveal chain" design (commit 8c64ec0, "bu-calc-UI-UX"), the one-page
-  version where every answer stacks downward on the same page instead
-  of replacing it, from just before this tool moved to the current
-  one-step-at-a-time wizard. Published at its own URL so Carl Larson
-  can compare it against the live wizard version, per his request to
-  see "what the other version looked like." This is a dead end, not a
-  live build — it is fully self-contained (its own copies of base.css/
-  fonts.css/format.js, not the shared/ folder) and is never touched by
-  build.sh or future changes to bu-fare-calculator/.
+  classic, pre-restructure vertical form (commit 76ddca4,
+  "bu-bespoke-calc-v8.7", 2026-10-29): every question visible at once
+  (no pagination, no click-to-reveal), both result cards always live
+  and updating as you type, the original 4-way route picker (Subway &
+  Bus / Commuter Rail / Ferry / Drive) with Drive's own embedded
+  comparison card. Published at its own URL so Carl Larson can compare
+  it against the current wizard, per his request to see "what the
+  other version looked like" — this specific commit, not the
+  in-between "reveal chain" build an earlier attempt at this archive
+  mistakenly used instead. This is a dead end, not a live build — it
+  is fully self-contained (its own copies of base.css/fonts.css/
+  format.js, not the shared/ folder) and is never touched by build.sh
+  or future changes to bu-fare-calculator/.
 -->
 <html lang="en">
 <head>
@@ -43,37 +47,146 @@
       </defs>
     </svg>
 
-    <div class="abc-farecalc-title-row">
-      <h2 class="abc-title abc-farecalc-title">Is BU's MBTA pass worth it for you?</h2>
-      <div class="abc-farecalc-lightbulb-wrap">
-        <button type="button" class="abc-farecalc-lightbulb-btn" data-abc-bus-pilot-toggle aria-label="Did you know?" aria-expanded="false" aria-haspopup="true" style="display: none;">
-          <svg class="abc-farecalc-lightbulb-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M9 18h6" />
-            <path d="M10 22h4" />
-            <path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.2 1 2.3v1h6v-1c0-1.1.4-1.8 1-2.3A7 7 0 0 0 12 2z" />
-          </svg>
-        </button>
-
-        <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
-          <button type="button" class="abc-farecalc-bus-pilot-close" data-abc-bus-pilot-close aria-label="Close">&times;</button>
-          <div class="abc-farecalc-bus-pilot-callout-head">
-            <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
-            <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
-          </div>
-          <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
-        </div>
-      </div>
-    </div>
+    <h2 class="abc-title abc-farecalc-title">Is an MBTA pass worth it for you?</h2>
     <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
 
+    <div class="abc-callout abc-farecalc-bus-pilot-callout" data-abc-bus-pilot-callout style="display: none;">
+      <div class="abc-farecalc-bus-pilot-callout-head">
+        <span class="abc-farecalc-bus-pilot-badge">Did you know?</span>
+        <span class="abc-farecalc-bus-pilot-days" data-abc-bus-pilot-days>0 days left</span>
+      </div>
+      <p>For 6 months, the MBTA Express Bus will now only cost $1.70 ($0.85 with reduced fare). Transfers will also be free for two-hours! <a href="https://www.mbta.com/FallFarePilots" target="_blank" rel="noopener">Details on MBTA's&nbsp;site</a>.</p>
+    </div>
+
     <div class="abc-farecalc-grid">
-      <div class="abc-farecalc-field-group" data-abc-top-mode-field>
-        <p class="abc-question">How do you currently get to campus?</p>
+      <div class="abc-farecalc-field-group" data-abc-route-field>
+        <p class="abc-question">How do you get to campus?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid abc-choice-grid-3">
+              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-route-select="subway">Subway & Bus</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-route-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-route-select="drive">Personal Car</button>
+              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry abc-farecalc-blob-btn" data-abc-route-select="ferry">
+                <span class="abc-farecalc-blob-inner">
+                  <span class="abc-farecalc-blob-group">
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                    <span class="abc-farecalc-blob"></span>
+                  </span>
+                </span>
+                <span class="abc-farecalc-blob-label">Ferry</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-trips-field>
+        <p class="abc-question" data-abc-trips-label>How many round-trips do you take per week?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-trips-stepper>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+              <div class="abc-farecalc-stepper-value-wrap">
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="10" value="3" inputmode="numeric" aria-label="Round-trips per week" />
+              </div>
+              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
+        <div class="abc-farecalc-promo-callout-head">
+          <h4>Limited-time savings</h4>
+          <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
+        </div>
+        <p>
+          Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded, <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>), and BU's 50% subsidy applies on top of that through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>; place your order by the 10th of the month so your pass is ready in time for the 1st.
+        </p>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-subway-tier-field>
+        <p class="abc-question">Which subway or bus pass do you want to compare?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-active" data-abc-top-mode-select="pay-per-ride">I take transit</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-drive" data-abc-top-mode-select="driving">I drive</button>
+              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
+            </div>
+
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-rapid-station-parking-field style="display: none;">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-rapid-station-parking-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Will you drive to and park at a T station?</span>
+              </label>
+              <span class="abc-field-hint">BU subsidizes 50% of the cost of parking at an MBTA station if you have any BU monthly pass. Only MBTA stations with park-and-ride lots are shown in this list.</span>
+            </div>
+
+            <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
+              <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-rapid-station-listbox" aria-autocomplete="list" data-abc-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
+              <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-rapid-station-listbox" role="listbox" data-abc-rapid-station-listbox hidden></ul>
+            </div>
+
+            <div class="abc-farecalc-station-parking-days" data-abc-rapid-station-parking-days-field style="display: none;">
+              <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-rapid-station-parking-days">How many days a week will you park there?</label>
+              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-rapid-station-parking-days-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-rapid-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-ferry-route-field style="display: none;">
+        <p class="abc-question">Which ferry route do you take?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-choice-grid">
+              <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
+              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
+        <p class="abc-question">Which station do you commute from?</p>
+        <div class="abc-input-row">
+          <div class="abc-field" style="flex-basis: 100%;">
+            <div class="abc-field-hint-wrap">
+              <div class="abc-farecalc-combobox">
+                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you commute from?" />
+                <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
+              </div>
+            </div>
+
+            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-station-parking-field style="display: none;">
+              <label class="abc-farecalc-toggle-label">
+                <input type="checkbox" data-abc-station-parking-toggle />
+                <span class="abc-farecalc-toggle-box"></span>
+                <span>Will you drive to and park at this station?</span>
+              </label>
+              <span class="abc-field-hint">BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</span>
+            </div>
+
+            <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
+              <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-station-parking-days">How many days a week will you park there?</label>
+              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-station-parking-days-stepper>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+                <div class="abc-farecalc-stepper-value-wrap">
+                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+                </div>
+                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+              </div>
             </div>
           </div>
         </div>
@@ -111,151 +224,6 @@
                   <span class="abc-farecalc-toggle-box"></span>
                   <span>Choose Daily Parking</span>
                 </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-abc-trips-field>
-        <p class="abc-question" data-abc-trips-label>How many round-trips do you take per week?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-trips-stepper>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
-              <div class="abc-farecalc-stepper-value-wrap">
-                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="10" value="3" inputmode="numeric" aria-label="Round-trips per week" />
-              </div>
-              <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-abc-mode-field>
-        <p class="abc-question" data-abc-mode-label>Which mode do you take?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid abc-choice-grid-3">
-              <button type="button" class="abc-choice-button abc-farecalc-btn-subway abc-active" data-abc-mode-select="subway">Subway & Bus</button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-rail" data-abc-mode-select="rail">Commuter Rail<span class="abc-farecalc-promo-badge" data-abc-promo-badge style="display: none;">50% OFF</span></button>
-              <button type="button" class="abc-choice-button abc-farecalc-btn-ferry abc-farecalc-blob-btn" data-abc-mode-select="ferry">
-                <span class="abc-farecalc-blob-inner">
-                  <span class="abc-farecalc-blob-group">
-                    <span class="abc-farecalc-blob"></span>
-                    <span class="abc-farecalc-blob"></span>
-                    <span class="abc-farecalc-blob"></span>
-                    <span class="abc-farecalc-blob"></span>
-                  </span>
-                </span>
-                <span class="abc-farecalc-blob-label">Ferry</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-callout abc-farecalc-promo-callout" data-abc-promo-callout style="display: none;">
-        <div class="abc-farecalc-promo-callout-head">
-          <h4>Limited-time savings</h4>
-          <span class="abc-farecalc-promo-days" data-abc-promo-days>0 days left</span>
-        </div>
-        <p>
-          Commuter Rail monthly passes are <strong>50% off</strong> through November 30, 2026 (Zone 1A excluded, <a href="https://www.mbta.com/fares/commuter-rail-summer-promotions" target="_blank" rel="noopener">details on MBTA's&nbsp;site</a>), and BU's 50% subsidy applies on top of that through <a href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/" target="_blank" rel="noopener">Edenred</a>; place your order by the 10th of the month so your pass is ready in time for the 1st.
-        </p>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-abc-subway-tier-field>
-        <p class="abc-question">Which subway or bus pass do you want to compare?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
-              <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-abc-ferry-route-field style="display: none;">
-        <p class="abc-question">Which ferry route do you take?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-active" data-abc-ferry-route-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
-              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-lynn">Lynn</button>
-              <button type="button" class="abc-choice-button" data-abc-ferry-route-select="ferry-hingham-hull">Hingham/Hull</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
-        <p class="abc-question">Which station do you commute from?</p>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-field-hint-wrap">
-              <div class="abc-farecalc-combobox">
-                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-station-listbox" aria-autocomplete="list" data-abc-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you commute from?" />
-                <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 4: park-and-ride, one shared slot in the grid. Subway & Bus
-           and Commuter Rail each get their own block (Subway & Bus still
-           needs its own station search; Commuter Rail reuses the commute
-           station from Step 3 above), but only one is ever visible at a
-           time, keyed off `mode` — see updateStationParkingFieldVisibility()/
-           updateRapidStationParkingFieldVisibility() in calculator.js. No
-           Ferry block yet: no park-and-ride lot data for ferry stations. -->
-      <div class="abc-farecalc-field-group" data-abc-park-ride-field>
-        <div class="abc-input-row">
-          <div class="abc-field" style="flex-basis: 100%;">
-            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-rapid-station-parking-field style="display: none;">
-              <label class="abc-farecalc-toggle-label">
-                <input type="checkbox" data-abc-rapid-station-parking-toggle />
-                <span class="abc-farecalc-toggle-box"></span>
-                <span>Will you drive to and park at a T station?</span>
-              </label>
-              <span class="abc-field-hint">BU subsidizes 50% of the cost of parking at an MBTA station if you have any BU monthly pass. Only MBTA stations with park-and-ride lots are shown in this list.</span>
-            </div>
-
-            <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
-              <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-rapid-station-listbox" aria-autocomplete="list" data-abc-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
-              <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-rapid-station-listbox" role="listbox" data-abc-rapid-station-listbox hidden></ul>
-            </div>
-
-            <div class="abc-farecalc-station-parking-days" data-abc-rapid-station-parking-days-field style="display: none;">
-              <label class="abc-farecalc-field-sublabel" for="abc-farecalc-rapid-station-parking-days">How many days a week will you park there?</label>
-              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-rapid-station-parking-days-stepper>
-                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
-                <div class="abc-farecalc-stepper-value-wrap">
-                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-rapid-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
-                </div>
-                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
-              </div>
-            </div>
-
-            <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-nested" data-abc-station-parking-field style="display: none;">
-              <label class="abc-farecalc-toggle-label">
-                <input type="checkbox" data-abc-station-parking-toggle />
-                <span class="abc-farecalc-toggle-box"></span>
-                <span>Will you drive to and park at this station?</span>
-              </label>
-              <span class="abc-field-hint">BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</span>
-            </div>
-
-            <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
-              <label class="abc-farecalc-field-sublabel" for="abc-farecalc-station-parking-days">How many days a week will you park there?</label>
-              <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-station-parking-days-stepper>
-                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
-                <div class="abc-farecalc-stepper-value-wrap">
-                  <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
-                </div>
-                <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
               </div>
             </div>
           </div>
@@ -314,10 +282,9 @@
         </p>
       </div>
 
-      <div class="abc-card" data-abc-card-pass>
+      <div class="abc-card" data-abc-card-pass data-abc-mode-card="transit">
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
-        <h3>BU Subsidized MBTA Pass</h3>
-        <p class="abc-farecalc-card-subtitle" data-abc-pass-subtitle></p>
+        <h3 data-abc-pass-title>Monthly Pass</h3>
 
         <div class="abc-farecalc-line">
           <span data-abc-pass-total-label>Total monthly cost</span>
@@ -381,6 +348,114 @@
         </p>
       </div>
 
+      <div class="abc-card abc-farecalc-drive-card" data-abc-mode-card="drive" style="display: none;">
+        <span class="abc-badge" data-abc-badge>Recommended for you</span>
+        <h3 data-abc-drive-compare-title>Link Pass Instead</h3>
+
+        <div class="abc-choice-grid abc-farecalc-drive-compare-toggle">
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="bus">Bus Pass</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-select="link">Link Pass</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="rail">Commuter Rail</button>
+          <button type="button" class="abc-choice-button" data-abc-drive-compare-select="ferry">Ferry</button>
+        </div>
+
+        <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-station-field style="display: none;">
+          <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-station">Which station do you commute from?</label>
+          <div class="abc-farecalc-combobox">
+            <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-drive-compare-listbox" aria-autocomplete="list" data-abc-drive-compare-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you commute from?" />
+            <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-drive-compare-listbox" role="listbox" data-abc-drive-compare-listbox hidden></ul>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-drive-compare-station" data-abc-drive-compare-ferry-field style="display: none;">
+          <p class="abc-farecalc-drive-compare-station-label">Which ferry route?</p>
+          <div class="abc-choice-grid">
+            <button type="button" class="abc-choice-button abc-active" data-abc-drive-compare-ferry-select="ferry-winthrop-quincy">Winthrop/Quincy</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-lynn">Lynn</button>
+            <button type="button" class="abc-choice-button" data-abc-drive-compare-ferry-select="ferry-hingham-hull">Hingham/Hull</button>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact" data-abc-drive-compare-parking-field style="display: none;">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-compare-parking-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>Will you drive to and park at the station?</span>
+          </label>
+        </div>
+
+        <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-drive-compare-rapid-station-field style="display: none;">
+          <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-drive-compare-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-drive-compare-rapid-listbox" aria-autocomplete="list" data-abc-drive-compare-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
+          <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-drive-compare-rapid-listbox" role="listbox" data-abc-drive-compare-rapid-listbox hidden></ul>
+        </div>
+
+        <div class="abc-farecalc-station-parking-days" data-abc-drive-compare-parking-days-field style="display: none;">
+          <label class="abc-farecalc-drive-compare-station-label" for="abc-farecalc-drive-compare-parking-days">How many days a week will you park there?</label>
+          <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-drive-compare-parking-days-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+            <div class="abc-farecalc-stepper-value-wrap">
+              <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-drive-compare-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park there?" />
+            </div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+          </div>
+        </div>
+
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-compare-bluebikes-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a></span>
+          </label>
+        </div>
+
+        <div class="abc-farecalc-toggle-field abc-farecalc-toggle-field-compact">
+          <label class="abc-farecalc-toggle-label">
+            <input type="checkbox" data-abc-drive-reduced-fare-toggle />
+            <span class="abc-farecalc-toggle-box"></span>
+            <span>I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></span>
+          </label>
+        </div>
+
+        <div class="abc-farecalc-line">
+          <span data-abc-drive-compare-total-label>Total monthly cost</span>
+          <span data-abc-drive-compare-total>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-reduced-row style="display: none;">
+          <span>Reduced Fare discount</span>
+          <span data-abc-drive-compare-reduced-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-drive-compare-promo-row style="display: none;">
+          <span data-abc-drive-compare-promo-label>Commuter Rail promo</span>
+          <span data-abc-drive-compare-promo-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
+          <span>BU subsidy (50%)</span>
+          <span data-abc-drive-compare-subsidy-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-compare-pretax-row style="display: none;">
+          <span>Est. pre-tax savings (30%)</span>
+          <span data-abc-drive-compare-pretax-amt>-$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-parking-row style="display: none;">
+          <span data-abc-drive-compare-parking-label>MBTA station parking</span>
+          <span data-abc-drive-compare-parking-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-compare-parking-subsidy-row style="display: none;">
+          <span>BU subsidy on parking (50%)</span>
+          <span data-abc-drive-compare-parking-subsidy-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line" data-abc-drive-compare-bluebikes-row style="display: none;">
+          <span>Bluebikes membership ($75.50/yr)</span>
+          <span data-abc-drive-compare-bluebikes-amt>$0.00</span>
+        </div>
+        <div class="abc-farecalc-line abc-farecalc-line-final">
+          <span>Your estimated monthly cost</span>
+          <span data-abc-drive-compare-final>$0.00</span>
+        </div>
+        <p class="abc-farecalc-savings-line" data-abc-savings-line style="display: none;">
+          You save <span data-abc-savings-amt>$0</span> a year versus driving.
+        </p>
+      </div>
     </div>
 
 
