@@ -322,7 +322,12 @@
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
-  padding-top: 24px;
+  /* The bus (24px tall, sits at top:0) was exactly filling this
+     reserved area with nothing left over, so its bottom edge touched
+     the chip row below it with zero gap (2026-11 fix, "bus icon too
+     tight to the bubble below it") — padding-top now reserves a
+     little more than the bus itself needs. */
+  padding-top: 32px;
   scrollbar-width: none;
 }
 
@@ -467,18 +472,6 @@
   min-height: 180px;
 }
 
-/* A page with nothing but the frequency stepper (and, later, Driving's
-   campus/zone picker) is the shortest content on any step — center it
-   vertically in the space above instead of letting it sit flush at the
-   top with a tall gap of nothing below (2026-11, "oddly placed"
-   follow-up). Scoped to just the trips field specifically, not every
-   field-group, since multi-question pages already fill most of their
-   own height and don't have this problem. */
-[data-abc-trips-field] .abc-input-row {
-  min-height: 140px;
-  display: flex;
-  align-items: center;
-}
 
 /* The hint text below the stepper used to be a normal-flow sibling,
    so its box height participated in the row's centering above — the
@@ -700,18 +693,6 @@ label.abc-question {
   flex: none;
 }
 
-/* Print carries a label alongside its icon, so it reads as a pill
-   instead of the plain circle Reset uses — same component, just wider
-   and less anonymous, since "Print" benefits from being spelled out. */
-.abc-farecalc-print-btn {
-  width: auto;
-  height: 44px;
-  padding: 0 var(--abc-space-md);
-  border-radius: var(--abc-radius-pill);
-  font-size: var(--abc-font-size-sm);
-  font-weight: 700;
-}
-
 /* ---- Wizard navigation: Back on the left, Continue on the right,
    sitting right below whichever single step is currently showing.
    Hidden/shown per step by renderWizardStep() in calculator.js — see
@@ -761,10 +742,22 @@ label.abc-question {
   filter: none;
 }
 
-.abc-farecalc-results-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: var(--abc-space-sm);
+/* Print reuses Back's neutral color/border (2026-11 — matches "same
+   font size, color, bubble size as the back button"), just adds the
+   icon+text flex layout and right-aligns the same way Continue does
+   (the two never show at the same time, so sharing that position is
+   safe). */
+.abc-farecalc-nav-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.abc-farecalc-nav-print svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
 
 /* ---- Print: a plain-text recap of every answer (populated by
@@ -781,7 +774,6 @@ label.abc-question {
 @media print {
   .abc-farecalc-title-actions,
   .abc-farecalc-wizard-nav,
-  .abc-farecalc-results-actions,
   .abc-farecalc-breadcrumb-row,
   .abc-details {
     display: none !important;

@@ -740,7 +740,6 @@ function buInitCalculator(rootEl) {
   const backBtn = rootEl.querySelector("[data-abc-back-btn]");
   const continueBtn = rootEl.querySelector("[data-abc-continue-btn]");
   const printBtn = rootEl.querySelector("[data-abc-print-btn]");
-  const resultsActions = rootEl.querySelector("[data-abc-results-actions]");
   const assumptionsDetails = rootEl.querySelector("[data-abc-assumptions-details]");
   const printSummaryList = rootEl.querySelector("[data-abc-print-summary-list]");
   const cardsEl = rootEl.querySelector(".abc-farecalc-cards");
@@ -1288,7 +1287,13 @@ function buInitCalculator(rootEl) {
     if (!medicalDailyField) return;
     const location = BU_PARKING_CONFIG.medical.locations.find((l) => l.id === medicalLocationId);
     const hasDailyOption = !!(location && location.daily);
-    setStepVisible(medicalDailyField, hasDailyOption, "block");
+    // Gated on an explicit click, not just the default value (2026-11
+    // fix) — Crosstown is the pre-selected garage, so without this the
+    // daily-vs-monthly question appeared immediately on page load, even
+    // though it's irrelevant to a 610 Albany parker who never actually
+    // chose Crosstown.
+    const touched = gridTouchedFor("[data-abc-medical-location-select]");
+    setStepVisible(medicalDailyField, hasDailyOption && touched, "block");
     if (!hasDailyOption) {
       medicalDaily = false;
       medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalDailySelect === "monthly"));
@@ -1393,11 +1398,14 @@ function buInitCalculator(rootEl) {
         return { label: "Mode", value: touched ? { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] : "—" };
       }
       case "parkride": {
+        // Kept deliberately bare (2026-11, same "keep simple" ask as
+        // the other chips) — just Yes/No, no station name, even though
+        // one exists here (unlike the Mode chip's rail case, where a
+        // resolved station IS the whole answer, there's nothing simpler
+        // to fall back to).
         if (mode === "subway") {
           if (!gridTouchedFor("[data-abc-rapid-station-parking-select]")) return { label: "Park & Ride", value: "—" };
-          if (!rapidStationParking) return { label: "Park & Ride", value: "No" };
-          const station = currentRapidStationLabel();
-          return { label: "Park & Ride", value: station ? `Yes, ${station}` : "Yes" };
+          return { label: "Park & Ride", value: rapidStationParking ? "Yes" : "No" };
         }
         if (mode === "rail") {
           if (!gridTouchedFor("[data-abc-station-parking-select]")) return { label: "Park & Ride", value: "—" };
@@ -1703,7 +1711,10 @@ function buInitCalculator(rootEl) {
       ));
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
-    if (resultsActions) resultsActions.style.display = stepId === "results" ? "flex" : "none";
+    // Print takes Continue's spot in the SAME row (2026-11 — the two
+    // never show together: Continue hides on Results, Print only shows
+    // there), rather than a separately-positioned/styled element.
+    if (printBtn) printBtn.style.display = stepId === "results" ? "inline-flex" : "none";
     // "Where we got these numbers" explains the figures in the cards,
     // so it only makes sense once they're actually showing (2026-11 —
     // was previously visible the whole time, even on Step 1).
