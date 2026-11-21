@@ -713,6 +713,9 @@ function buInitCalculator(rootEl) {
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
+  const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
+  const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
+  const breadcrumbEstimateAmt = rootEl.querySelector("[data-abc-breadcrumb-estimate]");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -1201,6 +1204,122 @@ function buInitCalculator(rootEl) {
     renderWizardStep();
   }
 
+  /** Short label/value for one breadcrumb chip. Always reflects the
+   * CURRENT live state (not gated on the step's own confirmed-flag) —
+   * a button-grid step's default is already shown as the active pill
+   * the moment you land on it, so showing its value here too isn't
+   * introducing a new "invisible default" problem, just mirroring what
+   * the page already shows. renderBreadcrumb() is what decides whether
+   * a given chip is allowed to show this value yet (see its "upcoming"
+   * state), not this function. */
+  function breadcrumbStepInfo(stepId) {
+    switch (stepId) {
+      case "topmode":
+        return { label: "Get to campus", value: topMode === "driving" ? "I drive" : "I take transit" };
+      case "driving": {
+        if (campus === "charles-river") {
+          const zone = currentCrcZone();
+          return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
+        }
+        const location = currentMedicalLocation();
+        return { label: "Parking", value: location ? location.label : "—" };
+      }
+      case "freq":
+        return { label: topMode === "driving" ? "Days/week" : "Round-trips/week", value: String(tripsPerWeek) };
+      case "mode":
+        return { label: "Mode", value: { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] };
+      case "subquestion": {
+        if (mode === "subway") {
+          const tier = buGetPassOption(passTier);
+          return { label: "Pass tier", value: (tier ? tier.label : "—") + (rapidStationParking ? " · Park: Yes" : "") };
+        }
+        if (mode === "rail") {
+          const label = currentStationLabel();
+          const station = buGetStation(label);
+          return { label: "Station", value: (station ? label : "—") + (station && stationParking ? " · Park: Yes" : "") };
+        }
+        const route = buGetPassOption(ferryRouteId);
+        return { label: "Ferry route", value: route ? route.label : "—" };
+      }
+      case "reduced":
+        return { label: "Reduced / Bike", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
+      default:
+        return null;
+    }
+  }
+
+  /** Rebuilds the breadcrumb strip: one chip per step on the CURRENT
+   * path (skipping ones wizardStepApplies() rules out, e.g. "driving"
+   * while Pay-Per-Ride), the bus icon's position along the track, and
+   * the running cost estimate. Called from both renderWizardStep()
+   * (step changed) and render() (an answer changed) — cheap, and
+   * idempotent either way. */
+  function renderBreadcrumb() {
+    if (!breadcrumbChips || !breadcrumbBus || !breadcrumbEstimateAmt) return;
+    const applicableIds = WIZARD_STEPS.filter((id) => id !== "results" && wizardStepApplies(id));
+    const currentId = WIZARD_STEPS[currentStepIndex];
+    const currentPos = applicableIds.indexOf(currentId);
+
+    breadcrumbChips.innerHTML = "";
+    applicableIds.forEach((id, pos) => {
+      const info = breadcrumbStepInfo(id);
+      if (!info) return;
+      const state = currentId === "results" ? "done" : pos < currentPos ? "done" : pos === currentPos ? "current" : "upcoming";
+      const chip = document.createElement(state === "upcoming" ? "div" : "button");
+      if (state !== "upcoming") chip.type = "button";
+      chip.className = "abc-farecalc-breadcrumb-chip";
+      chip.dataset.state = state;
+      const labelEl = document.createElement("span");
+      labelEl.className = "abc-farecalc-breadcrumb-chip-label";
+      labelEl.textContent = info.label;
+      const valueEl = document.createElement("span");
+      valueEl.className = "abc-farecalc-breadcrumb-chip-value";
+      valueEl.textContent = state === "upcoming" ? "—" : info.value;
+      chip.appendChild(labelEl);
+      chip.appendChild(valueEl);
+      if (state === "done") {
+        chip.addEventListener("click", () => {
+          currentStepIndex = WIZARD_STEPS.indexOf(id);
+          renderWizardStep();
+          render();
+        });
+      }
+      breadcrumbChips.appendChild(chip);
+    });
+
+    // Bus rides from the first chip (0%) to the last chip (100%),
+    // reaching the far end only once Results is actually showing.
+    const lastPos = applicableIds.length - 1;
+    const progressPct = currentId === "results" ? 100 : lastPos > 0 ? (currentPos / lastPos) * 100 : 0;
+    // Matches .abc-farecalc-breadcrumb-line's own 12px left/right inset
+    // (not bare 0%/100%) so the bus's circle never clips past the
+    // track's rounded edge at either end.
+    breadcrumbBus.style.left = `calc(12px + (100% - 24px) * ${progressPct / 100})`;
+
+    // ---- Running estimate: $0 until the mode question is actually
+    // answered (modeConfirmed), per the explicit "start at 0" ask —
+    // mirrors passFinalCost's own calc in renderResults(); if that
+    // calc changes, this one needs the same change alongside it. ----
+    let estimate = 0;
+    if (modeConfirmed) {
+      const oneWayTripsPerWeek = tripsPerWeek * 2;
+      const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
+      const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
+      const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare, includeSubwayLeg);
+      let parkingSubsidy = null;
+      if (mode === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
+        parkingSubsidy = buCalcStationParkingSubsidy(currentStation.parkingRate, stationParkingDays);
+      } else if (mode === "subway" && rapidStationParking) {
+        const rapidStation = buGetRapidStation(currentRapidStationLabel());
+        if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
+      }
+      const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
+      const passParkingAddon = parkingSubsidy ? parkingSubsidy.netCost : 0;
+      estimate = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
+    }
+    breadcrumbEstimateAmt.textContent = abcFormatCurrencyWhole(estimate);
+  }
+
   function goBackStep() {
     currentStepIndex = nextApplicableIndex(currentStepIndex, -1);
     renderWizardStep();
@@ -1351,6 +1470,7 @@ function buInitCalculator(rootEl) {
     // was previously visible the whole time, even on Step 1).
     if (assumptionsDetails) assumptionsDetails.style.display = stepId === "results" ? "block" : "none";
     if (stepId === "results") renderPrintSummary();
+    renderBreadcrumb();
   }
 
   /** Puts every answer back to its initial default and returns to Step
@@ -1511,6 +1631,7 @@ function buInitCalculator(rootEl) {
     updatePromoUI();
     updateBusPilotUI();
     renderResults();
+    renderBreadcrumb();
     scheduleAnalyticsFlush();
   }
 

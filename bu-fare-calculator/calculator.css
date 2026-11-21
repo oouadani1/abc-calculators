@@ -232,6 +232,171 @@
   margin-bottom: var(--abc-space-md);
 }
 
+/* ---- Breadcrumb strip (2026-11): one chip per step already in your
+   path, a running cost estimate, and a small bus riding along a track
+   to show progress — built in response to Carl Larson's feedback that
+   the one-step-at-a-time wizard lost the ability to see cost impact
+   change dynamically or jump back to an earlier answer. Rebuilt by
+   renderBreadcrumb() in calculator.js on every step/answer change.
+   Colors track --abc-farecalc-accent so it re-themes with Commuter
+   Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
+.abc-farecalc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
+  padding: 10px var(--abc-space-md);
+  background: #fff;
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+}
+
+.abc-farecalc-breadcrumb-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 24px;
+  scrollbar-width: none;
+}
+
+.abc-farecalc-breadcrumb-track::-webkit-scrollbar {
+  display: none;
+}
+
+.abc-farecalc-breadcrumb-line {
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--abc-border);
+  border-radius: 2px;
+}
+
+/* Rides along .abc-farecalc-breadcrumb-line; `left` is set inline by
+   JS as a percentage of the track's own width, eased by the transition
+   below rather than jumping straight to the new step. */
+.abc-farecalc-breadcrumb-bus {
+  position: absolute;
+  top: -2px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--abc-farecalc-accent-text);
+  background: var(--abc-farecalc-accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  transition: left 0.45s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.abc-farecalc-breadcrumb-bus svg {
+  width: 15px;
+  height: 15px;
+}
+
+.abc-farecalc-breadcrumb-chips {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.abc-farecalc-breadcrumb-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: var(--abc-radius-pill);
+  border: 1.5px solid var(--abc-border);
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  flex: none;
+}
+
+.abc-farecalc-breadcrumb-chip-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-breadcrumb-chip-value {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--bu-ink);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="done"] {
+  border-color: var(--abc-farecalc-accent);
+  background: var(--abc-farecalc-accent-tint);
+  cursor: pointer;
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="done"]:hover {
+  filter: brightness(0.97);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="current"] {
+  border-color: var(--abc-farecalc-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="upcoming"] {
+  opacity: 0.55;
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="upcoming"] .abc-farecalc-breadcrumb-chip-value {
+  color: var(--abc-ink-muted);
+  font-weight: 400;
+}
+
+.abc-farecalc-breadcrumb-estimate {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.abc-farecalc-breadcrumb-estimate-label {
+  font-size: 0.68rem;
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-breadcrumb-estimate-amt {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--bu-ink);
+}
+
+@media (max-width: 560px) {
+  .abc-farecalc-breadcrumb {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--abc-space-sm);
+  }
+  .abc-farecalc-breadcrumb-estimate {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+}
+
+/* ---- Card detail accordion (2026-11): collapses each card's itemized
+   math behind "See how we calculated this" — the headline total,
+   context line, and savings line stay visible by default; nothing is
+   removed, just tucked behind the existing .abc-details pattern
+   (shared/styles/base.css) already used for the footer accordion. ---- */
+.abc-farecalc-card-details {
+  margin: var(--abc-space-sm) 0;
+}
+
 .abc-farecalc-promo-callout {
   margin: var(--abc-space-md) 0;
 }
@@ -530,8 +695,26 @@
   .abc-farecalc-title-actions,
   .abc-farecalc-wizard-nav,
   .abc-farecalc-results-actions,
+  .abc-farecalc-breadcrumb,
   .abc-details {
     display: none !important;
+  }
+  /* The footer's "Where we got these numbers" accordion stays hidden
+     (methodology notes, not useful on paper), but each card's own
+     itemized math (reduced fare discount, parking subsidy, etc.) should
+     still print in full, same as it always has — the click-to-expand
+     behavior above is a screen-only convenience, not a real hide. */
+  .abc-farecalc-card-details {
+    display: block !important;
+  }
+  .abc-farecalc-card-details summary {
+    display: none !important;
+  }
+  .abc-farecalc-card-details .abc-details-body {
+    display: block !important;
+    margin-top: 0;
+    padding-left: 0;
+    border-left: none;
   }
   .abc-farecalc-print-summary {
     display: block !important;

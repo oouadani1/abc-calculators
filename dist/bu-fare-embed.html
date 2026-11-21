@@ -810,6 +810,171 @@
   margin-bottom: var(--abc-space-md);
 }
 
+/* ---- Breadcrumb strip (2026-11): one chip per step already in your
+   path, a running cost estimate, and a small bus riding along a track
+   to show progress — built in response to Carl Larson's feedback that
+   the one-step-at-a-time wizard lost the ability to see cost impact
+   change dynamically or jump back to an earlier answer. Rebuilt by
+   renderBreadcrumb() in calculator.js on every step/answer change.
+   Colors track --abc-farecalc-accent so it re-themes with Commuter
+   Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
+.abc-farecalc-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-md);
+  padding: 10px var(--abc-space-md);
+  background: #fff;
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+}
+
+.abc-farecalc-breadcrumb-track {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-top: 24px;
+  scrollbar-width: none;
+}
+
+.abc-farecalc-breadcrumb-track::-webkit-scrollbar {
+  display: none;
+}
+
+.abc-farecalc-breadcrumb-line {
+  position: absolute;
+  top: 11px;
+  left: 12px;
+  right: 12px;
+  height: 2px;
+  background: var(--abc-border);
+  border-radius: 2px;
+}
+
+/* Rides along .abc-farecalc-breadcrumb-line; `left` is set inline by
+   JS as a percentage of the track's own width, eased by the transition
+   below rather than jumping straight to the new step. */
+.abc-farecalc-breadcrumb-bus {
+  position: absolute;
+  top: -2px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--abc-farecalc-accent-text);
+  background: var(--abc-farecalc-accent);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  transition: left 0.45s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.abc-farecalc-breadcrumb-bus svg {
+  width: 15px;
+  height: 15px;
+}
+
+.abc-farecalc-breadcrumb-chips {
+  display: flex;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.abc-farecalc-breadcrumb-chip {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 12px;
+  border-radius: var(--abc-radius-pill);
+  border: 1.5px solid var(--abc-border);
+  background: #fff;
+  font-family: inherit;
+  text-align: left;
+  flex: none;
+}
+
+.abc-farecalc-breadcrumb-chip-label {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-breadcrumb-chip-value {
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: var(--bu-ink);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="done"] {
+  border-color: var(--abc-farecalc-accent);
+  background: var(--abc-farecalc-accent-tint);
+  cursor: pointer;
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="done"]:hover {
+  filter: brightness(0.97);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="current"] {
+  border-color: var(--abc-farecalc-accent);
+  border-width: 2px;
+  box-shadow: 0 0 0 3px var(--abc-farecalc-accent-tint);
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="upcoming"] {
+  opacity: 0.55;
+}
+
+.abc-farecalc-breadcrumb-chip[data-state="upcoming"] .abc-farecalc-breadcrumb-chip-value {
+  color: var(--abc-ink-muted);
+  font-weight: 400;
+}
+
+.abc-farecalc-breadcrumb-estimate {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.15;
+}
+
+.abc-farecalc-breadcrumb-estimate-label {
+  font-size: 0.68rem;
+  color: var(--abc-ink-muted);
+}
+
+.abc-farecalc-breadcrumb-estimate-amt {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--bu-ink);
+}
+
+@media (max-width: 560px) {
+  .abc-farecalc-breadcrumb {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--abc-space-sm);
+  }
+  .abc-farecalc-breadcrumb-estimate {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 6px;
+  }
+}
+
+/* ---- Card detail accordion (2026-11): collapses each card's itemized
+   math behind "See how we calculated this" — the headline total,
+   context line, and savings line stay visible by default; nothing is
+   removed, just tucked behind the existing .abc-details pattern
+   (shared/styles/base.css) already used for the footer accordion. ---- */
+.abc-farecalc-card-details {
+  margin: var(--abc-space-sm) 0;
+}
+
 .abc-farecalc-promo-callout {
   margin: var(--abc-space-md) 0;
 }
@@ -1108,8 +1273,26 @@
   .abc-farecalc-title-actions,
   .abc-farecalc-wizard-nav,
   .abc-farecalc-results-actions,
+  .abc-farecalc-breadcrumb,
   .abc-details {
     display: none !important;
+  }
+  /* The footer's "Where we got these numbers" accordion stays hidden
+     (methodology notes, not useful on paper), but each card's own
+     itemized math (reduced fare discount, parking subsidy, etc.) should
+     still print in full, same as it always has — the click-to-expand
+     behavior above is a screen-only convenience, not a real hide. */
+  .abc-farecalc-card-details {
+    display: block !important;
+  }
+  .abc-farecalc-card-details summary {
+    display: none !important;
+  }
+  .abc-farecalc-card-details .abc-details-body {
+    display: block !important;
+    margin-top: 0;
+    padding-left: 0;
+    border-left: none;
   }
   .abc-farecalc-print-summary {
     display: block !important;
@@ -2152,6 +2335,32 @@
     </div>
     <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members.</p>
 
+    <!-- Breadcrumb strip (2026-11): one chip per step already in your
+         path, a running cost estimate, and a small bus riding along a
+         track to show progress. Rebuilt by renderBreadcrumb() in
+         calculator.js every time a step or answer changes. Clicking a
+         "done" chip jumps straight back to that step; nothing below it
+         resets. Hidden on print (see @media print). -->
+    <div class="abc-farecalc-breadcrumb" data-abc-breadcrumb>
+      <div class="abc-farecalc-breadcrumb-track" data-abc-breadcrumb-track>
+        <div class="abc-farecalc-breadcrumb-line" aria-hidden="true"></div>
+        <div class="abc-farecalc-breadcrumb-chips" data-abc-breadcrumb-chips></div>
+        <div class="abc-farecalc-breadcrumb-bus" data-abc-breadcrumb-bus aria-hidden="true" style="left: 12px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M5 7.5V5.2a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1V7.5" />
+            <rect x="2.5" y="7.5" width="19" height="10.5" rx="2" />
+            <path d="M2.5 13h19" />
+            <circle cx="7.5" cy="18" r="1.4" />
+            <circle cx="16.5" cy="18" r="1.4" />
+          </svg>
+        </div>
+      </div>
+      <div class="abc-farecalc-breadcrumb-estimate">
+        <span class="abc-farecalc-breadcrumb-estimate-label">Est. so far</span>
+        <span class="abc-farecalc-breadcrumb-estimate-amt" data-abc-breadcrumb-estimate>$0</span>
+      </div>
+    </div>
+
     <div class="abc-farecalc-grid">
       <div class="abc-farecalc-field-group" data-abc-top-mode-field>
         <p class="abc-question">How do you currently get to campus?</p>
@@ -2422,22 +2631,27 @@
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
 
-        <div class="abc-farecalc-line">
-          <span data-abc-ride-total-label>Total monthly cost</span>
-          <span data-abc-ride-total>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-ride-reduced-row style="display: none;">
-          <span>Reduced Fare discount</span>
-          <span data-abc-ride-reduced-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-ride-station-parking-row style="display: none;">
-          <span data-abc-ride-station-parking-label>MBTA station parking</span>
-          <span data-abc-ride-station-parking-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-ride-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($75.50/yr)</span>
-          <span data-abc-ride-bluebikes-amt>$0.00</span>
-        </div>
+        <details class="abc-details abc-farecalc-card-details">
+          <summary>See how we calculated this</summary>
+          <div class="abc-details-body">
+            <div class="abc-farecalc-line">
+              <span data-abc-ride-total-label>Total monthly cost</span>
+              <span data-abc-ride-total>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-ride-reduced-row style="display: none;">
+              <span>Reduced Fare discount</span>
+              <span data-abc-ride-reduced-amt>-$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-ride-station-parking-row style="display: none;">
+              <span data-abc-ride-station-parking-label>MBTA station parking</span>
+              <span data-abc-ride-station-parking-amt>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-ride-bluebikes-row style="display: none;">
+              <span>Bluebikes membership ($75.50/yr)</span>
+              <span data-abc-ride-bluebikes-amt>$0.00</span>
+            </div>
+          </div>
+        </details>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-ride-final>$0.00</span>
@@ -2452,38 +2666,43 @@
         <h3>BU Subsidized MBTA Pass</h3>
         <p class="abc-farecalc-card-subtitle" data-abc-pass-subtitle></p>
 
-        <div class="abc-farecalc-line">
-          <span data-abc-pass-total-label>Total monthly cost</span>
-          <span data-abc-pass-total>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-pass-reduced-row style="display: none;">
-          <span>Reduced Fare discount</span>
-          <span data-abc-pass-reduced-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
-          <span data-abc-pass-promo-label>Commuter Rail promo</span>
-          <span data-abc-pass-promo-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy">
-          <span>BU subsidy (50%)</span>
-          <span data-abc-pass-subsidy-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pretax-line style="display: none;">
-          <span>Est. pre-tax savings (30%)</span>
-          <span data-abc-pretax-amt>-$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-pass-station-parking-row style="display: none;">
-          <span data-abc-pass-station-parking-label>MBTA station parking</span>
-          <span data-abc-pass-station-parking-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pass-station-parking-subsidy-row style="display: none;">
-          <span>BU subsidy on parking (50%)</span>
-          <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line" data-abc-pass-bluebikes-row style="display: none;">
-          <span>Bluebikes membership ($75.50/yr)</span>
-          <span data-abc-pass-bluebikes-amt>$0.00</span>
-        </div>
+        <details class="abc-details abc-farecalc-card-details">
+          <summary>See how we calculated this</summary>
+          <div class="abc-details-body">
+            <div class="abc-farecalc-line">
+              <span data-abc-pass-total-label>Total monthly cost</span>
+              <span data-abc-pass-total>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-pass-reduced-row style="display: none;">
+              <span>Reduced Fare discount</span>
+              <span data-abc-pass-reduced-amt>-$0.00</span>
+            </div>
+            <div class="abc-farecalc-line abc-farecalc-line-promo" data-abc-pass-promo-row style="display: none;">
+              <span data-abc-pass-promo-label>Commuter Rail promo</span>
+              <span data-abc-pass-promo-amt>-$0.00</span>
+            </div>
+            <div class="abc-farecalc-line abc-farecalc-line-subsidy">
+              <span>BU subsidy (50%)</span>
+              <span data-abc-pass-subsidy-amt>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pretax-line style="display: none;">
+              <span>Est. pre-tax savings (30%)</span>
+              <span data-abc-pretax-amt>-$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-pass-station-parking-row style="display: none;">
+              <span data-abc-pass-station-parking-label>MBTA station parking</span>
+              <span data-abc-pass-station-parking-amt>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-pass-station-parking-subsidy-row style="display: none;">
+              <span>BU subsidy on parking (50%)</span>
+              <span data-abc-pass-station-parking-subsidy-amt>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line" data-abc-pass-bluebikes-row style="display: none;">
+              <span>Bluebikes membership ($75.50/yr)</span>
+              <span data-abc-pass-bluebikes-amt>$0.00</span>
+            </div>
+          </div>
+        </details>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-pass-final>$0.00</span>
@@ -2497,14 +2716,19 @@
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3 data-abc-drive-label>Driving to Campus</h3>
         <ul class="abc-farecalc-line-notes" data-abc-drive-context-note></ul>
-        <div class="abc-farecalc-line">
-          <span data-abc-drive-rate-label>Daily rate</span>
-          <span data-abc-drive-rate-amt>$0.00</span>
-        </div>
-        <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-pretax-row style="display: none;">
-          <span>Est. pre-tax savings (30%)</span>
-          <span data-abc-drive-pretax-amt>-$0.00</span>
-        </div>
+        <details class="abc-details abc-farecalc-card-details">
+          <summary>See how we calculated this</summary>
+          <div class="abc-details-body">
+            <div class="abc-farecalc-line">
+              <span data-abc-drive-rate-label>Daily rate</span>
+              <span data-abc-drive-rate-amt>$0.00</span>
+            </div>
+            <div class="abc-farecalc-line abc-farecalc-line-subsidy" data-abc-drive-pretax-row style="display: none;">
+              <span>Est. pre-tax savings (30%)</span>
+              <span data-abc-drive-pretax-amt>-$0.00</span>
+            </div>
+          </div>
+        </details>
         <div class="abc-farecalc-line abc-farecalc-line-final">
           <span>Your estimated monthly cost</span>
           <span data-abc-drive-total>$0.00</span>
@@ -3312,6 +3536,9 @@ function buInitCalculator(rootEl) {
   const driveFields = rootEl.querySelector("[data-abc-drive-fields]");
   const tripsField = rootEl.querySelector("[data-abc-trips-field]");
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
+  const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
+  const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
+  const breadcrumbEstimateAmt = rootEl.querySelector("[data-abc-breadcrumb-estimate]");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -3800,6 +4027,122 @@ function buInitCalculator(rootEl) {
     renderWizardStep();
   }
 
+  /** Short label/value for one breadcrumb chip. Always reflects the
+   * CURRENT live state (not gated on the step's own confirmed-flag) —
+   * a button-grid step's default is already shown as the active pill
+   * the moment you land on it, so showing its value here too isn't
+   * introducing a new "invisible default" problem, just mirroring what
+   * the page already shows. renderBreadcrumb() is what decides whether
+   * a given chip is allowed to show this value yet (see its "upcoming"
+   * state), not this function. */
+  function breadcrumbStepInfo(stepId) {
+    switch (stepId) {
+      case "topmode":
+        return { label: "Get to campus", value: topMode === "driving" ? "I drive" : "I take transit" };
+      case "driving": {
+        if (campus === "charles-river") {
+          const zone = currentCrcZone();
+          return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
+        }
+        const location = currentMedicalLocation();
+        return { label: "Parking", value: location ? location.label : "—" };
+      }
+      case "freq":
+        return { label: topMode === "driving" ? "Days/week" : "Round-trips/week", value: String(tripsPerWeek) };
+      case "mode":
+        return { label: "Mode", value: { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] };
+      case "subquestion": {
+        if (mode === "subway") {
+          const tier = buGetPassOption(passTier);
+          return { label: "Pass tier", value: (tier ? tier.label : "—") + (rapidStationParking ? " · Park: Yes" : "") };
+        }
+        if (mode === "rail") {
+          const label = currentStationLabel();
+          const station = buGetStation(label);
+          return { label: "Station", value: (station ? label : "—") + (station && stationParking ? " · Park: Yes" : "") };
+        }
+        const route = buGetPassOption(ferryRouteId);
+        return { label: "Ferry route", value: route ? route.label : "—" };
+      }
+      case "reduced":
+        return { label: "Reduced / Bike", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
+      default:
+        return null;
+    }
+  }
+
+  /** Rebuilds the breadcrumb strip: one chip per step on the CURRENT
+   * path (skipping ones wizardStepApplies() rules out, e.g. "driving"
+   * while Pay-Per-Ride), the bus icon's position along the track, and
+   * the running cost estimate. Called from both renderWizardStep()
+   * (step changed) and render() (an answer changed) — cheap, and
+   * idempotent either way. */
+  function renderBreadcrumb() {
+    if (!breadcrumbChips || !breadcrumbBus || !breadcrumbEstimateAmt) return;
+    const applicableIds = WIZARD_STEPS.filter((id) => id !== "results" && wizardStepApplies(id));
+    const currentId = WIZARD_STEPS[currentStepIndex];
+    const currentPos = applicableIds.indexOf(currentId);
+
+    breadcrumbChips.innerHTML = "";
+    applicableIds.forEach((id, pos) => {
+      const info = breadcrumbStepInfo(id);
+      if (!info) return;
+      const state = currentId === "results" ? "done" : pos < currentPos ? "done" : pos === currentPos ? "current" : "upcoming";
+      const chip = document.createElement(state === "upcoming" ? "div" : "button");
+      if (state !== "upcoming") chip.type = "button";
+      chip.className = "abc-farecalc-breadcrumb-chip";
+      chip.dataset.state = state;
+      const labelEl = document.createElement("span");
+      labelEl.className = "abc-farecalc-breadcrumb-chip-label";
+      labelEl.textContent = info.label;
+      const valueEl = document.createElement("span");
+      valueEl.className = "abc-farecalc-breadcrumb-chip-value";
+      valueEl.textContent = state === "upcoming" ? "—" : info.value;
+      chip.appendChild(labelEl);
+      chip.appendChild(valueEl);
+      if (state === "done") {
+        chip.addEventListener("click", () => {
+          currentStepIndex = WIZARD_STEPS.indexOf(id);
+          renderWizardStep();
+          render();
+        });
+      }
+      breadcrumbChips.appendChild(chip);
+    });
+
+    // Bus rides from the first chip (0%) to the last chip (100%),
+    // reaching the far end only once Results is actually showing.
+    const lastPos = applicableIds.length - 1;
+    const progressPct = currentId === "results" ? 100 : lastPos > 0 ? (currentPos / lastPos) * 100 : 0;
+    // Matches .abc-farecalc-breadcrumb-line's own 12px left/right inset
+    // (not bare 0%/100%) so the bus's circle never clips past the
+    // track's rounded edge at either end.
+    breadcrumbBus.style.left = `calc(12px + (100% - 24px) * ${progressPct / 100})`;
+
+    // ---- Running estimate: $0 until the mode question is actually
+    // answered (modeConfirmed), per the explicit "start at 0" ask —
+    // mirrors passFinalCost's own calc in renderResults(); if that
+    // calc changes, this one needs the same change alongside it. ----
+    let estimate = 0;
+    if (modeConfirmed) {
+      const oneWayTripsPerWeek = tripsPerWeek * 2;
+      const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
+      const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
+      const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare, includeSubwayLeg);
+      let parkingSubsidy = null;
+      if (mode === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
+        parkingSubsidy = buCalcStationParkingSubsidy(currentStation.parkingRate, stationParkingDays);
+      } else if (mode === "subway" && rapidStationParking) {
+        const rapidStation = buGetRapidStation(currentRapidStationLabel());
+        if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
+      }
+      const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
+      const passParkingAddon = parkingSubsidy ? parkingSubsidy.netCost : 0;
+      estimate = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
+    }
+    breadcrumbEstimateAmt.textContent = abcFormatCurrencyWhole(estimate);
+  }
+
   function goBackStep() {
     currentStepIndex = nextApplicableIndex(currentStepIndex, -1);
     renderWizardStep();
@@ -3950,6 +4293,7 @@ function buInitCalculator(rootEl) {
     // was previously visible the whole time, even on Step 1).
     if (assumptionsDetails) assumptionsDetails.style.display = stepId === "results" ? "block" : "none";
     if (stepId === "results") renderPrintSummary();
+    renderBreadcrumb();
   }
 
   /** Puts every answer back to its initial default and returns to Step
@@ -4110,6 +4454,7 @@ function buInitCalculator(rootEl) {
     updatePromoUI();
     updateBusPilotUI();
     renderResults();
+    renderBreadcrumb();
     scheduleAnalyticsFlush();
   }
 
