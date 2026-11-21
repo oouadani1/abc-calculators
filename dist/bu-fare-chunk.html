@@ -940,6 +940,23 @@
   white-space: nowrap;
 }
 
+/* Which side is currently cheaper (2026-11) — toggled by renderBreadcrumb()
+   in calculator.js, only once both sides are real numbers and they
+   actually differ (see the comment there for why). Winner reuses
+   --mbta-green, the exact color "Recommended for you"/the savings line
+   already use on the cards below, so the small bubble and the full
+   cards agree on what green means here rather than introducing a
+   second, unrelated "winner" color. The loser dims via opacity (not a
+   flat gray hex) so it stays legible against the bubble's own bright
+   mint background at any theme. */
+.abc-farecalc-estimate-amt.abc-farecalc-estimate-winner {
+  color: var(--mbta-green);
+}
+
+.abc-farecalc-estimate-amt.abc-farecalc-estimate-dim {
+  opacity: 0.45;
+}
+
 .abc-farecalc-estimate-divider {
   font-size: 1.1rem;
   font-weight: 300;
@@ -4544,20 +4561,24 @@ function buInitCalculator(rootEl) {
         return { label: "Get to campus", value: touched ? (topMode === "driving" ? "Drive" : "Transit") : "—" };
       }
       case "driving": {
-        // Gated on EITHER the campus grid or the zone/garage grid being
-        // touched, not campus alone (2026-11 bug fix) — Charles River is
-        // the default campus, so someone who clicks straight into "Zone
-        // 2" without ever clicking "Charles River Campus" itself (it's
-        // already active, no reason to click it) had the campus-only
-        // gate permanently stuck at "—" even after picking a real zone.
+        // Gated on the zone/garage grid alone, NOT campus (2026-11 fix —
+        // this briefly also accepted the campus grid being touched
+        // instead, so clicking "Charles River Campus" (already the
+        // default, nothing new chosen) was enough to show a real zone's
+        // price before any zone was actually picked; same bug for
+        // Medical Campus + 610 Albany, which has no daily/monthly
+        // sub-question to catch it either). The campus pick only tells
+        // you WHICH zone/garage grid is showing, never a price by
+        // itself — only the zone/garage grid touched actually resolves
+        // one. Clicking a zone/garage directly, skipping the already-
+        // correct-default campus button, still works fine (that's the
+        // ONLY grid this checks now).
         if (campus === "charles-river") {
-          const touched = gridTouchedFor("[data-abc-crc-zone-select]") || gridTouchedFor("[data-abc-campus-select]");
-          if (!touched) return { label: "Parking", value: "—" };
+          if (!gridTouchedFor("[data-abc-crc-zone-select]")) return { label: "Parking", value: "—" };
           const zone = currentCrcZone();
           return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
         }
-        const touched = gridTouchedFor("[data-abc-medical-location-select]") || gridTouchedFor("[data-abc-campus-select]");
-        if (!touched) return { label: "Parking", value: "—" };
+        if (!gridTouchedFor("[data-abc-medical-location-select]")) return { label: "Parking", value: "—" };
         const location = currentMedicalLocation();
         // "Street" -> "St." for this compact chip only (2026-11 ask) —
         // the full question/garage picker elsewhere keeps the real name.
@@ -4684,26 +4705,36 @@ function buInitCalculator(rootEl) {
     // against). $0 / a placeholder sublabel until the relevant side's own
     // page is actually answered, same gating as the old single number. ----
     const zero = abcFormatCurrencyWhole(0);
+    let ready1 = false;
+    let ready2 = false;
     if (topMode === "driving") {
       estimateLabel1.textContent = "Driving";
-      if (drivingEstimateReady()) {
+      ready1 = drivingEstimateReady();
+      if (ready1) {
         const driveTotalEl = rootEl.querySelector("[data-abc-drive-total]");
         estimateAmt1.textContent = driveTotalEl ? driveTotalEl.textContent : zero;
       } else {
         estimateAmt1.textContent = zero;
       }
-      if (modeConfirmed) {
+      ready2 = modeConfirmed;
+      if (ready2) {
         const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
         estimateLabel2.textContent = modeLabel;
         const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
         estimateAmt2.textContent = passFinalEl ? passFinalEl.textContent : zero;
       } else {
-        estimateLabel2.textContent = "Comparison";
+        // "Transit" until a specific mode is picked (2026-11 — "Comparison"
+        // read as unclear jargon); once modeConfirmed, the branch above
+        // swaps this to the real mode name (Subway & Bus/Commuter Rail/
+        // Ferry), which is the label the user actually prefers once it's
+        // known.
+        estimateLabel2.textContent = "Transit";
         estimateAmt2.textContent = zero;
       }
     } else {
       estimateLabel1.textContent = "BU Pass";
       estimateLabel2.textContent = "Pay-per-ride";
+      ready1 = ready2 = modeConfirmed;
       if (modeConfirmed) {
         const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
         const rideFinalEl = rootEl.querySelector("[data-abc-ride-final]");
@@ -4712,6 +4743,32 @@ function buInitCalculator(rootEl) {
       } else {
         estimateAmt1.textContent = zero;
         estimateAmt2.textContent = zero;
+      }
+    }
+
+    // Highlight whichever side is currently cheaper (2026-11 — "similar in
+    // principle to the rec cards' boolean winner treatment, optimized for
+    // the dual-cost view"): the lower amount turns the same green used for
+    // "Recommended for you"/the savings line on the cards below, the other
+    // fades to a dim gray — reusing an existing color meaning in this tool
+    // rather than inventing a new one. Only applied once BOTH sides are
+    // actually ready (not a placeholder $0 — a not-yet-computed side would
+    // otherwise always look "cheaper" than a real number next to it, which
+    // is misleading, not a real comparison) and never on an exact tie
+    // (nobody wins a tie, so neither side should claim to). Parses the
+    // already-rounded DISPLAY text back into a number purely to compare
+    // the two — not a recompute, so no drift risk with the DOM-read values
+    // set above.
+    estimateAmt1.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-dim");
+    estimateAmt2.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-dim");
+    if (ready1 && ready2) {
+      const v1 = parseFloat(estimateAmt1.textContent.replace(/[^0-9.-]/g, ""));
+      const v2 = parseFloat(estimateAmt2.textContent.replace(/[^0-9.-]/g, ""));
+      if (!Number.isNaN(v1) && !Number.isNaN(v2) && v1 !== v2) {
+        const winnerEl = v1 < v2 ? estimateAmt1 : estimateAmt2;
+        const loserEl = v1 < v2 ? estimateAmt2 : estimateAmt1;
+        winnerEl.classList.add("abc-farecalc-estimate-winner");
+        loserEl.classList.add("abc-farecalc-estimate-dim");
       }
     }
   }
@@ -4728,17 +4785,25 @@ function buInitCalculator(rootEl) {
    * (a resolved selection, feeding buCalcParking()), factored out so
    * renderBreadcrumb() can decide whether to show that DOM value or $0. */
   function drivingEstimateReady() {
-    // Same "either grid counts" fix as breadcrumbStepInfo()'s "driving"
-    // case above (2026-11 bug fix) — this used to require the CAMPUS
-    // grid touched first, so clicking straight into "Zone 2" without
-    // ever clicking "Charles River Campus" (already the default) left
-    // the estimate permanently stuck at $0 even with a real zone picked.
+    // Gated on the zone/garage grid alone, NOT campus — same fix as
+    // breadcrumbStepInfo()'s "driving" case above (2026-11): clicking
+    // "Charles River Campus" or "Medical Campus" themselves resolves
+    // nothing price-wise, since both campuses have more than one
+    // possible zone/garage and neither pick, by itself, says which one.
+    // A prior version also accepted the campus grid as a stand-in for
+    // "touched," which let the estimate jump to a real dollar figure
+    // (using whichever zone/garage happened to be the default) the
+    // instant campus was clicked, before a zone/garage was ever chosen —
+    // reported live as "$127 appears just from picking Charles River,
+    // with no zone selected" and the same for Medical + 610 Albany
+    // (which has no daily/monthly sub-question to catch it either, the
+    // way Crosstown's does below). Clicking a zone/garage directly,
+    // skipping the already-correct-default campus button, still works
+    // fine — that's the only grid this checks now.
     if (campus === "charles-river") {
-      const touched = gridTouchedFor("[data-abc-crc-zone-select]") || gridTouchedFor("[data-abc-campus-select]");
-      return touched && !!currentCrcZone();
+      return gridTouchedFor("[data-abc-crc-zone-select]") && !!currentCrcZone();
     }
-    const touched = gridTouchedFor("[data-abc-medical-location-select]") || gridTouchedFor("[data-abc-campus-select]");
-    if (!touched) return false;
+    if (!gridTouchedFor("[data-abc-medical-location-select]")) return false;
     const location = currentMedicalLocation();
     if (!location) return false;
     if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return false;

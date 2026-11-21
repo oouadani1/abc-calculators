@@ -371,6 +371,23 @@
   white-space: nowrap;
 }
 
+/* Which side is currently cheaper (2026-11) — toggled by renderBreadcrumb()
+   in calculator.js, only once both sides are real numbers and they
+   actually differ (see the comment there for why). Winner reuses
+   --mbta-green, the exact color "Recommended for you"/the savings line
+   already use on the cards below, so the small bubble and the full
+   cards agree on what green means here rather than introducing a
+   second, unrelated "winner" color. The loser dims via opacity (not a
+   flat gray hex) so it stays legible against the bubble's own bright
+   mint background at any theme. */
+.abc-farecalc-estimate-amt.abc-farecalc-estimate-winner {
+  color: var(--mbta-green);
+}
+
+.abc-farecalc-estimate-amt.abc-farecalc-estimate-dim {
+  opacity: 0.45;
+}
+
 .abc-farecalc-estimate-divider {
   font-size: 1.1rem;
   font-weight: 300;
