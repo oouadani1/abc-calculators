@@ -666,11 +666,11 @@
   --bu-mint-bright: #70FFC8; /* BU's actual sampled accent color */
   --bu-mint-tint: #E3FBF2;
   --bu-ink: #212121; /* sampled from the same stylesheet */
-  /* Neutral base for the dual-cost bubble once a real winner exists
-     (2026-11) — the green sliding highlight is what marks "cheaper" at
-     that point, so the bubble's own base fill needs to read as plain/
-     neutral, not compete with it. Distinct enough from the page's own
-     #EEF1F4 background to still read as a filled pill shape. */
+  /* The dual-cost bubble's constant track color (2026-11, iOS-toggle-
+     inspired redesign) — always this gray from first render onward,
+     never switching identity; the sliding mint-green knob is what marks
+     "cheaper." Distinct enough from the page's own #EEF1F4 background
+     to still read as a filled pill shape. */
   --abc-farecalc-estimate-loser-bg: #C9CFD6;
 }
 
@@ -904,97 +904,90 @@
   border-radius: var(--abc-radius-pill);
 }
 
-/* Split out from the breadcrumb strip itself (2026-11 follow-up) so a
-   cost change stands out on its own, not blended into the same white
-   pill as the chips — same mint-green-fill-with-dark-ink treatment the
-   winner card's "Recommended for you" badge already uses elsewhere in
-   this tool. align-items: stretch on the row above (the flex default)
-   already matches this bubble's height to the breadcrumb's, no extra
-   sizing math needed. */
-/* Two sides (each its own label + amount) separated by a divider, not
-   a single number — shows the live tradeoff the whole way through, not
-   just the one card the user happens to be building (2026-11 follow-
-   up to the single-number version). Still sized to its own content
-   (flex: none) and matched in height to the breadcrumb strip beside it
-   via the row's own align-items: stretch default — unchanged from the
-   single-number version. */
+/* iOS-toggle-inspired redesign (2026-11 follow-up — "I want the mint
+   green bubble to be the equivalent to the white toggle part... and the
+   background to be the current duller gray," not an actual interactive
+   toggle, just that visual language). The TRACK (this element) is now
+   ALWAYS the same gray, from first render onward — no more switching
+   from mint to gray the instant both sides become comparable, which
+   read as a jarring "the whole pill just changed identity" moment.
+   Only the green KNOB (.abc-farecalc-estimate-highlight below) fades/
+   slides in once there's a real winner; the track itself never moves.
+   Padding lives on .abc-farecalc-estimate-side now, not here — zero
+   padding + overflow:hidden lets the highlight go fully edge-to-edge
+   against this pill's own rounded cap on whichever end it's on, instead
+   of floating as a smaller capsule inside with visible gray margin
+   around it (the "circle within the pill" the user asked to simplify
+   away). No flex `gap` either, and no "|" divider element anymore — the
+   two sides sit directly adjacent; the color split itself (once a
+   winner exists) is what visually divides them. */
 .abc-farecalc-estimate-bubble {
   display: flex;
   flex-direction: row;
-  align-items: center;
+  align-items: stretch;
   justify-content: center;
   flex: none;
-  gap: var(--abc-space-sm);
-  padding: 10px var(--abc-space-md);
-  background: var(--bu-mint-bright);
+  padding: 0;
+  background: var(--abc-farecalc-estimate-loser-bg);
   color: var(--bu-ink);
   border-radius: var(--abc-radius-pill);
   position: relative;
-  transition: background-color 0.25s ease;
+  overflow: hidden;
 }
 
-/* Once a real winner exists (2026-11 follow-up — see .abc-farecalc-
-   estimate-highlight below), the bubble's own base fill switches to a
-   neutral gray — the green highlight is what actually marks "cheaper"
-   now, so the base needs to read as neutral, not as a second claim of
-   its own. Reverts to the plain mint fill (no highlight) when nothing's
-   comparable yet or the two sides tie — see renderBreadcrumb(). */
-.abc-farecalc-estimate-bubble.abc-farecalc-estimate-compared {
-  background: var(--abc-farecalc-estimate-loser-bg);
-}
-
-/* A green pill that SLIDES to sit behind whichever side is currently
-   cheaper (2026-11, "like a bubble flowing left to right depending on
-   the winning cost") rather than just recoloring text in place —
-   positioned/sized in JS (renderBreadcrumb()) to exactly match that
-   side's own rendered box each time it (re)computes, so the same
-   transition plays whenever the winner flips sides (e.g. switching Bus
-   Pass to LinkPass). Sits behind the text (z-index 0 vs. 1 below) and
-   never intercepts clicks. Reuses --mbta-green, same color
-   "Recommended for you"/the savings line already use on the cards
-   below, so this bubble and the full cards agree on what green means. */
+/* The sliding "knob" — sized/positioned in JS (renderBreadcrumb()) to
+   exactly match whichever .abc-farecalc-estimate-side is winning, full
+   bleed top-to-bottom and out to the track's own edge on that side
+   (inset: 0 on the relevant sides, not a few px in) so it reads as
+   "this whole side filled with mint," not a shape floating inside it.
+   Rounded only on the outer end (matching the track's own cap) via the
+   .is-left/.is-right modifier JS toggles — flat on the inner end, where
+   it meets the gray. Uses --bu-mint-bright, the SAME mint used
+   everywhere else in this tool (buttons, chips, the old single-number
+   bubble) — deliberately NOT --mbta-green, which is a different, more
+   saturated green reserved for the full result cards' "Recommended for
+   you"/savings-line treatment; this bubble stays in the tool's own BU
+   mint family throughout. */
 .abc-farecalc-estimate-highlight {
   position: absolute;
-  top: 4px;
-  bottom: 4px;
+  top: 0;
+  bottom: 0;
   left: 0;
   width: 0;
-  border-radius: var(--abc-radius-pill);
-  background: var(--mbta-green);
+  background: var(--bu-mint-bright);
   opacity: 0;
   transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
   pointer-events: none;
   z-index: 0;
 }
 
+.abc-farecalc-estimate-highlight.abc-farecalc-estimate-highlight-left {
+  border-radius: var(--abc-radius-pill) 0 0 var(--abc-radius-pill);
+}
+
+.abc-farecalc-estimate-highlight.abc-farecalc-estimate-highlight-right {
+  border-radius: 0 var(--abc-radius-pill) var(--abc-radius-pill) 0;
+}
+
 .abc-farecalc-estimate-side {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 2px;
   line-height: 1.1;
   position: relative;
   z-index: 1;
-  padding: 2px 10px;
-  border-radius: var(--abc-radius-pill);
+  padding: 10px 14px;
 }
 
-/* Text color per side follows whichever fill is actually behind it —
-   white on the green highlight, muted ink on the gray base — rather
-   than a fixed color, so this keeps working if either background
-   shade is ever retuned. */
-.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-sublabel,
-.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-amt {
-  color: #fff;
-}
-
-.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-sublabel {
-  opacity: 0.9;
-}
-
-.abc-farecalc-estimate-side.abc-farecalc-estimate-loser .abc-farecalc-estimate-sublabel,
-.abc-farecalc-estimate-side.abc-farecalc-estimate-loser .abc-farecalc-estimate-amt {
-  color: var(--abc-ink-muted);
+/* Losing side dims as a whole (both its label and amount together,
+   whatever their own base opacity already is) once a real winner
+   exists elsewhere — default (not-yet-comparable, or an exact tie) is
+   full strength on both sides, same dark ink either way, since
+   --bu-mint-bright and the gray track both read fine with it. */
+.abc-farecalc-estimate-side.abc-farecalc-estimate-loser {
+  opacity: 0.5;
 }
 
 .abc-farecalc-estimate-sublabel {
@@ -1011,14 +1004,6 @@
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
-}
-
-.abc-farecalc-estimate-divider {
-  font-size: 1.1rem;
-  font-weight: 300;
-  opacity: 0.4;
-  position: relative;
-  z-index: 1;
 }
 
 @media (max-width: 560px) {
@@ -2716,7 +2701,6 @@ label.abc-question {
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
           <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-1>$0</span>
         </div>
-        <span class="abc-farecalc-estimate-divider" aria-hidden="true">|</span>
         <div class="abc-farecalc-estimate-side" data-abc-estimate-side-2>
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
           <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
@@ -3990,7 +3974,6 @@ function buInitCalculator(rootEl) {
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
   const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
-  const estimateBubble = rootEl.querySelector("[data-abc-estimate-bubble]");
   const estimateHighlight = rootEl.querySelector("[data-abc-estimate-highlight]");
   const estimateSide1 = rootEl.querySelector("[data-abc-estimate-side-1]");
   const estimateSide2 = rootEl.querySelector("[data-abc-estimate-side-2]");
@@ -4810,22 +4793,23 @@ function buInitCalculator(rootEl) {
     }
 
     // Highlight whichever side is currently cheaper (2026-11 follow-up —
-    // "change the winning color to have a background of green, while the
-    // losing one is gray, almost like a bubble flowing left to right
-    // depending on the winning cost"): a green pill SLIDES (via CSS
-    // transition on left/width) to sit behind whichever side is cheaper,
-    // rather than just recoloring text in place — same sliding-indicator
-    // idea as the breadcrumb's own bus icon elsewhere in this file, just
-    // applied here. Winner reuses --mbta-green, the exact color
-    // "Recommended for you"/the savings line already use on the cards
-    // below. Only applied once BOTH sides are actually ready (not a
-    // placeholder $0 — a not-yet-computed side would otherwise always
-    // look "cheaper" than a real number next to it) and never on an exact
-    // tie (nobody wins a tie, so the bubble reverts to its plain neutral
-    // mint fill with no highlight, same as the not-yet-comparable state).
-    // Parses the already-rounded DISPLAY text back into a number purely
-    // to compare the two — not a recompute, no drift risk with the
-    // DOM-read values set above.
+    // "I want the mint green bubble to be the equivalent to the white
+    // toggle part [of an iPhone settings toggle], and the background to
+    // be the current duller gray"): the track (the bubble itself) is
+    // always that gray now — see its own CSS rule — and a mint-green
+    // "knob" SLIDES (via CSS transition on left/width) to fill whichever
+    // side is cheaper, full bleed to that side's own edge of the track,
+    // rounded only on the outer end to match the track's own cap. Same
+    // sliding-indicator idea as the breadcrumb's own bus icon elsewhere
+    // in this file. Only applied once BOTH sides are actually ready (not
+    // a placeholder $0 — a not-yet-computed side would otherwise always
+    // look "cheaper" than a real number next to it) and never on an
+    // exact tie (nobody wins a tie, so the knob just stays hidden, same
+    // as the not-yet-comparable state — both sides read as plain dark
+    // ink on the gray track either way, no separate "neutral" styling
+    // needed). Parses the already-rounded DISPLAY text back into a
+    // number purely to compare the two — not a recompute, no drift risk
+    // with the DOM-read values set above.
     estimateSide1.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
     estimateSide2.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
     let haveWinner = false;
@@ -4834,21 +4818,22 @@ function buInitCalculator(rootEl) {
       const v2 = parseFloat(estimateAmt2.textContent.replace(/[^0-9.-]/g, ""));
       if (!Number.isNaN(v1) && !Number.isNaN(v2) && v1 !== v2) {
         haveWinner = true;
-        const winnerSide = v1 < v2 ? estimateSide1 : estimateSide2;
-        const loserSide = v1 < v2 ? estimateSide2 : estimateSide1;
+        const side1Wins = v1 < v2;
+        const winnerSide = side1Wins ? estimateSide1 : estimateSide2;
+        const loserSide = side1Wins ? estimateSide2 : estimateSide1;
         winnerSide.classList.add("abc-farecalc-estimate-winner");
         loserSide.classList.add("abc-farecalc-estimate-loser");
-        if (estimateBubble) estimateBubble.classList.add("abc-farecalc-estimate-compared");
         if (estimateHighlight) {
           estimateHighlight.style.opacity = "1";
           estimateHighlight.style.left = `${winnerSide.offsetLeft}px`;
           estimateHighlight.style.width = `${winnerSide.offsetWidth}px`;
+          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-left", side1Wins);
+          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-right", !side1Wins);
         }
       }
     }
-    if (!haveWinner) {
-      if (estimateBubble) estimateBubble.classList.remove("abc-farecalc-estimate-compared");
-      if (estimateHighlight) estimateHighlight.style.opacity = "0";
+    if (!haveWinner && estimateHighlight) {
+      estimateHighlight.style.opacity = "0";
     }
   }
 

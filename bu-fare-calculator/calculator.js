@@ -751,7 +751,6 @@ function buInitCalculator(rootEl) {
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
   const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
-  const estimateBubble = rootEl.querySelector("[data-abc-estimate-bubble]");
   const estimateHighlight = rootEl.querySelector("[data-abc-estimate-highlight]");
   const estimateSide1 = rootEl.querySelector("[data-abc-estimate-side-1]");
   const estimateSide2 = rootEl.querySelector("[data-abc-estimate-side-2]");
@@ -1571,22 +1570,23 @@ function buInitCalculator(rootEl) {
     }
 
     // Highlight whichever side is currently cheaper (2026-11 follow-up —
-    // "change the winning color to have a background of green, while the
-    // losing one is gray, almost like a bubble flowing left to right
-    // depending on the winning cost"): a green pill SLIDES (via CSS
-    // transition on left/width) to sit behind whichever side is cheaper,
-    // rather than just recoloring text in place — same sliding-indicator
-    // idea as the breadcrumb's own bus icon elsewhere in this file, just
-    // applied here. Winner reuses --mbta-green, the exact color
-    // "Recommended for you"/the savings line already use on the cards
-    // below. Only applied once BOTH sides are actually ready (not a
-    // placeholder $0 — a not-yet-computed side would otherwise always
-    // look "cheaper" than a real number next to it) and never on an exact
-    // tie (nobody wins a tie, so the bubble reverts to its plain neutral
-    // mint fill with no highlight, same as the not-yet-comparable state).
-    // Parses the already-rounded DISPLAY text back into a number purely
-    // to compare the two — not a recompute, no drift risk with the
-    // DOM-read values set above.
+    // "I want the mint green bubble to be the equivalent to the white
+    // toggle part [of an iPhone settings toggle], and the background to
+    // be the current duller gray"): the track (the bubble itself) is
+    // always that gray now — see its own CSS rule — and a mint-green
+    // "knob" SLIDES (via CSS transition on left/width) to fill whichever
+    // side is cheaper, full bleed to that side's own edge of the track,
+    // rounded only on the outer end to match the track's own cap. Same
+    // sliding-indicator idea as the breadcrumb's own bus icon elsewhere
+    // in this file. Only applied once BOTH sides are actually ready (not
+    // a placeholder $0 — a not-yet-computed side would otherwise always
+    // look "cheaper" than a real number next to it) and never on an
+    // exact tie (nobody wins a tie, so the knob just stays hidden, same
+    // as the not-yet-comparable state — both sides read as plain dark
+    // ink on the gray track either way, no separate "neutral" styling
+    // needed). Parses the already-rounded DISPLAY text back into a
+    // number purely to compare the two — not a recompute, no drift risk
+    // with the DOM-read values set above.
     estimateSide1.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
     estimateSide2.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
     let haveWinner = false;
@@ -1595,21 +1595,22 @@ function buInitCalculator(rootEl) {
       const v2 = parseFloat(estimateAmt2.textContent.replace(/[^0-9.-]/g, ""));
       if (!Number.isNaN(v1) && !Number.isNaN(v2) && v1 !== v2) {
         haveWinner = true;
-        const winnerSide = v1 < v2 ? estimateSide1 : estimateSide2;
-        const loserSide = v1 < v2 ? estimateSide2 : estimateSide1;
+        const side1Wins = v1 < v2;
+        const winnerSide = side1Wins ? estimateSide1 : estimateSide2;
+        const loserSide = side1Wins ? estimateSide2 : estimateSide1;
         winnerSide.classList.add("abc-farecalc-estimate-winner");
         loserSide.classList.add("abc-farecalc-estimate-loser");
-        if (estimateBubble) estimateBubble.classList.add("abc-farecalc-estimate-compared");
         if (estimateHighlight) {
           estimateHighlight.style.opacity = "1";
           estimateHighlight.style.left = `${winnerSide.offsetLeft}px`;
           estimateHighlight.style.width = `${winnerSide.offsetWidth}px`;
+          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-left", side1Wins);
+          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-right", !side1Wins);
         }
       }
     }
-    if (!haveWinner) {
-      if (estimateBubble) estimateBubble.classList.remove("abc-farecalc-estimate-compared");
-      if (estimateHighlight) estimateHighlight.style.opacity = "0";
+    if (!haveWinner && estimateHighlight) {
+      estimateHighlight.style.opacity = "0";
     }
   }
 
