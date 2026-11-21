@@ -1478,43 +1478,35 @@ function buInitCalculator(rootEl) {
     }
     breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
-    // ---- Running estimate: tracks whichever card represents YOUR own
-    // situation, not always Card 1 (2026-11 follow-up). For Pay-Per-
-    // Ride that's still Card 1 (BU Subsidized Pass — its inputs, mode/
-    // trips/reduced/parking/bluebikes, are the shared main-sequence
-    // answers regardless of topMode). For Driving it's Card 2 (Driving
-    // to Campus: days × garage/zone rate) instead, since Card 1 doesn't
-    // depend on campus/garage at all — per the user's explicit ask,
-    // "the cost of those current inputs (# of drives × garage price)"
-    // should start computing once a real garage/zone is picked, not
-    // once a comparison pass is picked. $0 until the first grid on
-    // whichever page actually feeds it is touched, same "start at 0"
-    // rule as before. Both branches mirror their own card's calc in
-    // renderResults() exactly — if either calc changes, this needs the
-    // same change alongside it. ----
-    let estimate = 0;
+    // ---- Running estimate: reads the ALREADY-PAINTED, already-
+    // correctly-rounded card total straight from the DOM — renderResults()
+    // keeps [data-abc-pass-final]/[data-abc-drive-total] up to date on
+    // every render() call regardless of which step is current — rather
+    // than recomputing the dollar amount independently. A prior version
+    // recomputed from raw numbers and rounded the exact sum once at the
+    // very end, while every card itself rounds each line individually
+    // and sums the ALREADY-ROUNDED pieces (the "round each line, let the
+    // final equal exactly what's printed above it" waterfall every card
+    // in this tool follows) — the two methods can land a dollar apart on
+    // an unlucky split (2026-11 bug fix: found via a live $17 breadcrumb
+    // vs. $16 card mismatch). Reading the same text the card already
+    // shows makes that kind of divergence structurally impossible, not
+    // just unlikely, and needs no "keep these two calcs in sync" upkeep.
+    // Tracks whichever card represents YOUR own situation: Card 1 (BU
+    // Subsidized Pass) for Pay-Per-Ride, Card 2 (Driving to Campus) for
+    // Driving, since Card 1 doesn't depend on campus/garage at all. $0
+    // until the relevant page is actually answered, same as before. ----
+    let estimateText = abcFormatCurrencyWhole(0);
     if (topMode === "driving") {
-      estimate = computeDrivingEstimate();
-    } else if (modeConfirmed) {
-      const oneWayTripsPerWeek = tripsPerWeek * 2;
-      const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
-      const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
-      const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare, includeSubwayLeg);
-      let parkingSubsidy = null;
-      if (mode === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
-        parkingSubsidy = buCalcStationParkingSubsidy(currentStation.parkingRate, stationParkingDays);
-      } else if (mode === "subway" && rapidStationParking) {
-        const rapidStation = buGetRapidStation(currentRapidStationLabel());
-        if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
-      } else if (mode === "ferry" && ferryParking) {
-        const route = buGetPassOption(ferryRouteId);
-        if (route && route.parkingRate != null) parkingSubsidy = buCalcStationParkingSubsidy(route.parkingRate, ferryParkingDays);
+      if (drivingEstimateReady()) {
+        const driveTotalEl = rootEl.querySelector("[data-abc-drive-total]");
+        if (driveTotalEl) estimateText = driveTotalEl.textContent;
       }
-      const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
-      const passParkingAddon = parkingSubsidy ? parkingSubsidy.netCost : 0;
-      estimate = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
+    } else if (modeConfirmed) {
+      const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
+      if (passFinalEl) estimateText = passFinalEl.textContent;
     }
-    breadcrumbEstimateAmt.textContent = abcFormatCurrencyWhole(estimate);
+    breadcrumbEstimateAmt.textContent = estimateText;
   }
 
   /** Card 2's own calc for the Driving branch (days × garage/zone rate,
@@ -1523,28 +1515,21 @@ function buInitCalculator(rootEl) {
    * (campus, then zone/garage, then the daily-vs-monthly toggle only
    * when that choice actually exists for the picked garage) so the
    * number never appears ahead of what the page itself shows as picked. */
-  function computeDrivingEstimate() {
-    if (!gridTouchedFor("[data-abc-campus-select]")) return 0;
-    let selection = null;
+  /** Whether Driving's own campus/zone/garage selection is complete
+   * enough for [data-abc-drive-total] to already hold a real number —
+   * mirrors the exact gates renderResults()'s driving branch depends on
+   * (a resolved selection, feeding buCalcParking()), factored out so
+   * renderBreadcrumb() can decide whether to show that DOM value or $0. */
+  function drivingEstimateReady() {
+    if (!gridTouchedFor("[data-abc-campus-select]")) return false;
     if (campus === "charles-river") {
-      if (!gridTouchedFor("[data-abc-crc-zone-select]")) return 0;
-      const zone = currentCrcZone();
-      selection = zone ? { rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax } : null;
-    } else {
-      if (!gridTouchedFor("[data-abc-medical-location-select]")) return 0;
-      const location = currentMedicalLocation();
-      if (location) {
-        if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return 0;
-        const useDaily = medicalDaily && location.daily;
-        const rateInfo = useDaily ? location.daily : location.monthly;
-        selection = { rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
-      }
+      return gridTouchedFor("[data-abc-crc-zone-select]") && !!currentCrcZone();
     }
-    if (!selection) return 0;
-    const parking = buCalcParking(selection, tripsPerWeek);
-    if (!parking) return 0;
-    const parkingPreTaxSavings = parking.preTax ? parking.monthlyCost * (BU_CONFIG.preTaxSavingsPct / 100) : 0;
-    return parking.monthlyCost - parkingPreTaxSavings;
+    if (!gridTouchedFor("[data-abc-medical-location-select]")) return false;
+    const location = currentMedicalLocation();
+    if (!location) return false;
+    if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return false;
+    return true;
   }
 
   function goBackStep() {
@@ -2194,6 +2179,18 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
+      // Driving's own total only ever covers parking — no fuel or
+      // insurance — so whenever Driving comes out ahead, that specific
+      // savings figure understates driving's real cost; flagged right
+      // in the sentence (2026-11 ask), not shown when the PASS wins
+      // (irrelevant there) or in the Pay-Per-Ride branch (no driving
+      // involved at all).
+      const caveatEl = winnerCard.querySelector("[data-abc-savings-caveat]");
+      if (caveatEl) {
+        caveatEl.textContent = (topMode === "driving" && !passWins)
+          ? ", not taking into account fuel and insurance"
+          : "";
+      }
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
     }
   }
