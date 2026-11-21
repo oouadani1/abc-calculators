@@ -796,6 +796,39 @@
    The CR promo callout rides along with "subquestion" (only relevant
    while picking a Commuter Rail station) rather than being its own
    step — see updatePromoUI()'s currentStepIndex check. ---- */
+
+/* ============================================================
+   STANDARD SPACING (2026-11, "lock these in" ask) — this tool went
+   through several rounds of "the gap here is too big/too small"
+   reports, each traced to a DIFFERENT rule (field-group min-height
+   stacking, a leftover single-step centering rule, a missing margin
+   on a row that assumed something above it already had one). Treat
+   these as the canonical values; when touching spacing anywhere in
+   this file, reuse one of these rather than inventing a new number:
+
+   - 8px (var(--abc-space-sm)): a question to its own answer
+     (.abc-question's own margin-bottom — see
+     .abc-farecalc-field-group .abc-question / .abc-farecalc
+     .abc-question). This is the "tightest" gap in the tool.
+   - 16px (var(--abc-space-md)): every "section" gap — breadcrumb strip
+     to the first question (.abc-farecalc-breadcrumb-row's own
+     margin-bottom), the assumptions accordion to the Back/Print nav
+     row (.abc-farecalc-wizard-nav's margin-top), and the grid's own
+     margin-bottom before the nav row on every other step.
+   - 24px (var(--abc-space-lg)): a bundled SECOND question riding along
+     under a sibling's own answer (.abc-farecalc-subfield's own
+     margin-top) — e.g. Bluebikes under Reduced Fare, "Monthly or
+     Daily" under the medical garage pick.
+
+   What NOT to do: don't give a field-group its own min-height assuming
+   it's always alone on its step — bundled pages (topMode+frequency,
+   mode+sub-choice) stack TWO field-groups on one step now, and two
+   independent min-heights compound into a much bigger gap than any
+   single number here. Keep min-height scoped to field-groups that can
+   genuinely be a step's SOLE content (see the allow-list a few rules
+   below), and clear it via JS inline style the moment a sibling
+   becomes visible (see renderWizardStep() in calculator.js).
+   ============================================================ */
 .abc-farecalc-grid {
   display: block;
   margin-bottom: var(--abc-space-md);
@@ -834,29 +867,54 @@
    this tool. align-items: stretch on the row above (the flex default)
    already matches this bubble's height to the breadcrumb's, no extra
    sizing math needed. */
+/* Two sides (each its own label + amount) separated by a divider, not
+   a single number — shows the live tradeoff the whole way through, not
+   just the one card the user happens to be building (2026-11 follow-
+   up to the single-number version). Still sized to its own content
+   (flex: none) and matched in height to the breadcrumb strip beside it
+   via the row's own align-items: stretch default — unchanged from the
+   single-number version. */
 .abc-farecalc-estimate-bubble {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   flex: none;
-  gap: 2px;
-  padding: 10px var(--abc-space-lg);
+  gap: var(--abc-space-sm);
+  padding: 10px var(--abc-space-md);
   background: var(--bu-mint-bright);
   color: var(--bu-ink);
   border-radius: var(--abc-radius-pill);
 }
 
-.abc-farecalc-estimate-label {
-  font-size: 0.68rem;
+.abc-farecalc-estimate-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1.1;
+}
+
+.abc-farecalc-estimate-sublabel {
+  font-size: 0.62rem;
   font-weight: 600;
   opacity: 0.75;
+  white-space: nowrap;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .abc-farecalc-estimate-amt {
-  font-size: 1.6rem;
+  font-size: 1.3rem;
   font-weight: 700;
   line-height: 1;
+  white-space: nowrap;
+}
+
+.abc-farecalc-estimate-divider {
+  font-size: 1.1rem;
+  font-weight: 300;
+  opacity: 0.4;
 }
 
 @media (max-width: 560px) {
@@ -866,13 +924,12 @@
   }
   .abc-farecalc-estimate-bubble {
     /* align-items: stretch on the column above (set two lines up)
-       would otherwise force this to the breadcrumb's full width,
-       stretching a small label+number into an oversized banner —
-       sized to its own content instead, left-aligned under the
-       breadcrumb strip (2026-11 mobile fix). */
-    flex-direction: row;
+       would otherwise force this to the breadcrumb's full width — sized
+       to its own content instead, left-aligned under the breadcrumb
+       strip (2026-11 mobile fix). Stays a row (not stacked) — two short
+       label+number columns side by side is still narrower than the
+       phone screen itself, see the width test in project memory. */
     align-self: flex-start;
-    gap: 8px;
   }
   /* The chip row routinely overflows at phone widths (more steps than
      fit on screen at once) — a plain cut-off edge gave no hint that
@@ -1270,6 +1327,15 @@ label.abc-question {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  /* margin-top added (2026-11 fix) — this row sits right after the
+     assumptions accordion on Results (`.abc-details` only defines its
+     OWN margin-top, nothing below it), so with no margin here the Back/
+     Print row read as jammed against "Where we got these numbers"
+     above it. Same --abc-space-md used for every other "section gap"
+     in this tool (breadcrumb-to-first-question, bundled-question-to-
+     parent) — see the STANDARD SPACING comment above .abc-farecalc-grid
+     for the full list; keep this value in sync with that one. */
+  margin-top: var(--abc-space-md);
   margin-bottom: var(--abc-space-md);
 }
 
@@ -2496,9 +2562,24 @@ label.abc-question {
           </div>
         </div>
       </div>
+      <!-- Dual cost comparison (2026-11 follow-up — replaces the single
+           "Net cost so far" number): shows BOTH sides of the comparison
+           side by side, so the live tradeoff is visible the whole way
+           through, not just at Results. Which two sides, and their
+           labels, depend on topMode — see renderBreadcrumb() in
+           calculator.js. Each amount is still read straight off its
+           card's own DOM text (never recomputed independently) for the
+           same rounding-consistency reason documented there. -->
       <div class="abc-farecalc-estimate-bubble">
-        <span class="abc-farecalc-estimate-label">Net cost so far</span>
-        <span class="abc-farecalc-estimate-amt" data-abc-breadcrumb-estimate>$0</span>
+        <div class="abc-farecalc-estimate-side">
+          <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
+          <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-1>$0</span>
+        </div>
+        <span class="abc-farecalc-estimate-divider" aria-hidden="true">|</span>
+        <div class="abc-farecalc-estimate-side">
+          <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
+          <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
+        </div>
       </div>
     </div>
 
@@ -3768,7 +3849,10 @@ function buInitCalculator(rootEl) {
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
   const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
-  const breadcrumbEstimateAmt = rootEl.querySelector("[data-abc-breadcrumb-estimate]");
+  const estimateLabel1 = rootEl.querySelector("[data-abc-estimate-label-1]");
+  const estimateAmt1 = rootEl.querySelector("[data-abc-estimate-amt-1]");
+  const estimateLabel2 = rootEl.querySelector("[data-abc-estimate-label-2]");
+  const estimateAmt2 = rootEl.querySelector("[data-abc-estimate-amt-2]");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -4461,7 +4545,7 @@ function buInitCalculator(rootEl) {
    * (step changed) and render() (an answer changed) — cheap, and
    * idempotent either way. */
   function renderBreadcrumb() {
-    if (!breadcrumbChips || !breadcrumbBus || !breadcrumbEstimateAmt) return;
+    if (!breadcrumbChips || !breadcrumbBus || !estimateAmt1 || !estimateAmt2) return;
     const applicableIds = WIZARD_STEPS.filter((id) => id !== "results" && wizardStepApplies(id));
     const currentId = WIZARD_STEPS[currentStepIndex];
     const currentPos = applicableIds.indexOf(currentId);
@@ -4511,35 +4595,60 @@ function buInitCalculator(rootEl) {
     }
     breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
-    // ---- Running estimate: reads the ALREADY-PAINTED, already-
-    // correctly-rounded card total straight from the DOM — renderResults()
-    // keeps [data-abc-pass-final]/[data-abc-drive-total] up to date on
-    // every render() call regardless of which step is current — rather
-    // than recomputing the dollar amount independently. A prior version
+    // ---- Running estimate: BOTH sides of the comparison, each read
+    // straight from its own ALREADY-PAINTED, already-correctly-rounded
+    // card total in the DOM — renderResults() keeps [data-abc-pass-final]/
+    // [data-abc-ride-final]/[data-abc-drive-total] up to date on every
+    // render() call regardless of which step is current — rather than
+    // recomputing either dollar amount independently. A prior version
     // recomputed from raw numbers and rounded the exact sum once at the
-    // very end, while every card itself rounds each line individually
-    // and sums the ALREADY-ROUNDED pieces (the "round each line, let the
-    // final equal exactly what's printed above it" waterfall every card
-    // in this tool follows) — the two methods can land a dollar apart on
-    // an unlucky split (2026-11 bug fix: found via a live $17 breadcrumb
-    // vs. $16 card mismatch). Reading the same text the card already
-    // shows makes that kind of divergence structurally impossible, not
-    // just unlikely, and needs no "keep these two calcs in sync" upkeep.
-    // Tracks whichever card represents YOUR own situation: Card 1 (BU
-    // Subsidized Pass) for Pay-Per-Ride, Card 2 (Driving to Campus) for
-    // Driving, since Card 1 doesn't depend on campus/garage at all. $0
-    // until the relevant page is actually answered, same as before. ----
-    let estimateText = abcFormatCurrencyWhole(0);
+    // very end, while every card itself rounds each line individually and
+    // sums the ALREADY-ROUNDED pieces (the "round each line, let the final
+    // equal exactly what's printed above it" waterfall every card in this
+    // tool follows) — the two methods can land a dollar apart on an
+    // unlucky split (2026-11 bug fix: found via a live $17 breadcrumb vs.
+    // $16 card mismatch). Reading the same text the card already shows
+    // makes that kind of divergence structurally impossible, not just
+    // unlikely, and needs no "keep these two calcs in sync" upkeep.
+    // Which two sides, and their labels (2026-11 follow-up — replaces the
+    // single "Net cost so far" number, since a lone net figure couldn't
+    // show which mode it was even comparing against): Pay-Per-Ride always
+    // compares the BU Pass to paying per ride; Driving compares Driving to
+    // whichever transit mode was picked as the stand-in (dynamic label,
+    // since that mode is a choice, not a fixed thing to pay per ride
+    // against). $0 / a placeholder sublabel until the relevant side's own
+    // page is actually answered, same gating as the old single number. ----
+    const zero = abcFormatCurrencyWhole(0);
     if (topMode === "driving") {
+      estimateLabel1.textContent = "Driving";
       if (drivingEstimateReady()) {
         const driveTotalEl = rootEl.querySelector("[data-abc-drive-total]");
-        if (driveTotalEl) estimateText = driveTotalEl.textContent;
+        estimateAmt1.textContent = driveTotalEl ? driveTotalEl.textContent : zero;
+      } else {
+        estimateAmt1.textContent = zero;
       }
-    } else if (modeConfirmed) {
-      const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
-      if (passFinalEl) estimateText = passFinalEl.textContent;
+      if (modeConfirmed) {
+        const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
+        estimateLabel2.textContent = modeLabel;
+        const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
+        estimateAmt2.textContent = passFinalEl ? passFinalEl.textContent : zero;
+      } else {
+        estimateLabel2.textContent = "Comparison";
+        estimateAmt2.textContent = zero;
+      }
+    } else {
+      estimateLabel1.textContent = "BU Pass";
+      estimateLabel2.textContent = "Pay-per-ride";
+      if (modeConfirmed) {
+        const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
+        const rideFinalEl = rootEl.querySelector("[data-abc-ride-final]");
+        estimateAmt1.textContent = passFinalEl ? passFinalEl.textContent : zero;
+        estimateAmt2.textContent = rideFinalEl ? rideFinalEl.textContent : zero;
+      } else {
+        estimateAmt1.textContent = zero;
+        estimateAmt2.textContent = zero;
+      }
     }
-    breadcrumbEstimateAmt.textContent = estimateText;
   }
 
   /** Card 2's own calc for the Driving branch (days × garage/zone rate,

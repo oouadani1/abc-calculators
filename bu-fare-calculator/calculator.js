@@ -751,7 +751,10 @@ function buInitCalculator(rootEl) {
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
   const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
-  const breadcrumbEstimateAmt = rootEl.querySelector("[data-abc-breadcrumb-estimate]");
+  const estimateLabel1 = rootEl.querySelector("[data-abc-estimate-label-1]");
+  const estimateAmt1 = rootEl.querySelector("[data-abc-estimate-amt-1]");
+  const estimateLabel2 = rootEl.querySelector("[data-abc-estimate-label-2]");
+  const estimateAmt2 = rootEl.querySelector("[data-abc-estimate-amt-2]");
 
   const promoActive = mbtaPromoIsActive(BU_CONFIG);
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
@@ -1444,7 +1447,7 @@ function buInitCalculator(rootEl) {
    * (step changed) and render() (an answer changed) — cheap, and
    * idempotent either way. */
   function renderBreadcrumb() {
-    if (!breadcrumbChips || !breadcrumbBus || !breadcrumbEstimateAmt) return;
+    if (!breadcrumbChips || !breadcrumbBus || !estimateAmt1 || !estimateAmt2) return;
     const applicableIds = WIZARD_STEPS.filter((id) => id !== "results" && wizardStepApplies(id));
     const currentId = WIZARD_STEPS[currentStepIndex];
     const currentPos = applicableIds.indexOf(currentId);
@@ -1494,35 +1497,60 @@ function buInitCalculator(rootEl) {
     }
     breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
-    // ---- Running estimate: reads the ALREADY-PAINTED, already-
-    // correctly-rounded card total straight from the DOM — renderResults()
-    // keeps [data-abc-pass-final]/[data-abc-drive-total] up to date on
-    // every render() call regardless of which step is current — rather
-    // than recomputing the dollar amount independently. A prior version
+    // ---- Running estimate: BOTH sides of the comparison, each read
+    // straight from its own ALREADY-PAINTED, already-correctly-rounded
+    // card total in the DOM — renderResults() keeps [data-abc-pass-final]/
+    // [data-abc-ride-final]/[data-abc-drive-total] up to date on every
+    // render() call regardless of which step is current — rather than
+    // recomputing either dollar amount independently. A prior version
     // recomputed from raw numbers and rounded the exact sum once at the
-    // very end, while every card itself rounds each line individually
-    // and sums the ALREADY-ROUNDED pieces (the "round each line, let the
-    // final equal exactly what's printed above it" waterfall every card
-    // in this tool follows) — the two methods can land a dollar apart on
-    // an unlucky split (2026-11 bug fix: found via a live $17 breadcrumb
-    // vs. $16 card mismatch). Reading the same text the card already
-    // shows makes that kind of divergence structurally impossible, not
-    // just unlikely, and needs no "keep these two calcs in sync" upkeep.
-    // Tracks whichever card represents YOUR own situation: Card 1 (BU
-    // Subsidized Pass) for Pay-Per-Ride, Card 2 (Driving to Campus) for
-    // Driving, since Card 1 doesn't depend on campus/garage at all. $0
-    // until the relevant page is actually answered, same as before. ----
-    let estimateText = abcFormatCurrencyWhole(0);
+    // very end, while every card itself rounds each line individually and
+    // sums the ALREADY-ROUNDED pieces (the "round each line, let the final
+    // equal exactly what's printed above it" waterfall every card in this
+    // tool follows) — the two methods can land a dollar apart on an
+    // unlucky split (2026-11 bug fix: found via a live $17 breadcrumb vs.
+    // $16 card mismatch). Reading the same text the card already shows
+    // makes that kind of divergence structurally impossible, not just
+    // unlikely, and needs no "keep these two calcs in sync" upkeep.
+    // Which two sides, and their labels (2026-11 follow-up — replaces the
+    // single "Net cost so far" number, since a lone net figure couldn't
+    // show which mode it was even comparing against): Pay-Per-Ride always
+    // compares the BU Pass to paying per ride; Driving compares Driving to
+    // whichever transit mode was picked as the stand-in (dynamic label,
+    // since that mode is a choice, not a fixed thing to pay per ride
+    // against). $0 / a placeholder sublabel until the relevant side's own
+    // page is actually answered, same gating as the old single number. ----
+    const zero = abcFormatCurrencyWhole(0);
     if (topMode === "driving") {
+      estimateLabel1.textContent = "Driving";
       if (drivingEstimateReady()) {
         const driveTotalEl = rootEl.querySelector("[data-abc-drive-total]");
-        if (driveTotalEl) estimateText = driveTotalEl.textContent;
+        estimateAmt1.textContent = driveTotalEl ? driveTotalEl.textContent : zero;
+      } else {
+        estimateAmt1.textContent = zero;
       }
-    } else if (modeConfirmed) {
-      const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
-      if (passFinalEl) estimateText = passFinalEl.textContent;
+      if (modeConfirmed) {
+        const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
+        estimateLabel2.textContent = modeLabel;
+        const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
+        estimateAmt2.textContent = passFinalEl ? passFinalEl.textContent : zero;
+      } else {
+        estimateLabel2.textContent = "Comparison";
+        estimateAmt2.textContent = zero;
+      }
+    } else {
+      estimateLabel1.textContent = "BU Pass";
+      estimateLabel2.textContent = "Pay-per-ride";
+      if (modeConfirmed) {
+        const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
+        const rideFinalEl = rootEl.querySelector("[data-abc-ride-final]");
+        estimateAmt1.textContent = passFinalEl ? passFinalEl.textContent : zero;
+        estimateAmt2.textContent = rideFinalEl ? rideFinalEl.textContent : zero;
+      } else {
+        estimateAmt1.textContent = zero;
+        estimateAmt2.textContent = zero;
+      }
     }
-    breadcrumbEstimateAmt.textContent = estimateText;
   }
 
   /** Card 2's own calc for the Driving branch (days × garage/zone rate,
