@@ -268,16 +268,19 @@
 .abc-farecalc-breadcrumb-line {
   position: absolute;
   top: 11px;
-  left: 12px;
-  right: 12px;
+  left: 4px;
+  right: 4px;
   height: 2px;
   background: var(--abc-border);
   border-radius: 2px;
 }
 
-/* Rides along .abc-farecalc-breadcrumb-line; `left` is set inline by
-   JS as a percentage of the track's own width, eased by the transition
-   below rather than jumping straight to the new step. */
+/* Rides along .abc-farecalc-breadcrumb-line; `left` is a real pixel
+   offset set inline by JS from the active chip's own offsetLeft (not a
+   generic index/count percentage), so it lands at the actual start of
+   that chip regardless of chip width, eased by the transition below
+   rather than jumping straight there. No translateX centering — the
+   circle's left edge IS the "beginning of this chip" position. */
 .abc-farecalc-breadcrumb-bus {
   position: absolute;
   top: -2px;
@@ -289,7 +292,6 @@
   color: var(--abc-farecalc-accent-text);
   background: var(--abc-farecalc-accent);
   border-radius: 50%;
-  transform: translateX(-50%);
   transition: left 0.45s ease;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
 }
@@ -471,6 +473,20 @@
   font-family: "Sora", "IBM Plex Sans", sans-serif;
   font-weight: 600;
   font-size: 1.3rem;
+}
+
+/* The park-and-ride days question is the only .abc-question rendered
+   as a real <label> (it's paired with the stepper's id via `for`, for
+   accessibility) — that one extra fact makes it also match the shared
+   `.abc-field label` rule (color: var(--abc-ink-muted)) from base.css,
+   which ties on specificity with plain `.abc-question` and happened to
+   win, washing out its color to gray while every other question (a
+   plain <p>, never matched by `.abc-field label`) stayed navy. Same
+   specificity-tie shape this project has hit twice before with other
+   label-based components — fix is the same: a tag+class selector at
+   the matching specificity. */
+label.abc-question {
+  color: var(--abc-navy-deep);
 }
 
 /* Full-width text: nothing in this tool should wrap early inside a
@@ -974,7 +990,30 @@
 }
 
 /* ---- Route buttons ---- */
-.abc-farecalc-btn-rail.abc-active {
+/* Gated on .abc-choice-grid[data-abc-touched] (2026-11) — a default
+   selection no longer paints as "chosen" until the grid it lives in
+   has actually been clicked at least once (calculator.js sets
+   data-abc-touched on first click, via one delegated listener covering
+   every choice-grid in the tool). The underlying state variable (and
+   its default value) is unchanged; only the "this looks already
+   answered" visual is deferred to a real click, so a fresh page or a
+   Reset doesn't look like it already has answers nobody gave it. */
+/* The shared base.css rule `.abc-choice-button.abc-active { background:
+   var(--abc-navy); ... }` is unscoped (every ABC tool uses it) and
+   paints ANY active button navy regardless of this tool's own
+   touched-gating above — the gated rules only ever ADD a themed fill
+   once touched, they never neutralized that shared default, so an
+   untouched default was rendering navy instead of plain/neutral. This
+   resets it back to the ordinary unselected look specifically while
+   untouched; specificity (five selectors) comfortably beats the base
+   rule's two regardless of load order. */
+.abc-farecalc .abc-choice-grid:not([data-abc-touched]) .abc-choice-button.abc-active {
+  background: var(--abc-card-bg);
+  border-color: var(--abc-border);
+  color: var(--abc-ink);
+}
+
+.abc-choice-grid[data-abc-touched] .abc-farecalc-btn-rail.abc-active {
   background: var(--mbta-purple);
   border-color: var(--mbta-purple);
   color: #fff;
@@ -983,7 +1022,7 @@
 /* Ferry blue is too light for white text (2.5:1 contrast, fails WCAG AA
    even at this font size) — dark ink instead, same call as the theme
    variables above. */
-.abc-farecalc-btn-ferry.abc-active {
+.abc-choice-grid[data-abc-touched] .abc-farecalc-btn-ferry.abc-active {
   background: var(--mbta-ferry-blue);
   border-color: var(--mbta-ferry-blue);
   color: var(--bu-ink);
@@ -993,7 +1032,7 @@
    itself, so the whole ferry "module" reads as one color, the same way
    Commuter Rail's purple carries through its own controls via the theme
    variables above. */
-[data-abc-ferry-route-select].abc-active {
+.abc-choice-grid[data-abc-touched] [data-abc-ferry-route-select].abc-active {
   background: var(--mbta-ferry-blue);
   border-color: var(--mbta-ferry-blue);
   color: var(--bu-ink);
@@ -1480,7 +1519,7 @@
    own rule above. One rule covers Subway & Bus / Drive route pills, the
    pass-tier pop-out, campus/garage pickers, and the CRC zone pills, so
    there's a single color to change later rather than five. ---- */
-.abc-farecalc .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]) {
+.abc-farecalc .abc-choice-grid[data-abc-touched] .abc-choice-button.abc-active:not(.abc-farecalc-btn-rail):not(.abc-farecalc-btn-ferry):not([data-abc-ferry-route-select]) {
   background: var(--bu-mint-bright);
   border-color: var(--bu-mint-bright);
   color: var(--bu-ink);

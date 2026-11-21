@@ -812,6 +812,39 @@ function buInitCalculator(rootEl) {
     });
   });
 
+  // ---- "Touched" tracking for choice-grid defaults (2026-11): a
+  // default selection (LinkPass, "No", Subway & Bus, etc.) still feeds
+  // the math immediately, same cascade-default philosophy this tool has
+  // always used, but no longer PAINTS as mint-chosen until its own
+  // grid has actually been clicked — a fresh page (or one just reset)
+  // shouldn't look like it already has answers nobody gave it. One
+  // delegated listener marks the clicked grid (not the whole tool at
+  // once), which calculator.css's `.abc-choice-grid[data-abc-touched]`
+  // selectors key off of; renderBreadcrumb() reads the same attribute
+  // so a chip's value only appears once its own on-page grid agrees. */
+  // Capture phase (not bubble): each button's OWN click handler calls
+  // render()/renderBreadcrumb() synchronously as part of the same
+  // click, and that handler runs in the bubble phase once the event
+  // reaches the button — a bubble-phase listener here would still fire
+  // AFTER that render() call, one click too late. Capture fires on the
+  // way down, before the button's own handler, so data-abc-touched is
+  // already set by the time anything reads it this same click.
+  rootEl.addEventListener("click", (e) => {
+    const grid = e.target.closest(".abc-choice-grid");
+    if (grid) grid.dataset.abcTouched = "1";
+  }, true);
+
+  /** Whether the .abc-choice-grid containing the button matched by
+   * `buttonSelector` has been clicked yet — walks up from the button
+   * rather than guessing a grid selector directly, so it stays correct
+   * regardless of how many choice-grids share a field-group (e.g.
+   * Reduced Fare and Bluebikes are two separate grids one page apart). */
+  function gridTouchedFor(buttonSelector) {
+    const btn = rootEl.querySelector(buttonSelector);
+    const grid = btn ? btn.closest(".abc-choice-grid") : null;
+    return !!(grid && grid.dataset.abcTouched === "1");
+  }
+
   // ---- Ferry route pop-out (Winthrop/Quincy / Lynn / Hingham/Hull) ----
   const ferryRouteButtons = rootEl.querySelectorAll("[data-abc-ferry-route-select]");
   ferryRouteButtons.forEach((btn) => {
@@ -1204,19 +1237,24 @@ function buInitCalculator(rootEl) {
     renderWizardStep();
   }
 
-  /** Short label/value for one breadcrumb chip. Always reflects the
-   * CURRENT live state (not gated on the step's own confirmed-flag) —
-   * a button-grid step's default is already shown as the active pill
-   * the moment you land on it, so showing its value here too isn't
-   * introducing a new "invisible default" problem, just mirroring what
-   * the page already shows. renderBreadcrumb() is what decides whether
-   * a given chip is allowed to show this value yet (see its "upcoming"
-   * state), not this function. */
+  /** Short label/value for one breadcrumb chip. A button-grid piece
+   * only shows its real value once gridTouchedFor() says that specific
+   * grid has actually been clicked — same "don't paint a default as if
+   * it were chosen" rule the buttons themselves now follow (2026-11),
+   * so the breadcrumb can never show an answer the page itself doesn't
+   * yet visually show as picked. The frequency stepper is the one
+   * exception (no button grid, no concept of "unclicked" — its current
+   * number is always the real live value, same cascade-default
+   * philosophy this tool has always used for non-button steps). */
   function breadcrumbStepInfo(stepId) {
     switch (stepId) {
-      case "topmode":
-        return { label: "Get to campus", value: topMode === "driving" ? "I drive" : "I take transit" };
+      case "topmode": {
+        const touched = gridTouchedFor("[data-abc-top-mode-select]");
+        return { label: "Get to campus", value: touched ? (topMode === "driving" ? "I drive" : "I take transit") : "—" };
+      }
       case "driving": {
+        const touched = gridTouchedFor("[data-abc-campus-select]");
+        if (!touched) return { label: "Parking", value: "—" };
         if (campus === "charles-river") {
           const zone = currentCrcZone();
           return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
@@ -1226,23 +1264,36 @@ function buInitCalculator(rootEl) {
       }
       case "freq":
         return { label: topMode === "driving" ? "Days/week" : "Round-trips/week", value: String(tripsPerWeek) };
-      case "mode":
-        return { label: "Mode", value: { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] };
+      case "mode": {
+        const touched = gridTouchedFor("[data-abc-mode-select]");
+        return { label: "Mode", value: touched ? { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] : "—" };
+      }
       case "subquestion": {
         if (mode === "subway") {
+          const touched = gridTouchedFor("[data-abc-pass-tier-select]");
           const tier = buGetPassOption(passTier);
-          return { label: "Pass tier", value: (tier ? tier.label : "—") + (rapidStationParking ? " · Park: Yes" : "") };
+          const parkTouched = gridTouchedFor("[data-abc-rapid-station-parking-select]");
+          const parkBit = (parkTouched && rapidStationParking) ? " · Park: Yes" : "";
+          return { label: "Pass tier", value: touched ? (tier ? tier.label : "—") + parkBit : "—" };
         }
         if (mode === "rail") {
           const label = currentStationLabel();
           const station = buGetStation(label);
-          return { label: "Station", value: (station ? label : "—") + (station && stationParking ? " · Park: Yes" : "") };
+          const parkTouched = gridTouchedFor("[data-abc-station-parking-select]");
+          const parkBit = (parkTouched && stationParking) ? " · Park: Yes" : "";
+          return { label: "Station", value: (station ? label : "—") + parkBit };
         }
+        const touched = gridTouchedFor("[data-abc-ferry-route-select]");
         const route = buGetPassOption(ferryRouteId);
-        return { label: "Ferry route", value: route ? route.label : "—" };
+        return { label: "Ferry route", value: touched ? (route ? route.label : "—") : "—" };
       }
-      case "reduced":
-        return { label: "Reduced / Bike", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
+      case "reduced": {
+        const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
+        const bikeTouched = gridTouchedFor("[data-abc-bluebikes-select]");
+        const reducedVal = reducedTouched ? (reducedFare ? "Yes" : "No") : "—";
+        const bikeVal = bikeTouched ? (bluebikesAdded ? "Yes" : "No") : "—";
+        return { label: "Reduced / Bike", value: `${reducedVal} · ${bikeVal}` };
+      }
       default:
         return null;
     }
@@ -1287,14 +1338,23 @@ function buInitCalculator(rootEl) {
       breadcrumbChips.appendChild(chip);
     });
 
-    // Bus rides from the first chip (0%) to the last chip (100%),
-    // reaching the far end only once Results is actually showing.
-    const lastPos = applicableIds.length - 1;
-    const progressPct = currentId === "results" ? 100 : lastPos > 0 ? (currentPos / lastPos) * 100 : 0;
-    // Matches .abc-farecalc-breadcrumb-line's own 12px left/right inset
-    // (not bare 0%/100%) so the bus's circle never clips past the
-    // track's rounded edge at either end.
-    breadcrumbBus.style.left = `calc(12px + (100% - 24px) * ${progressPct / 100})`;
+    // Bus aligns to the LEADING edge of the current chip (not a
+    // generic index/count percentage) — measured from the actual
+    // rendered chips, so it lands precisely at "the start of this
+    // chip" regardless of how wide any chip's text makes it (2026-11,
+    // "should jump to the beginning of the next bubble, not the end").
+    // On Results (no chip of its own), it rides past the last chip's
+    // right edge instead, since there's nowhere further to align to.
+    const chipEls = Array.from(breadcrumbChips.children);
+    let targetX = 0;
+    if (currentId === "results") {
+      const last = chipEls[chipEls.length - 1];
+      if (last) targetX = last.offsetLeft + last.offsetWidth;
+    } else {
+      const activeChip = chipEls[currentPos];
+      if (activeChip) targetX = activeChip.offsetLeft;
+    }
+    breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
     // ---- Running estimate: $0 until the mode question is actually
     // answered (modeConfirmed), per the explicit "start at 0" ask —
@@ -1499,6 +1559,9 @@ function buInitCalculator(rootEl) {
     subwayTierConfirmed = false;
     ferryRouteConfirmed = false;
     currentStepIndex = 0;
+    // Reset means "back to exactly how this looked on first load" — no
+    // grid should look already-answered, same as a fresh page.
+    rootEl.querySelectorAll(".abc-choice-grid[data-abc-touched]").forEach((g) => { delete g.dataset.abcTouched; });
 
     topModeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcTopModeSelect === topMode));
     modeButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcModeSelect === mode));
