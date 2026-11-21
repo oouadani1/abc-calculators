@@ -1217,10 +1217,10 @@ function buInitCalculator(rootEl) {
     rows.push(["How do you currently get to campus?", topMode === "driving" ? "I drive" : "I take transit"]);
 
     if (topMode === "driving") {
-      rows.push(["Which campus?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
+      rows.push(["Which campus do you park on?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
       if (campus === "charles-river") {
         const zone = currentCrcZone();
-        rows.push(["Which zone?", zone ? zone.label : ""]);
+        rows.push(["In which Flex Permit Zone do you usually park?", zone ? zone.label : ""]);
       } else {
         const location = currentMedicalLocation();
         rows.push(["Which garage?", location ? location.label : ""]);

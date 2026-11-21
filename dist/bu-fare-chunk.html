@@ -2157,7 +2157,7 @@
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-drive-fields style="display: none;">
-        <p class="abc-question">Which campus?</p>
+        <p class="abc-question">Which campus do you park on?</p>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-choice-grid">
@@ -2167,7 +2167,7 @@
 
             <div data-abc-crc-fields style="display: block; margin-top: var(--abc-space-md);">
               <div class="abc-farecalc-question-row">
-                <p class="abc-question">Which zone?</p>
+                <p class="abc-question">In which Flex Permit Zone do you usually park?</p>
                 <div class="abc-farecalc-hint-wrap" data-abc-hint>
                   <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true">?</button>
                   <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
@@ -3807,10 +3807,10 @@ function buInitCalculator(rootEl) {
     rows.push(["How do you currently get to campus?", topMode === "driving" ? "I drive" : "I take transit"]);
 
     if (topMode === "driving") {
-      rows.push(["Which campus?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
+      rows.push(["Which campus do you park on?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
       if (campus === "charles-river") {
         const zone = currentCrcZone();
-        rows.push(["Which zone?", zone ? zone.label : ""]);
+        rows.push(["In which Flex Permit Zone do you usually park?", zone ? zone.label : ""]);
       } else {
         const location = currentMedicalLocation();
         rows.push(["Which garage?", location ? location.label : ""]);
