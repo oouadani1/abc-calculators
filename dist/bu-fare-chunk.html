@@ -895,73 +895,81 @@
   border-radius: var(--abc-radius-pill);
 }
 
-/* iOS-toggle-inspired redesign (2026-11 follow-up — "I want the mint
-   green bubble to be the equivalent to the white toggle part... and the
-   background to be the current duller gray," not an actual interactive
-   toggle, just that visual language). The TRACK (this element) is now
-   ALWAYS the same gray, from first render onward — no more switching
-   from mint to gray the instant both sides become comparable, which
-   read as a jarring "the whole pill just changed identity" moment.
-   Only the green KNOB (.abc-farecalc-estimate-highlight below) fades/
-   slides in once there's a real winner; the track itself never moves.
-   Padding lives on .abc-farecalc-estimate-side now, not here — zero
-   padding + overflow:hidden lets the highlight go fully edge-to-edge
-   against this pill's own rounded cap on whichever end it's on, instead
-   of floating as a smaller capsule inside with visible gray margin
-   around it (the "circle within the pill" the user asked to simplify
-   away). No flex `gap` either, and no "|" divider element anymore — the
-   two sides sit directly adjacent; the color split itself (once a
-   winner exists) is what visually divides them. */
+/* iOS-toggle-inspired redesign (2026-11, built across two follow-ups —
+   "I want the mint green bubble to be the equivalent to the white
+   toggle part... and the background to be the current duller gray,"
+   not an actual interactive toggle, just that visual language). The
+   TRACK (this element) is ALWAYS the same gray, from first render
+   onward — no switching from mint to gray the instant both sides
+   become comparable, which read as a jarring "the whole pill just
+   changed identity" moment. Only the green KNOB
+   (.abc-farecalc-estimate-highlight below) fades/slides in once
+   there's a real winner; the track itself never moves.
+   FIXED width (2026-11 follow-up, "make the toggle pill fixed, absolute
+   to the maximum width it could be"): 130px per side / 260px total,
+   measured via headless Chrome against the single widest realistic
+   label ("Commuter Rail," even against a 4-digit dollar figure — the
+   uppercase label is consistently the width bottleneck here, not the
+   bold-but-shorter amount beneath it) plus a safety margin — see
+   project memory for the exact measurement. This means the pill no
+   longer resizes as answers change, at the cost of not literally
+   guaranteeing zero overflow for an extreme, unrealistic trip count
+   (trips/week has no hard cap in this tool) — acceptable, re-measure
+   this number if a longer label is ever added. Each side is a fixed
+   50% of that width (not sized to its own content), so the two sides
+   — and the knob sliding between them — never need to measure anything
+   dynamically besides which one is winning. */
 .abc-farecalc-estimate-bubble {
   display: flex;
   flex-direction: row;
   align-items: stretch;
   justify-content: center;
   flex: none;
+  width: 260px;
   padding: 0;
   background: var(--abc-farecalc-estimate-loser-bg);
   color: var(--bu-ink);
   border-radius: var(--abc-radius-pill);
   position: relative;
-  overflow: hidden;
 }
 
-/* The sliding "knob" — sized/positioned in JS (renderBreadcrumb()) to
-   exactly match whichever .abc-farecalc-estimate-side is winning, full
-   bleed top-to-bottom and out to the track's own edge on that side
-   (inset: 0 on the relevant sides, not a few px in) so it reads as
-   "this whole side filled with mint," not a shape floating inside it.
-   Rounded only on the outer end (matching the track's own cap) via the
-   .is-left/.is-right modifier JS toggles — flat on the inner end, where
-   it meets the gray. Uses --bu-mint-bright, the SAME mint used
-   everywhere else in this tool (buttons, chips, the old single-number
-   bubble) — deliberately NOT --mbta-green, which is a different, more
-   saturated green reserved for the full result cards' "Recommended for
-   you"/savings-line treatment; this bubble stays in the tool's own BU
-   mint family throughout. */
+/* The sliding "knob" (2026-11 follow-up, after comparing against an
+   actual iOS toggle more closely) — INSET from the track's edges on
+   all four sides (top/bottom AND left/right, not flush), and fully
+   rounded on every corner, same as a real toggle's circular thumb sits
+   within its track with a visible sliver of track color around it on
+   every side. A flat seam down the middle (the previous version) read
+   as too hard-edged/two-tone; this reads as "a knob resting in one half
+   of the track," which is the actual reference being matched. Slides
+   between exactly two fixed positions (left half / right half of this
+   fixed-width bubble) — no per-render width/position measurement needed
+   anymore now that the two sides are a fixed 50/50 split. Uses
+   --bu-mint-bright, the SAME mint used everywhere else in this tool
+   (buttons, chips, the old single-number bubble) — deliberately NOT
+   --mbta-green, which stays reserved for the full result cards'
+   "Recommended for you"/savings-line treatment. */
 .abc-farecalc-estimate-highlight {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  width: 0;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc(50% - 10px);
+  border-radius: var(--abc-radius-pill);
   background: var(--bu-mint-bright);
   opacity: 0;
-  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
   pointer-events: none;
   z-index: 0;
 }
 
-.abc-farecalc-estimate-highlight.abc-farecalc-estimate-highlight-left {
-  border-radius: var(--abc-radius-pill) 0 0 var(--abc-radius-pill);
-}
-
 .abc-farecalc-estimate-highlight.abc-farecalc-estimate-highlight-right {
-  border-radius: 0 var(--abc-radius-pill) var(--abc-radius-pill) 0;
+  left: calc(50% + 5px);
 }
 
 .abc-farecalc-estimate-side {
   display: flex;
+  flex: 1 1 50%;
+  width: 50%;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -969,7 +977,7 @@
   line-height: 1.1;
   position: relative;
   z-index: 1;
-  padding: 10px 14px;
+  padding: 10px 6px;
 }
 
 /* Losing side dims as a whole (both its label and amount together,
@@ -4815,10 +4823,11 @@ function buInitCalculator(rootEl) {
         winnerSide.classList.add("abc-farecalc-estimate-winner");
         loserSide.classList.add("abc-farecalc-estimate-loser");
         if (estimateHighlight) {
+          // Just a left/right position toggle now (2026-11 follow-up) —
+          // the bubble and its two sides are a fixed 50/50 width, so the
+          // knob only ever needs to sit in one of two fixed spots, no
+          // per-render offsetLeft/offsetWidth measurement needed anymore.
           estimateHighlight.style.opacity = "1";
-          estimateHighlight.style.left = `${winnerSide.offsetLeft}px`;
-          estimateHighlight.style.width = `${winnerSide.offsetWidth}px`;
-          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-left", side1Wins);
           estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-right", !side1Wins);
         }
       }

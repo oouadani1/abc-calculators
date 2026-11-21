@@ -1601,10 +1601,11 @@ function buInitCalculator(rootEl) {
         winnerSide.classList.add("abc-farecalc-estimate-winner");
         loserSide.classList.add("abc-farecalc-estimate-loser");
         if (estimateHighlight) {
+          // Just a left/right position toggle now (2026-11 follow-up) —
+          // the bubble and its two sides are a fixed 50/50 width, so the
+          // knob only ever needs to sit in one of two fixed spots, no
+          // per-render offsetLeft/offsetWidth measurement needed anymore.
           estimateHighlight.style.opacity = "1";
-          estimateHighlight.style.left = `${winnerSide.offsetLeft}px`;
-          estimateHighlight.style.width = `${winnerSide.offsetWidth}px`;
-          estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-left", side1Wins);
           estimateHighlight.classList.toggle("abc-farecalc-estimate-highlight-right", !side1Wins);
         }
       }
