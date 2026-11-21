@@ -657,6 +657,12 @@
   --bu-mint-bright: #70FFC8; /* BU's actual sampled accent color */
   --bu-mint-tint: #E3FBF2;
   --bu-ink: #212121; /* sampled from the same stylesheet */
+  /* Neutral base for the dual-cost bubble once a real winner exists
+     (2026-11) — the green sliding highlight is what marks "cheaper" at
+     that point, so the bubble's own base fill needs to read as plain/
+     neutral, not compete with it. Distinct enough from the page's own
+     #EEF1F4 background to still read as a filled pill shape. */
+  --abc-farecalc-estimate-loser-bg: #C9CFD6;
 }
 
 .abc-farecalc {
@@ -914,6 +920,42 @@
   background: var(--bu-mint-bright);
   color: var(--bu-ink);
   border-radius: var(--abc-radius-pill);
+  position: relative;
+  transition: background-color 0.25s ease;
+}
+
+/* Once a real winner exists (2026-11 follow-up — see .abc-farecalc-
+   estimate-highlight below), the bubble's own base fill switches to a
+   neutral gray — the green highlight is what actually marks "cheaper"
+   now, so the base needs to read as neutral, not as a second claim of
+   its own. Reverts to the plain mint fill (no highlight) when nothing's
+   comparable yet or the two sides tie — see renderBreadcrumb(). */
+.abc-farecalc-estimate-bubble.abc-farecalc-estimate-compared {
+  background: var(--abc-farecalc-estimate-loser-bg);
+}
+
+/* A green pill that SLIDES to sit behind whichever side is currently
+   cheaper (2026-11, "like a bubble flowing left to right depending on
+   the winning cost") rather than just recoloring text in place —
+   positioned/sized in JS (renderBreadcrumb()) to exactly match that
+   side's own rendered box each time it (re)computes, so the same
+   transition plays whenever the winner flips sides (e.g. switching Bus
+   Pass to LinkPass). Sits behind the text (z-index 0 vs. 1 below) and
+   never intercepts clicks. Reuses --mbta-green, same color
+   "Recommended for you"/the savings line already use on the cards
+   below, so this bubble and the full cards agree on what green means. */
+.abc-farecalc-estimate-highlight {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  border-radius: var(--abc-radius-pill);
+  background: var(--mbta-green);
+  opacity: 0;
+  transition: left 0.35s cubic-bezier(0.4, 0, 0.2, 1), width 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 0;
 }
 
 .abc-farecalc-estimate-side {
@@ -922,6 +964,28 @@
   align-items: center;
   gap: 2px;
   line-height: 1.1;
+  position: relative;
+  z-index: 1;
+  padding: 2px 10px;
+  border-radius: var(--abc-radius-pill);
+}
+
+/* Text color per side follows whichever fill is actually behind it —
+   white on the green highlight, muted ink on the gray base — rather
+   than a fixed color, so this keeps working if either background
+   shade is ever retuned. */
+.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-sublabel,
+.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-amt {
+  color: #fff;
+}
+
+.abc-farecalc-estimate-side.abc-farecalc-estimate-winner .abc-farecalc-estimate-sublabel {
+  opacity: 0.9;
+}
+
+.abc-farecalc-estimate-side.abc-farecalc-estimate-loser .abc-farecalc-estimate-sublabel,
+.abc-farecalc-estimate-side.abc-farecalc-estimate-loser .abc-farecalc-estimate-amt {
+  color: var(--abc-ink-muted);
 }
 
 .abc-farecalc-estimate-sublabel {
@@ -940,27 +1004,12 @@
   white-space: nowrap;
 }
 
-/* Which side is currently cheaper (2026-11) — toggled by renderBreadcrumb()
-   in calculator.js, only once both sides are real numbers and they
-   actually differ (see the comment there for why). Winner reuses
-   --mbta-green, the exact color "Recommended for you"/the savings line
-   already use on the cards below, so the small bubble and the full
-   cards agree on what green means here rather than introducing a
-   second, unrelated "winner" color. The loser dims via opacity (not a
-   flat gray hex) so it stays legible against the bubble's own bright
-   mint background at any theme. */
-.abc-farecalc-estimate-amt.abc-farecalc-estimate-winner {
-  color: var(--mbta-green);
-}
-
-.abc-farecalc-estimate-amt.abc-farecalc-estimate-dim {
-  opacity: 0.45;
-}
-
 .abc-farecalc-estimate-divider {
   font-size: 1.1rem;
   font-weight: 300;
   opacity: 0.4;
+  position: relative;
+  z-index: 1;
 }
 
 @media (max-width: 560px) {
@@ -2652,13 +2701,14 @@ label.abc-question {
            calculator.js. Each amount is still read straight off its
            card's own DOM text (never recomputed independently) for the
            same rounding-consistency reason documented there. -->
-      <div class="abc-farecalc-estimate-bubble">
-        <div class="abc-farecalc-estimate-side">
+      <div class="abc-farecalc-estimate-bubble" data-abc-estimate-bubble>
+        <div class="abc-farecalc-estimate-highlight" data-abc-estimate-highlight aria-hidden="true"></div>
+        <div class="abc-farecalc-estimate-side" data-abc-estimate-side-1>
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
           <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-1>$0</span>
         </div>
         <span class="abc-farecalc-estimate-divider" aria-hidden="true">|</span>
-        <div class="abc-farecalc-estimate-side">
+        <div class="abc-farecalc-estimate-side" data-abc-estimate-side-2>
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
           <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
         </div>
@@ -3931,6 +3981,10 @@ function buInitCalculator(rootEl) {
   const reducedFareField = rootEl.querySelector("[data-abc-reduced-fare-field]");
   const breadcrumbChips = rootEl.querySelector("[data-abc-breadcrumb-chips]");
   const breadcrumbBus = rootEl.querySelector("[data-abc-breadcrumb-bus]");
+  const estimateBubble = rootEl.querySelector("[data-abc-estimate-bubble]");
+  const estimateHighlight = rootEl.querySelector("[data-abc-estimate-highlight]");
+  const estimateSide1 = rootEl.querySelector("[data-abc-estimate-side-1]");
+  const estimateSide2 = rootEl.querySelector("[data-abc-estimate-side-2]");
   const estimateLabel1 = rootEl.querySelector("[data-abc-estimate-label-1]");
   const estimateAmt1 = rootEl.querySelector("[data-abc-estimate-amt-1]");
   const estimateLabel2 = rootEl.querySelector("[data-abc-estimate-label-2]");
@@ -4746,30 +4800,46 @@ function buInitCalculator(rootEl) {
       }
     }
 
-    // Highlight whichever side is currently cheaper (2026-11 — "similar in
-    // principle to the rec cards' boolean winner treatment, optimized for
-    // the dual-cost view"): the lower amount turns the same green used for
-    // "Recommended for you"/the savings line on the cards below, the other
-    // fades to a dim gray — reusing an existing color meaning in this tool
-    // rather than inventing a new one. Only applied once BOTH sides are
-    // actually ready (not a placeholder $0 — a not-yet-computed side would
-    // otherwise always look "cheaper" than a real number next to it, which
-    // is misleading, not a real comparison) and never on an exact tie
-    // (nobody wins a tie, so neither side should claim to). Parses the
-    // already-rounded DISPLAY text back into a number purely to compare
-    // the two — not a recompute, so no drift risk with the DOM-read values
-    // set above.
-    estimateAmt1.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-dim");
-    estimateAmt2.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-dim");
+    // Highlight whichever side is currently cheaper (2026-11 follow-up —
+    // "change the winning color to have a background of green, while the
+    // losing one is gray, almost like a bubble flowing left to right
+    // depending on the winning cost"): a green pill SLIDES (via CSS
+    // transition on left/width) to sit behind whichever side is cheaper,
+    // rather than just recoloring text in place — same sliding-indicator
+    // idea as the breadcrumb's own bus icon elsewhere in this file, just
+    // applied here. Winner reuses --mbta-green, the exact color
+    // "Recommended for you"/the savings line already use on the cards
+    // below. Only applied once BOTH sides are actually ready (not a
+    // placeholder $0 — a not-yet-computed side would otherwise always
+    // look "cheaper" than a real number next to it) and never on an exact
+    // tie (nobody wins a tie, so the bubble reverts to its plain neutral
+    // mint fill with no highlight, same as the not-yet-comparable state).
+    // Parses the already-rounded DISPLAY text back into a number purely
+    // to compare the two — not a recompute, no drift risk with the
+    // DOM-read values set above.
+    estimateSide1.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
+    estimateSide2.classList.remove("abc-farecalc-estimate-winner", "abc-farecalc-estimate-loser");
+    let haveWinner = false;
     if (ready1 && ready2) {
       const v1 = parseFloat(estimateAmt1.textContent.replace(/[^0-9.-]/g, ""));
       const v2 = parseFloat(estimateAmt2.textContent.replace(/[^0-9.-]/g, ""));
       if (!Number.isNaN(v1) && !Number.isNaN(v2) && v1 !== v2) {
-        const winnerEl = v1 < v2 ? estimateAmt1 : estimateAmt2;
-        const loserEl = v1 < v2 ? estimateAmt2 : estimateAmt1;
-        winnerEl.classList.add("abc-farecalc-estimate-winner");
-        loserEl.classList.add("abc-farecalc-estimate-dim");
+        haveWinner = true;
+        const winnerSide = v1 < v2 ? estimateSide1 : estimateSide2;
+        const loserSide = v1 < v2 ? estimateSide2 : estimateSide1;
+        winnerSide.classList.add("abc-farecalc-estimate-winner");
+        loserSide.classList.add("abc-farecalc-estimate-loser");
+        if (estimateBubble) estimateBubble.classList.add("abc-farecalc-estimate-compared");
+        if (estimateHighlight) {
+          estimateHighlight.style.opacity = "1";
+          estimateHighlight.style.left = `${winnerSide.offsetLeft}px`;
+          estimateHighlight.style.width = `${winnerSide.offsetWidth}px`;
+        }
       }
+    }
+    if (!haveWinner) {
+      if (estimateBubble) estimateBubble.classList.remove("abc-farecalc-estimate-compared");
+      if (estimateHighlight) estimateHighlight.style.opacity = "0";
     }
   }
 
