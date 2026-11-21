@@ -1390,6 +1390,14 @@ label.abc-question {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--abc-space-sm);
+  /* This row stands in for a plain <p class="abc-question"> as the
+     flex child of .abc-field, so it carries the same margin-bottom
+     every other question gets — the inner .abc-question's own margin
+     is zeroed below to avoid doubling it, not to remove it (that
+     zeroing, with nothing here to replace it, was the actual bug: any
+     question with a hint icon lost its gap to the content below it
+     entirely — found and fixed 2026-11). */
+  margin-bottom: var(--abc-space-sm);
 }
 
 .abc-farecalc-question-row .abc-question {
@@ -1402,30 +1410,43 @@ label.abc-question {
   margin-top: 2px;
 }
 
+/* Same circumference and hover-shake as the title's lightbulb button
+   (2026-11, "match the lightbulb") — 42px, shake on the inner glyph
+   rather than the button itself, exactly the lightbulb's own split
+   (button changes color, inner icon shakes) so the two read as one
+   consistent icon language. */
 .abc-farecalc-hint-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1.5px solid var(--abc-farecalc-help-blue);
   background: var(--abc-farecalc-help-blue-tint);
   color: var(--abc-farecalc-help-blue);
   font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
-  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .abc-farecalc-hint-btn:hover,
 .abc-farecalc-hint-btn[aria-expanded="true"] {
   background: var(--abc-farecalc-help-blue);
   color: #fff;
-  transform: scale(1.08);
+}
+
+.abc-farecalc-hint-icon {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Reuses the lightbulb's own shake keyframe (defined above) — same
+   motion, same "look at me" hover cue, now on both icons in the tool. */
+.abc-farecalc-hint-btn:hover .abc-farecalc-hint-icon {
+  animation: abc-farecalc-lightbulb-shake 0.5s ease-in-out;
 }
 
 .abc-farecalc-hint-popover {
@@ -2285,6 +2306,14 @@ label.abc-question {
   color: var(--abc-ink-muted);
 }
 
+/* --bu-mint (the darkened shade), not --bu-mint-bright — same
+   plain-text-on-white exception the Reduced Fare/Bluebikes hyperlinks
+   already use, since the literal bright accent fails contrast as text. */
+.abc-farecalc-credit-link {
+  color: var(--bu-mint);
+  text-decoration: underline;
+}
+
 .abc-farecalc-bu-logo img {
   flex-shrink: 0;
   width: 140px;
@@ -2417,7 +2446,7 @@ label.abc-question {
               <div class="abc-farecalc-question-row">
                 <p class="abc-question">In which Flex Permit Zone do you usually park?</p>
                 <div class="abc-farecalc-hint-wrap" data-abc-hint>
-                  <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true">?</button>
+                  <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true"><span class="abc-farecalc-hint-icon">?</span></button>
                   <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
                     <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
                     <p>Not sure which parking zone? <a href="https://www.bu.edu/transportation/files/2026/08/2026-Parking-Map-EMPLOYEE-FLEX-1.1.png" target="_blank" rel="noopener">Check out the parking map</a>.</p>
@@ -2505,48 +2534,6 @@ label.abc-question {
               <button type="button" class="abc-choice-button" data-abc-pass-tier-select="local-bus">Bus Pass</button>
               <button type="button" class="abc-choice-button abc-active" data-abc-pass-tier-select="linkpass">LinkPass (Subway + Bus)</button>
             </div>
-
-            <!-- Park-and-ride rides along on the SAME page as the mode's own
-                 sub-choice (2026-11 follow-up — was briefly its own wizard
-                 step, which left Commuter Rail's station question stranded
-                 on a lonely page by itself with just a checkbox below it).
-                 Visible unconditionally once Subway & Bus is the mode (no
-                 dependency on which tier is picked — park-and-ride doesn't
-                 care whether you're comparing Bus or Link), unlike the tier
-                 pills above it, which still need an explicit click before
-                 Continue unlocks (see subwayTierConfirmed in calculator.js). -->
-            <div class="abc-farecalc-subfield" data-abc-rapid-station-parking-field>
-              <div class="abc-farecalc-question-row">
-                <p class="abc-question">Will you drive to and park at a T station?</p>
-                <div class="abc-farecalc-hint-wrap" data-abc-hint>
-                  <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true">?</button>
-                  <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
-                    <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
-                    <p>BU subsidizes 50% of the cost of parking at an MBTA station if you have any BU monthly pass. Only MBTA stations with park-and-ride lots are shown in this list.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-rapid-station-parking-select="no">No</button>
-                <button type="button" class="abc-choice-button" data-abc-rapid-station-parking-select="yes">Yes</button>
-              </div>
-
-              <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
-                <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-rapid-station-listbox" aria-autocomplete="list" data-abc-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
-                <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-rapid-station-listbox" role="listbox" data-abc-rapid-station-listbox hidden></ul>
-              </div>
-
-              <div class="abc-farecalc-station-parking-days" data-abc-rapid-station-parking-days-field style="display: none;">
-                <label class="abc-question" for="abc-farecalc-rapid-station-parking-days">How many days a week will you park there?</label>
-                <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-rapid-station-parking-days-stepper>
-                  <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
-                  <div class="abc-farecalc-stepper-value-wrap">
-                    <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-rapid-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
-                  </div>
-                  <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -2574,38 +2561,77 @@ label.abc-question {
                 <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-station-listbox" role="listbox" data-abc-station-listbox hidden></ul>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
 
-            <!-- Shown once the typed station resolves to one with an MBTA
-                 park-and-ride lot — see updateStationParkingFieldVisibility()
-                 in calculator.js. Same "rides along on this page" treatment
-                 Subway & Bus's version gets above. -->
-            <div class="abc-farecalc-subfield" data-abc-station-parking-field style="display: none;">
-              <div class="abc-farecalc-question-row">
-                <p class="abc-question">Will you drive to and park at this station?</p>
-                <div class="abc-farecalc-hint-wrap" data-abc-hint>
-                  <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true">?</button>
-                  <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
-                    <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
-                    <p>BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-station-parking-select="no">No</button>
-                <button type="button" class="abc-choice-button" data-abc-station-parking-select="yes">Yes</button>
-              </div>
-
-              <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
-                <label class="abc-question" for="abc-farecalc-station-parking-days">How many days a week will you park there?</label>
-                <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-station-parking-days-stepper>
-                  <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
-                  <div class="abc-farecalc-stepper-value-wrap">
-                    <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
-                  </div>
-                  <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
-                </div>
-              </div>
+      <!-- Park-and-ride: its own dedicated page again (2026-11 follow-up —
+           was briefly bundled onto the mode/sub-choice page, now split back
+           out now that mode+sub-choice got merged onto ONE page themselves,
+           which would otherwise have left two separate questions stacked on
+           it). Only one of the two blocks below is ever shown at a time,
+           gated on `mode` by updateRapidStationParkingFieldVisibility()/
+           updateStationParkingFieldVisibility() in calculator.js, which also
+           gate on being on this step. Ferry has no block yet (no MBTA
+           parking-lot data for ferry stations) — once that data exists, this
+           is where its own block would go. -->
+      <div class="abc-farecalc-field-group" data-abc-rapid-station-parking-field style="display: none;">
+        <div class="abc-farecalc-question-row">
+          <p class="abc-question">Will you drive to and park at a T station?</p>
+          <div class="abc-farecalc-hint-wrap" data-abc-hint>
+            <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true"><span class="abc-farecalc-hint-icon">?</span></button>
+            <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
+              <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
+              <p>BU subsidizes 50% of the cost of parking at an MBTA station if you have any BU monthly pass. Only MBTA stations with park-and-ride lots are shown in this list.</p>
             </div>
+          </div>
+        </div>
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button" data-abc-rapid-station-parking-select="yes">Yes</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-rapid-station-parking-select="no">No</button>
+        </div>
+
+        <div class="abc-farecalc-combobox abc-farecalc-rapid-station-input-wrap" data-abc-rapid-station-field style="display: none;">
+          <input class="abc-select abc-farecalc-station-input" id="abc-farecalc-rapid-station" type="text" role="combobox" aria-expanded="false" aria-controls="abc-farecalc-rapid-station-listbox" aria-autocomplete="list" data-abc-rapid-station-input placeholder="Start typing your station&hellip;" autocomplete="off" aria-label="Which station do you park at?" />
+          <ul class="abc-farecalc-combobox-listbox" id="abc-farecalc-rapid-station-listbox" role="listbox" data-abc-rapid-station-listbox hidden></ul>
+        </div>
+
+        <div class="abc-farecalc-station-parking-days" data-abc-rapid-station-parking-days-field style="display: none;">
+          <label class="abc-question" for="abc-farecalc-rapid-station-parking-days">How many days a week will you park there?</label>
+          <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-rapid-station-parking-days-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+            <div class="abc-farecalc-stepper-value-wrap">
+              <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-rapid-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+            </div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="abc-farecalc-field-group" data-abc-station-parking-field style="display: none;">
+        <div class="abc-farecalc-question-row">
+          <p class="abc-question">Will you drive to and park at this station?</p>
+          <div class="abc-farecalc-hint-wrap" data-abc-hint>
+            <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true"><span class="abc-farecalc-hint-icon">?</span></button>
+            <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
+              <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
+              <p>BU offers an additional 50% parking subsidy if you already have a BU-subsidized monthly pass.</p>
+            </div>
+          </div>
+        </div>
+        <div class="abc-choice-grid">
+          <button type="button" class="abc-choice-button" data-abc-station-parking-select="yes">Yes</button>
+          <button type="button" class="abc-choice-button abc-active" data-abc-station-parking-select="no">No</button>
+        </div>
+
+        <div class="abc-farecalc-station-parking-days" data-abc-station-parking-days-field style="display: none;">
+          <label class="abc-question" for="abc-farecalc-station-parking-days">How many days a week will you park there?</label>
+          <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-station-parking-days-stepper>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
+            <div class="abc-farecalc-stepper-value-wrap">
+              <input type="number" class="abc-farecalc-stepper-input" id="abc-farecalc-station-parking-days" data-abc-stepper-value min="0" max="7" value="3" inputmode="numeric" aria-label="How many days a week will you drive and park at this station?" />
+            </div>
+            <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
           </div>
         </div>
       </div>
@@ -2615,15 +2641,15 @@ label.abc-question {
           <div class="abc-field" style="flex-basis: 100%;">
             <p class="abc-question">I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></p>
             <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button abc-active" data-abc-reduced-fare-select="no">No</button>
               <button type="button" class="abc-choice-button" data-abc-reduced-fare-select="yes">Yes</button>
+              <button type="button" class="abc-choice-button abc-active" data-abc-reduced-fare-select="no">No</button>
             </div>
 
             <div class="abc-farecalc-subfield">
-              <p class="abc-question">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a></p>
+              <p class="abc-question">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a> for <span data-abc-bluebikes-price>$6</span> a month</p>
               <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-bluebikes-select="no">No</button>
                 <button type="button" class="abc-choice-button" data-abc-bluebikes-select="yes">Yes</button>
+                <button type="button" class="abc-choice-button abc-active" data-abc-bluebikes-select="no">No</button>
               </div>
             </div>
           </div>
@@ -2791,8 +2817,8 @@ label.abc-question {
     </details>
 
     <div class="abc-farecalc-bu-logo">
-      <p class="abc-farecalc-credit-line"><strong>Built by A Better City</strong> | November 2026</p>
       <img src="data:image/png;base64,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" alt="Boston University" />
+      <p class="abc-farecalc-credit-line">Built by <a href="https://abctma.com/a/mission" target="_blank" rel="noopener" class="abc-farecalc-credit-link"><strong>A Better City</strong></a> | November 2026</p>
     </div>
   </div>
 
@@ -3519,7 +3545,22 @@ function buInitCalculator(rootEl) {
   let subwayTierConfirmed = false;
   let ferryRouteConfirmed = false;
 
-  const WIZARD_STEPS = ["topmode", "driving", "freq", "mode", "subquestion", "reduced", "results"];
+  // "freq" is no longer its own step (2026-11) — the frequency stepper
+  // now rides along on the SAME page as "topmode" (conditionally shown
+  // once a topMode choice is made), so a real trips-per-week value is
+  // already available by the time "driving"'s garage/zone or "mode"'s
+  // pass/station is picked, letting the breadcrumb's running estimate
+  // compute a real number right then instead of waiting for a further
+  // separate frequency page.
+  // "subquestion" is gone as its own step (2026-11 follow-up) — the
+  // mode's sub-choice (Bus/Link pills, station input, or ferry routes)
+  // now rides along on the SAME page as picking the mode itself, for
+  // further compactness. Park-and-ride, previously bundled onto that
+  // same sub-choice page, moves to its OWN dedicated "parkride" page in
+  // exchange — applies only for Subway & Bus and Commuter Rail (see
+  // wizardStepApplies(), which also skips it for a rail station with no
+  // MBTA parking lot); Ferry has no block yet (no parking-lot data).
+  const WIZARD_STEPS = ["topmode", "driving", "mode", "parkride", "reduced", "results"];
   let currentStepIndex = 0;
 
   /** Sets an element's display, and — if it's newly becoming visible
@@ -3574,11 +3615,20 @@ function buInitCalculator(rootEl) {
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
   if (promoBadge) promoBadge.style.display = promoActive ? "" : "none";
 
+  // Static (doesn't depend on any answer), so set once here rather than
+  // every render() — computed from BU_CONFIG.bluebikesAnnualPrice so the
+  // question text can't drift out of sync if that price ever changes.
+  const bluebikesPriceEl = rootEl.querySelector("[data-abc-bluebikes-price]");
+  if (bluebikesPriceEl) bluebikesPriceEl.textContent = abcFormatCurrencyWhole(BU_CONFIG.bluebikesAnnualPrice / 12);
+
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const onSubquestionStep = WIZARD_STEPS[currentStepIndex] === "subquestion";
-    const applies = onSubquestionStep && promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
+    // Rail's station input (where picking a zone actually happens) now
+    // lives on the "mode" step, not a separate "subquestion" step
+    // (2026-11 follow-up) — this callout follows it there.
+    const onModeStep = WIZARD_STEPS[currentStepIndex] === "mode";
+    const applies = onModeStep && promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     setStepVisible(callout, applies, "block");
     if (applies) {
       const days = buEdenredDeadlineDaysLeft();
@@ -3705,7 +3755,10 @@ function buInitCalculator(rootEl) {
       ferryRouteId = btn.dataset.abcFerryRouteSelect;
       ferryRouteConfirmed = true;
       ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      advanceStep();
+      // No advanceStep() here (2026-11 follow-up) — ferry's route pick
+      // now rides along on the same page as the mode picker itself, so
+      // this click just unlocks Continue rather than moving on by itself.
+      renderWizardStep();
       render();
     });
   });
@@ -3865,16 +3918,25 @@ function buInitCalculator(rootEl) {
   const stationParkingButtons = rootEl.querySelectorAll("[data-abc-station-parking-select]");
   const stationParkingDaysField = rootEl.querySelector("[data-abc-station-parking-days-field]");
 
+  // Now a top-level field-group on its own "parkride" page (2026-11
+  // follow-up — was nested inside the rail station field, riding along
+  // on the sub-choice page). Promoted out of that nesting, so its own
+  // visibility must explicitly check the current step too — nothing
+  // else hides it now. The reset-to-"No" below stays keyed on
+  // hasParking alone (not the step), so a stale "Yes" clears the
+  // instant the eligibility itself changes, even before ever visiting
+  // this page.
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
     const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
     const hasParking = !!(station && station.parkingRate != null);
-    setStepVisible(stationParkingField, hasParking, "block");
+    const onStep = WIZARD_STEPS[currentStepIndex] === "parkride" && mode === "rail";
+    setStepVisible(stationParkingField, onStep && hasParking, "block");
     if (!hasParking && stationParking) {
       stationParking = false;
       stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     }
-    setStepVisible(stationParkingDaysField, hasParking && stationParking, "block");
+    setStepVisible(stationParkingDaysField, onStep && hasParking && stationParking, "block");
   }
 
   stationParkingButtons.forEach((btn) => {
@@ -3895,10 +3957,11 @@ function buInitCalculator(rootEl) {
   // ---- Rapid-transit (Subway & Bus) park-and-ride: same BU parking
   // subsidy, same two-line itemization, but MBTA_RAPID_STATIONS instead
   // of BU_STATIONS, and no fare to resolve (Local Bus/LinkPass pricing
-  // doesn't depend on which station you park at). Nested inside
-  // [data-abc-subway-tier-field] (2026-11 — rides along on the same
-  // page as the Bus/Link pick), visible unconditionally once Subway &
-  // Bus is the mode, independent of which tier is picked. ----
+  // doesn't depend on which station you park at). Its own top-level
+  // field-group on the dedicated "parkride" page (2026-11 follow-up —
+  // was nested inside the subway tier field, riding along on the
+  // sub-choice page before mode+sub-choice were merged onto one page
+  // of their own), independent of which tier is picked. ----
   const rapidStationParkingField = rootEl.querySelector("[data-abc-rapid-station-parking-field]");
   const rapidStationParkingButtons = rootEl.querySelectorAll("[data-abc-rapid-station-parking-select]");
   const rapidStationField = rootEl.querySelector("[data-abc-rapid-station-field]");
@@ -3914,13 +3977,14 @@ function buInitCalculator(rootEl) {
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
     const show = mode === "subway";
-    setStepVisible(rapidStationParkingField, show, "block");
+    const onStep = WIZARD_STEPS[currentStepIndex] === "parkride" && show;
+    setStepVisible(rapidStationParkingField, onStep, "block");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
       rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     }
-    setStepVisible(rapidStationField, show && rapidStationParking, "block");
-    setStepVisible(rapidStationParkingDaysField, show && rapidStationParking, "block");
+    setStepVisible(rapidStationField, onStep && rapidStationParking, "block");
+    setStepVisible(rapidStationParkingDaysField, onStep && rapidStationParking, "block");
   }
 
   rapidStationParkingButtons.forEach((btn) => {
@@ -3978,10 +4042,10 @@ function buInitCalculator(rootEl) {
       passTier = btn.dataset.abcPassTierSelect;
       subwayTierConfirmed = true;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      // No advanceStep() here — park-and-ride now rides along on this
-      // same page (2026-11), so picking a tier just unlocks Continue
-      // (see the "Wizard chrome" comment in renderWizardStep()) rather
-      // than moving to the next page by itself.
+      // No advanceStep() here — this page's own mode pick already needs
+      // an explicit Continue (see the "Wizard chrome" comment in
+      // renderWizardStep()), since mode+sub-choice are bundled onto one
+      // page (2026-11 follow-up); picking a tier just unlocks it.
       renderWizardStep();
       render();
     });
@@ -4066,7 +4130,15 @@ function buInitCalculator(rootEl) {
 
   function wizardStepApplies(id) {
     if (id === "driving") return topMode === "driving";
-    return true; // topmode, freq, mode, subquestion, reduced, results always apply once reached
+    if (id === "parkride") {
+      if (mode === "subway") return true; // MBTA_RAPID_STATIONS only lists stations that already have real parking data
+      if (mode === "rail") {
+        const station = buGetStation(currentStationLabel());
+        return !!(station && station.parkingRate != null);
+      }
+      return false; // ferry — no MBTA parking-lot data yet
+    }
+    return true; // topmode, mode, reduced, results always apply once reached
   }
 
   function clampStepIndex(i) {
@@ -4095,15 +4167,26 @@ function buInitCalculator(rootEl) {
    * grid has actually been clicked — same "don't paint a default as if
    * it were chosen" rule the buttons themselves now follow (2026-11),
    * so the breadcrumb can never show an answer the page itself doesn't
-   * yet visually show as picked. The frequency stepper is the one
-   * exception (no button grid, no concept of "unclicked" — its current
-   * number is always the real live value, same cascade-default
-   * philosophy this tool has always used for non-button steps). */
+   * yet visually show as picked. The frequency stepper (folded into
+   * the "topmode" chip, not a step of its own) is the one exception —
+   * no button grid, no concept of "unclicked," so its current number is
+   * always the real live value once topmode itself is touched, same
+   * cascade-default philosophy this tool has always used for non-
+   * button inputs. */
   function breadcrumbStepInfo(stepId) {
     switch (stepId) {
       case "topmode": {
         const touched = gridTouchedFor("[data-abc-top-mode-select]");
-        return { label: "Get to campus", value: touched ? (topMode === "driving" ? "I drive" : "I take transit") : "—" };
+        if (!touched) return { label: "Get to campus", value: "—" };
+        // Frequency rides along on this same page now (2026-11), so its
+        // value is folded into this one chip rather than getting a chip
+        // of its own — same "one chip per bundled page" rule the
+        // subquestion page's tier+park-ride combo already follows.
+        const modeText = topMode === "driving" ? "I drive" : "I take transit";
+        const freqText = topMode === "driving"
+          ? `${tripsPerWeek} day${tripsPerWeek === 1 ? "" : "s"}/wk`
+          : `${tripsPerWeek} rt/wk`;
+        return { label: "Get to campus", value: `${modeText} · ${freqText}` };
       }
       case "driving": {
         const touched = gridTouchedFor("[data-abc-campus-select]");
@@ -4115,30 +4198,43 @@ function buInitCalculator(rootEl) {
         const location = currentMedicalLocation();
         return { label: "Parking", value: location ? location.label : "—" };
       }
-      case "freq":
-        return { label: topMode === "driving" ? "Days/week" : "Round-trips/week", value: String(tripsPerWeek) };
       case "mode": {
-        const touched = gridTouchedFor("[data-abc-mode-select]");
-        return { label: "Mode", value: touched ? { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] : "—" };
-      }
-      case "subquestion": {
+        // Mode's own sub-choice (tier pills / station input / ferry
+        // routes) is bundled onto this same page now (2026-11 follow-
+        // up), so it's one combined chip rather than a separate
+        // "subquestion" chip — park-and-ride moved OUT to its own
+        // "parkride" chip below, since it's no longer on this page.
+        const modeTouched = gridTouchedFor("[data-abc-mode-select]");
+        if (!modeTouched) return { label: "Mode", value: "—" };
+        const modeText = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
+        let subText = "—";
         if (mode === "subway") {
           const touched = gridTouchedFor("[data-abc-pass-tier-select]");
           const tier = buGetPassOption(passTier);
-          const parkTouched = gridTouchedFor("[data-abc-rapid-station-parking-select]");
-          const parkBit = (parkTouched && rapidStationParking) ? " · Park: Yes" : "";
-          return { label: "Pass tier", value: touched ? (tier ? tier.label : "—") + parkBit : "—" };
-        }
-        if (mode === "rail") {
+          subText = touched && tier ? tier.label : "—";
+        } else if (mode === "rail") {
           const label = currentStationLabel();
           const station = buGetStation(label);
-          const parkTouched = gridTouchedFor("[data-abc-station-parking-select]");
-          const parkBit = (parkTouched && stationParking) ? " · Park: Yes" : "";
-          return { label: "Station", value: (station ? label : "—") + parkBit };
+          subText = station ? label : "—";
+        } else {
+          const touched = gridTouchedFor("[data-abc-ferry-route-select]");
+          const route = buGetPassOption(ferryRouteId);
+          subText = touched && route ? route.label : "—";
         }
-        const touched = gridTouchedFor("[data-abc-ferry-route-select]");
-        const route = buGetPassOption(ferryRouteId);
-        return { label: "Ferry route", value: touched ? (route ? route.label : "—") : "—" };
+        return { label: "Mode", value: subText === "—" ? modeText : `${modeText} · ${subText}` };
+      }
+      case "parkride": {
+        if (mode === "subway") {
+          if (!gridTouchedFor("[data-abc-rapid-station-parking-select]")) return { label: "Park & Ride", value: "—" };
+          if (!rapidStationParking) return { label: "Park & Ride", value: "No" };
+          const station = currentRapidStationLabel();
+          return { label: "Park & Ride", value: station ? `Yes, ${station}` : "Yes" };
+        }
+        if (mode === "rail") {
+          if (!gridTouchedFor("[data-abc-station-parking-select]")) return { label: "Park & Ride", value: "—" };
+          return { label: "Park & Ride", value: stationParking ? "Yes" : "No" };
+        }
+        return null; // ferry — wizardStepApplies() already skips this step entirely
       }
       case "reduced": {
         const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
@@ -4209,12 +4305,24 @@ function buInitCalculator(rootEl) {
     }
     breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
-    // ---- Running estimate: $0 until the mode question is actually
-    // answered (modeConfirmed), per the explicit "start at 0" ask —
-    // mirrors passFinalCost's own calc in renderResults(); if that
-    // calc changes, this one needs the same change alongside it. ----
+    // ---- Running estimate: tracks whichever card represents YOUR own
+    // situation, not always Card 1 (2026-11 follow-up). For Pay-Per-
+    // Ride that's still Card 1 (BU Subsidized Pass — its inputs, mode/
+    // trips/reduced/parking/bluebikes, are the shared main-sequence
+    // answers regardless of topMode). For Driving it's Card 2 (Driving
+    // to Campus: days × garage/zone rate) instead, since Card 1 doesn't
+    // depend on campus/garage at all — per the user's explicit ask,
+    // "the cost of those current inputs (# of drives × garage price)"
+    // should start computing once a real garage/zone is picked, not
+    // once a comparison pass is picked. $0 until the first grid on
+    // whichever page actually feeds it is touched, same "start at 0"
+    // rule as before. Both branches mirror their own card's calc in
+    // renderResults() exactly — if either calc changes, this needs the
+    // same change alongside it. ----
     let estimate = 0;
-    if (modeConfirmed) {
+    if (topMode === "driving") {
+      estimate = computeDrivingEstimate();
+    } else if (modeConfirmed) {
       const oneWayTripsPerWeek = tripsPerWeek * 2;
       const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
       const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
@@ -4231,6 +4339,36 @@ function buInitCalculator(rootEl) {
       estimate = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
     }
     breadcrumbEstimateAmt.textContent = abcFormatCurrencyWhole(estimate);
+  }
+
+  /** Card 2's own calc for the Driving branch (days × garage/zone rate,
+   * minus pre-tax savings where it applies) — mirrors renderResults()'s
+   * driving-card block exactly, gated on the SAME grids being touched
+   * (campus, then zone/garage, then the daily-vs-monthly toggle only
+   * when that choice actually exists for the picked garage) so the
+   * number never appears ahead of what the page itself shows as picked. */
+  function computeDrivingEstimate() {
+    if (!gridTouchedFor("[data-abc-campus-select]")) return 0;
+    let selection = null;
+    if (campus === "charles-river") {
+      if (!gridTouchedFor("[data-abc-crc-zone-select]")) return 0;
+      const zone = currentCrcZone();
+      selection = zone ? { rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax } : null;
+    } else {
+      if (!gridTouchedFor("[data-abc-medical-location-select]")) return 0;
+      const location = currentMedicalLocation();
+      if (location) {
+        if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return 0;
+        const useDaily = medicalDaily && location.daily;
+        const rateInfo = useDaily ? location.daily : location.monthly;
+        selection = { rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
+      }
+    }
+    if (!selection) return 0;
+    const parking = buCalcParking(selection, tripsPerWeek);
+    if (!parking) return 0;
+    const parkingPreTaxSavings = parking.preTax ? parking.monthlyCost * (BU_CONFIG.preTaxSavingsPct / 100) : 0;
+    return parking.monthlyCost - parkingPreTaxSavings;
   }
 
   function goBackStep() {
@@ -4314,12 +4452,22 @@ function buInitCalculator(rootEl) {
     const stepId = WIZARD_STEPS[currentStepIndex];
 
     setStepVisible(topModeField, stepId === "topmode", "");
+    // Rides along on the SAME page as topmode now (2026-11), revealed
+    // only once a real choice has been made there — before that, no
+    // stepper default should be showing on a page where nothing's
+    // been picked yet (same "don't paint an unmade choice" rule the
+    // buttons themselves follow).
+    setStepVisible(tripsField, stepId === "topmode" && topModeConfirmed, "");
     setStepVisible(driveFields, stepId === "driving", "");
-    setStepVisible(tripsField, stepId === "freq", "");
     setStepVisible(modeField, stepId === "mode", "");
-    setStepVisible(subwayTierField, stepId === "subquestion" && mode === "subway");
-    setStepVisible(railZoneField, stepId === "subquestion" && mode === "rail");
-    setStepVisible(ferryRouteField, stepId === "subquestion" && mode === "ferry");
+    // Rides along on the SAME page as the mode picker now (2026-11
+    // follow-up), gated on modeConfirmed too — nothing appears until
+    // a real click happens, same "don't paint an unmade choice" rule
+    // every other step follows (park-and-ride, previously bundled in
+    // here, now lives on its own "parkride" step instead).
+    setStepVisible(subwayTierField, stepId === "mode" && modeConfirmed && mode === "subway");
+    setStepVisible(railZoneField, stepId === "mode" && modeConfirmed && mode === "rail");
+    setStepVisible(ferryRouteField, stepId === "mode" && modeConfirmed && mode === "ferry");
     setStepVisible(reducedFareField, stepId === "reduced", "");
     setStepVisible(cardsEl, stepId === "results", "flex");
 
@@ -4354,27 +4502,26 @@ function buInitCalculator(rootEl) {
     });
 
     // ---- Wizard chrome: Back / Continue / Reset / Print ----
-    // Button-grid steps that are FULLY answered by one click (topMode,
-    // mode, and Ferry's route pick, which has nothing else on its page)
-    // advance themselves, so Continue would be redundant there. Subway
-    // & Bus and Commuter Rail's sub-questions now also carry the park-
-    // and-ride follow-up on the same page (2026-11), so picking a tier
-    // or typing a station no longer finishes the page — both need an
-    // explicit Continue, same as any other step with more than one
-    // thing to answer.
-    const isButtonGridStep = stepId === "topmode" || stepId === "mode"
-      || (stepId === "subquestion" && mode === "ferry");
+    // No step auto-advances on a single click anymore (2026-11 follow-
+    // up) — topMode carries the frequency stepper, and "mode" now
+    // carries its own sub-choice (tier pills / station input / ferry
+    // routes), so every button-grid step has at least one more thing
+    // to answer on the same page, same reasoning Subway & Bus/Commuter
+    // Rail's bundled sub-questions already established. Continue always
+    // shows except on Results.
     if (backBtn) backBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (continueBtn) {
-      continueBtn.style.display = (!isButtonGridStep && stepId !== "results") ? "" : "none";
-      // Neither Subway & Bus's tier pills nor Commuter Rail's station
-      // field have been explicitly answered until a real click/valid
-      // station happens — don't let Continue move past either with
-      // nothing actually picked yet.
-      continueBtn.disabled = stepId === "subquestion" && (
+      continueBtn.style.display = stepId !== "results" ? "" : "none";
+      // Nothing's been explicitly answered until a real click happens
+      // (a default isn't a confirmed choice) — don't let Continue move
+      // past topMode, or "mode" + whichever sub-choice it carries,
+      // with nothing actually picked yet.
+      continueBtn.disabled = (stepId === "topmode" && !topModeConfirmed) || (stepId === "mode" && (
+        !modeConfirmed ||
         (mode === "subway" && !subwayTierConfirmed) ||
-        (mode === "rail" && !buGetStation(currentStationLabel()))
-      );
+        (mode === "rail" && !buGetStation(currentStationLabel())) ||
+        (mode === "ferry" && !ferryRouteConfirmed)
+      ));
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (resultsActions) resultsActions.style.display = stepId === "results" ? "flex" : "none";
@@ -4465,7 +4612,10 @@ function buInitCalculator(rootEl) {
       // gets revealed again by actually using the stepper (see
       // tripsStepper's setValue above), never just by switching back.
       if (topMode === "driving") setStepVisible(tripsHint, false);
-      advanceStep();
+      // No longer auto-advances (2026-11) — the frequency stepper now
+      // rides along on this same page, so this click only reveals it;
+      // Continue (now unlocked by topModeConfirmed) does the advancing.
+      renderWizardStep();
       render();
     });
   });
@@ -4475,7 +4625,10 @@ function buInitCalculator(rootEl) {
       mode = btn.dataset.abcModeSelect;
       modeConfirmed = true;
       modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      advanceStep();
+      // No advanceStep() here (2026-11 follow-up) — the mode's own
+      // sub-choice now rides along on this same page, so this click
+      // just reveals it; Continue does the advancing.
+      renderWizardStep();
       render();
     });
   });

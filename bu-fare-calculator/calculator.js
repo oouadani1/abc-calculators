@@ -666,7 +666,22 @@ function buInitCalculator(rootEl) {
   let subwayTierConfirmed = false;
   let ferryRouteConfirmed = false;
 
-  const WIZARD_STEPS = ["topmode", "driving", "freq", "mode", "subquestion", "reduced", "results"];
+  // "freq" is no longer its own step (2026-11) — the frequency stepper
+  // now rides along on the SAME page as "topmode" (conditionally shown
+  // once a topMode choice is made), so a real trips-per-week value is
+  // already available by the time "driving"'s garage/zone or "mode"'s
+  // pass/station is picked, letting the breadcrumb's running estimate
+  // compute a real number right then instead of waiting for a further
+  // separate frequency page.
+  // "subquestion" is gone as its own step (2026-11 follow-up) — the
+  // mode's sub-choice (Bus/Link pills, station input, or ferry routes)
+  // now rides along on the SAME page as picking the mode itself, for
+  // further compactness. Park-and-ride, previously bundled onto that
+  // same sub-choice page, moves to its OWN dedicated "parkride" page in
+  // exchange — applies only for Subway & Bus and Commuter Rail (see
+  // wizardStepApplies(), which also skips it for a rail station with no
+  // MBTA parking lot); Ferry has no block yet (no parking-lot data).
+  const WIZARD_STEPS = ["topmode", "driving", "mode", "parkride", "reduced", "results"];
   let currentStepIndex = 0;
 
   /** Sets an element's display, and — if it's newly becoming visible
@@ -721,11 +736,20 @@ function buInitCalculator(rootEl) {
   const promoBadge = rootEl.querySelector("[data-abc-promo-badge]");
   if (promoBadge) promoBadge.style.display = promoActive ? "" : "none";
 
+  // Static (doesn't depend on any answer), so set once here rather than
+  // every render() — computed from BU_CONFIG.bluebikesAnnualPrice so the
+  // question text can't drift out of sync if that price ever changes.
+  const bluebikesPriceEl = rootEl.querySelector("[data-abc-bluebikes-price]");
+  if (bluebikesPriceEl) bluebikesPriceEl.textContent = abcFormatCurrencyWhole(BU_CONFIG.bluebikesAnnualPrice / 12);
+
   function updatePromoUI() {
     const callout = rootEl.querySelector("[data-abc-promo-callout]");
     if (!callout) return;
-    const onSubquestionStep = WIZARD_STEPS[currentStepIndex] === "subquestion";
-    const applies = onSubquestionStep && promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
+    // Rail's station input (where picking a zone actually happens) now
+    // lives on the "mode" step, not a separate "subquestion" step
+    // (2026-11 follow-up) — this callout follows it there.
+    const onModeStep = WIZARD_STEPS[currentStepIndex] === "mode";
+    const applies = onModeStep && promoActive && mode === "rail" && !BU_CONFIG.promo.excludeZoneIds.includes(currentPassId());
     setStepVisible(callout, applies, "block");
     if (applies) {
       const days = buEdenredDeadlineDaysLeft();
@@ -852,7 +876,10 @@ function buInitCalculator(rootEl) {
       ferryRouteId = btn.dataset.abcFerryRouteSelect;
       ferryRouteConfirmed = true;
       ferryRouteButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      advanceStep();
+      // No advanceStep() here (2026-11 follow-up) — ferry's route pick
+      // now rides along on the same page as the mode picker itself, so
+      // this click just unlocks Continue rather than moving on by itself.
+      renderWizardStep();
       render();
     });
   });
@@ -1012,16 +1039,25 @@ function buInitCalculator(rootEl) {
   const stationParkingButtons = rootEl.querySelectorAll("[data-abc-station-parking-select]");
   const stationParkingDaysField = rootEl.querySelector("[data-abc-station-parking-days-field]");
 
+  // Now a top-level field-group on its own "parkride" page (2026-11
+  // follow-up — was nested inside the rail station field, riding along
+  // on the sub-choice page). Promoted out of that nesting, so its own
+  // visibility must explicitly check the current step too — nothing
+  // else hides it now. The reset-to-"No" below stays keyed on
+  // hasParking alone (not the step), so a stale "Yes" clears the
+  // instant the eligibility itself changes, even before ever visiting
+  // this page.
   function updateStationParkingFieldVisibility() {
     if (!stationParkingField) return;
     const station = mode === "rail" ? buGetStation(currentStationLabel()) : null;
     const hasParking = !!(station && station.parkingRate != null);
-    setStepVisible(stationParkingField, hasParking, "block");
+    const onStep = WIZARD_STEPS[currentStepIndex] === "parkride" && mode === "rail";
+    setStepVisible(stationParkingField, onStep && hasParking, "block");
     if (!hasParking && stationParking) {
       stationParking = false;
       stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     }
-    setStepVisible(stationParkingDaysField, hasParking && stationParking, "block");
+    setStepVisible(stationParkingDaysField, onStep && hasParking && stationParking, "block");
   }
 
   stationParkingButtons.forEach((btn) => {
@@ -1042,10 +1078,11 @@ function buInitCalculator(rootEl) {
   // ---- Rapid-transit (Subway & Bus) park-and-ride: same BU parking
   // subsidy, same two-line itemization, but MBTA_RAPID_STATIONS instead
   // of BU_STATIONS, and no fare to resolve (Local Bus/LinkPass pricing
-  // doesn't depend on which station you park at). Nested inside
-  // [data-abc-subway-tier-field] (2026-11 — rides along on the same
-  // page as the Bus/Link pick), visible unconditionally once Subway &
-  // Bus is the mode, independent of which tier is picked. ----
+  // doesn't depend on which station you park at). Its own top-level
+  // field-group on the dedicated "parkride" page (2026-11 follow-up —
+  // was nested inside the subway tier field, riding along on the
+  // sub-choice page before mode+sub-choice were merged onto one page
+  // of their own), independent of which tier is picked. ----
   const rapidStationParkingField = rootEl.querySelector("[data-abc-rapid-station-parking-field]");
   const rapidStationParkingButtons = rootEl.querySelectorAll("[data-abc-rapid-station-parking-select]");
   const rapidStationField = rootEl.querySelector("[data-abc-rapid-station-field]");
@@ -1061,13 +1098,14 @@ function buInitCalculator(rootEl) {
   function updateRapidStationParkingFieldVisibility() {
     if (!rapidStationParkingField) return;
     const show = mode === "subway";
-    setStepVisible(rapidStationParkingField, show, "block");
+    const onStep = WIZARD_STEPS[currentStepIndex] === "parkride" && show;
+    setStepVisible(rapidStationParkingField, onStep, "block");
     if (!show && rapidStationParking) {
       rapidStationParking = false;
       rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     }
-    setStepVisible(rapidStationField, show && rapidStationParking, "block");
-    setStepVisible(rapidStationParkingDaysField, show && rapidStationParking, "block");
+    setStepVisible(rapidStationField, onStep && rapidStationParking, "block");
+    setStepVisible(rapidStationParkingDaysField, onStep && rapidStationParking, "block");
   }
 
   rapidStationParkingButtons.forEach((btn) => {
@@ -1125,10 +1163,10 @@ function buInitCalculator(rootEl) {
       passTier = btn.dataset.abcPassTierSelect;
       subwayTierConfirmed = true;
       tierButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      // No advanceStep() here — park-and-ride now rides along on this
-      // same page (2026-11), so picking a tier just unlocks Continue
-      // (see the "Wizard chrome" comment in renderWizardStep()) rather
-      // than moving to the next page by itself.
+      // No advanceStep() here — this page's own mode pick already needs
+      // an explicit Continue (see the "Wizard chrome" comment in
+      // renderWizardStep()), since mode+sub-choice are bundled onto one
+      // page (2026-11 follow-up); picking a tier just unlocks it.
       renderWizardStep();
       render();
     });
@@ -1213,7 +1251,15 @@ function buInitCalculator(rootEl) {
 
   function wizardStepApplies(id) {
     if (id === "driving") return topMode === "driving";
-    return true; // topmode, freq, mode, subquestion, reduced, results always apply once reached
+    if (id === "parkride") {
+      if (mode === "subway") return true; // MBTA_RAPID_STATIONS only lists stations that already have real parking data
+      if (mode === "rail") {
+        const station = buGetStation(currentStationLabel());
+        return !!(station && station.parkingRate != null);
+      }
+      return false; // ferry — no MBTA parking-lot data yet
+    }
+    return true; // topmode, mode, reduced, results always apply once reached
   }
 
   function clampStepIndex(i) {
@@ -1242,15 +1288,26 @@ function buInitCalculator(rootEl) {
    * grid has actually been clicked — same "don't paint a default as if
    * it were chosen" rule the buttons themselves now follow (2026-11),
    * so the breadcrumb can never show an answer the page itself doesn't
-   * yet visually show as picked. The frequency stepper is the one
-   * exception (no button grid, no concept of "unclicked" — its current
-   * number is always the real live value, same cascade-default
-   * philosophy this tool has always used for non-button steps). */
+   * yet visually show as picked. The frequency stepper (folded into
+   * the "topmode" chip, not a step of its own) is the one exception —
+   * no button grid, no concept of "unclicked," so its current number is
+   * always the real live value once topmode itself is touched, same
+   * cascade-default philosophy this tool has always used for non-
+   * button inputs. */
   function breadcrumbStepInfo(stepId) {
     switch (stepId) {
       case "topmode": {
         const touched = gridTouchedFor("[data-abc-top-mode-select]");
-        return { label: "Get to campus", value: touched ? (topMode === "driving" ? "I drive" : "I take transit") : "—" };
+        if (!touched) return { label: "Get to campus", value: "—" };
+        // Frequency rides along on this same page now (2026-11), so its
+        // value is folded into this one chip rather than getting a chip
+        // of its own — same "one chip per bundled page" rule the
+        // subquestion page's tier+park-ride combo already follows.
+        const modeText = topMode === "driving" ? "I drive" : "I take transit";
+        const freqText = topMode === "driving"
+          ? `${tripsPerWeek} day${tripsPerWeek === 1 ? "" : "s"}/wk`
+          : `${tripsPerWeek} rt/wk`;
+        return { label: "Get to campus", value: `${modeText} · ${freqText}` };
       }
       case "driving": {
         const touched = gridTouchedFor("[data-abc-campus-select]");
@@ -1262,30 +1319,43 @@ function buInitCalculator(rootEl) {
         const location = currentMedicalLocation();
         return { label: "Parking", value: location ? location.label : "—" };
       }
-      case "freq":
-        return { label: topMode === "driving" ? "Days/week" : "Round-trips/week", value: String(tripsPerWeek) };
       case "mode": {
-        const touched = gridTouchedFor("[data-abc-mode-select]");
-        return { label: "Mode", value: touched ? { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] : "—" };
-      }
-      case "subquestion": {
+        // Mode's own sub-choice (tier pills / station input / ferry
+        // routes) is bundled onto this same page now (2026-11 follow-
+        // up), so it's one combined chip rather than a separate
+        // "subquestion" chip — park-and-ride moved OUT to its own
+        // "parkride" chip below, since it's no longer on this page.
+        const modeTouched = gridTouchedFor("[data-abc-mode-select]");
+        if (!modeTouched) return { label: "Mode", value: "—" };
+        const modeText = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
+        let subText = "—";
         if (mode === "subway") {
           const touched = gridTouchedFor("[data-abc-pass-tier-select]");
           const tier = buGetPassOption(passTier);
-          const parkTouched = gridTouchedFor("[data-abc-rapid-station-parking-select]");
-          const parkBit = (parkTouched && rapidStationParking) ? " · Park: Yes" : "";
-          return { label: "Pass tier", value: touched ? (tier ? tier.label : "—") + parkBit : "—" };
-        }
-        if (mode === "rail") {
+          subText = touched && tier ? tier.label : "—";
+        } else if (mode === "rail") {
           const label = currentStationLabel();
           const station = buGetStation(label);
-          const parkTouched = gridTouchedFor("[data-abc-station-parking-select]");
-          const parkBit = (parkTouched && stationParking) ? " · Park: Yes" : "";
-          return { label: "Station", value: (station ? label : "—") + parkBit };
+          subText = station ? label : "—";
+        } else {
+          const touched = gridTouchedFor("[data-abc-ferry-route-select]");
+          const route = buGetPassOption(ferryRouteId);
+          subText = touched && route ? route.label : "—";
         }
-        const touched = gridTouchedFor("[data-abc-ferry-route-select]");
-        const route = buGetPassOption(ferryRouteId);
-        return { label: "Ferry route", value: touched ? (route ? route.label : "—") : "—" };
+        return { label: "Mode", value: subText === "—" ? modeText : `${modeText} · ${subText}` };
+      }
+      case "parkride": {
+        if (mode === "subway") {
+          if (!gridTouchedFor("[data-abc-rapid-station-parking-select]")) return { label: "Park & Ride", value: "—" };
+          if (!rapidStationParking) return { label: "Park & Ride", value: "No" };
+          const station = currentRapidStationLabel();
+          return { label: "Park & Ride", value: station ? `Yes, ${station}` : "Yes" };
+        }
+        if (mode === "rail") {
+          if (!gridTouchedFor("[data-abc-station-parking-select]")) return { label: "Park & Ride", value: "—" };
+          return { label: "Park & Ride", value: stationParking ? "Yes" : "No" };
+        }
+        return null; // ferry — wizardStepApplies() already skips this step entirely
       }
       case "reduced": {
         const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
@@ -1356,12 +1426,24 @@ function buInitCalculator(rootEl) {
     }
     breadcrumbBus.style.left = `${Math.max(4, targetX - 4)}px`;
 
-    // ---- Running estimate: $0 until the mode question is actually
-    // answered (modeConfirmed), per the explicit "start at 0" ask —
-    // mirrors passFinalCost's own calc in renderResults(); if that
-    // calc changes, this one needs the same change alongside it. ----
+    // ---- Running estimate: tracks whichever card represents YOUR own
+    // situation, not always Card 1 (2026-11 follow-up). For Pay-Per-
+    // Ride that's still Card 1 (BU Subsidized Pass — its inputs, mode/
+    // trips/reduced/parking/bluebikes, are the shared main-sequence
+    // answers regardless of topMode). For Driving it's Card 2 (Driving
+    // to Campus: days × garage/zone rate) instead, since Card 1 doesn't
+    // depend on campus/garage at all — per the user's explicit ask,
+    // "the cost of those current inputs (# of drives × garage price)"
+    // should start computing once a real garage/zone is picked, not
+    // once a comparison pass is picked. $0 until the first grid on
+    // whichever page actually feeds it is touched, same "start at 0"
+    // rule as before. Both branches mirror their own card's calc in
+    // renderResults() exactly — if either calc changes, this needs the
+    // same change alongside it. ----
     let estimate = 0;
-    if (modeConfirmed) {
+    if (topMode === "driving") {
+      estimate = computeDrivingEstimate();
+    } else if (modeConfirmed) {
       const oneWayTripsPerWeek = tripsPerWeek * 2;
       const currentStation = mode === "rail" ? buGetStation(currentStationLabel()) : null;
       const includeSubwayLeg = mode === "rail" && !!currentStation && currentStation.line !== "fw";
@@ -1378,6 +1460,36 @@ function buInitCalculator(rootEl) {
       estimate = result.passEffectiveCost + passParkingAddon + bluebikesMonthlyCost;
     }
     breadcrumbEstimateAmt.textContent = abcFormatCurrencyWhole(estimate);
+  }
+
+  /** Card 2's own calc for the Driving branch (days × garage/zone rate,
+   * minus pre-tax savings where it applies) — mirrors renderResults()'s
+   * driving-card block exactly, gated on the SAME grids being touched
+   * (campus, then zone/garage, then the daily-vs-monthly toggle only
+   * when that choice actually exists for the picked garage) so the
+   * number never appears ahead of what the page itself shows as picked. */
+  function computeDrivingEstimate() {
+    if (!gridTouchedFor("[data-abc-campus-select]")) return 0;
+    let selection = null;
+    if (campus === "charles-river") {
+      if (!gridTouchedFor("[data-abc-crc-zone-select]")) return 0;
+      const zone = currentCrcZone();
+      selection = zone ? { rateType: "daily", rate: zone.weekdayRate, preTax: BU_PARKING_CONFIG.charlesRiver.preTax } : null;
+    } else {
+      if (!gridTouchedFor("[data-abc-medical-location-select]")) return 0;
+      const location = currentMedicalLocation();
+      if (location) {
+        if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return 0;
+        const useDaily = medicalDaily && location.daily;
+        const rateInfo = useDaily ? location.daily : location.monthly;
+        selection = { rateType: useDaily ? "daily" : "monthly", rate: rateInfo.rate, preTax: rateInfo.preTax };
+      }
+    }
+    if (!selection) return 0;
+    const parking = buCalcParking(selection, tripsPerWeek);
+    if (!parking) return 0;
+    const parkingPreTaxSavings = parking.preTax ? parking.monthlyCost * (BU_CONFIG.preTaxSavingsPct / 100) : 0;
+    return parking.monthlyCost - parkingPreTaxSavings;
   }
 
   function goBackStep() {
@@ -1461,12 +1573,22 @@ function buInitCalculator(rootEl) {
     const stepId = WIZARD_STEPS[currentStepIndex];
 
     setStepVisible(topModeField, stepId === "topmode", "");
+    // Rides along on the SAME page as topmode now (2026-11), revealed
+    // only once a real choice has been made there — before that, no
+    // stepper default should be showing on a page where nothing's
+    // been picked yet (same "don't paint an unmade choice" rule the
+    // buttons themselves follow).
+    setStepVisible(tripsField, stepId === "topmode" && topModeConfirmed, "");
     setStepVisible(driveFields, stepId === "driving", "");
-    setStepVisible(tripsField, stepId === "freq", "");
     setStepVisible(modeField, stepId === "mode", "");
-    setStepVisible(subwayTierField, stepId === "subquestion" && mode === "subway");
-    setStepVisible(railZoneField, stepId === "subquestion" && mode === "rail");
-    setStepVisible(ferryRouteField, stepId === "subquestion" && mode === "ferry");
+    // Rides along on the SAME page as the mode picker now (2026-11
+    // follow-up), gated on modeConfirmed too — nothing appears until
+    // a real click happens, same "don't paint an unmade choice" rule
+    // every other step follows (park-and-ride, previously bundled in
+    // here, now lives on its own "parkride" step instead).
+    setStepVisible(subwayTierField, stepId === "mode" && modeConfirmed && mode === "subway");
+    setStepVisible(railZoneField, stepId === "mode" && modeConfirmed && mode === "rail");
+    setStepVisible(ferryRouteField, stepId === "mode" && modeConfirmed && mode === "ferry");
     setStepVisible(reducedFareField, stepId === "reduced", "");
     setStepVisible(cardsEl, stepId === "results", "flex");
 
@@ -1501,27 +1623,26 @@ function buInitCalculator(rootEl) {
     });
 
     // ---- Wizard chrome: Back / Continue / Reset / Print ----
-    // Button-grid steps that are FULLY answered by one click (topMode,
-    // mode, and Ferry's route pick, which has nothing else on its page)
-    // advance themselves, so Continue would be redundant there. Subway
-    // & Bus and Commuter Rail's sub-questions now also carry the park-
-    // and-ride follow-up on the same page (2026-11), so picking a tier
-    // or typing a station no longer finishes the page — both need an
-    // explicit Continue, same as any other step with more than one
-    // thing to answer.
-    const isButtonGridStep = stepId === "topmode" || stepId === "mode"
-      || (stepId === "subquestion" && mode === "ferry");
+    // No step auto-advances on a single click anymore (2026-11 follow-
+    // up) — topMode carries the frequency stepper, and "mode" now
+    // carries its own sub-choice (tier pills / station input / ferry
+    // routes), so every button-grid step has at least one more thing
+    // to answer on the same page, same reasoning Subway & Bus/Commuter
+    // Rail's bundled sub-questions already established. Continue always
+    // shows except on Results.
     if (backBtn) backBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (continueBtn) {
-      continueBtn.style.display = (!isButtonGridStep && stepId !== "results") ? "" : "none";
-      // Neither Subway & Bus's tier pills nor Commuter Rail's station
-      // field have been explicitly answered until a real click/valid
-      // station happens — don't let Continue move past either with
-      // nothing actually picked yet.
-      continueBtn.disabled = stepId === "subquestion" && (
+      continueBtn.style.display = stepId !== "results" ? "" : "none";
+      // Nothing's been explicitly answered until a real click happens
+      // (a default isn't a confirmed choice) — don't let Continue move
+      // past topMode, or "mode" + whichever sub-choice it carries,
+      // with nothing actually picked yet.
+      continueBtn.disabled = (stepId === "topmode" && !topModeConfirmed) || (stepId === "mode" && (
+        !modeConfirmed ||
         (mode === "subway" && !subwayTierConfirmed) ||
-        (mode === "rail" && !buGetStation(currentStationLabel()))
-      );
+        (mode === "rail" && !buGetStation(currentStationLabel())) ||
+        (mode === "ferry" && !ferryRouteConfirmed)
+      ));
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
     if (resultsActions) resultsActions.style.display = stepId === "results" ? "flex" : "none";
@@ -1612,7 +1733,10 @@ function buInitCalculator(rootEl) {
       // gets revealed again by actually using the stepper (see
       // tripsStepper's setValue above), never just by switching back.
       if (topMode === "driving") setStepVisible(tripsHint, false);
-      advanceStep();
+      // No longer auto-advances (2026-11) — the frequency stepper now
+      // rides along on this same page, so this click only reveals it;
+      // Continue (now unlocked by topModeConfirmed) does the advancing.
+      renderWizardStep();
       render();
     });
   });
@@ -1622,7 +1746,10 @@ function buInitCalculator(rootEl) {
       mode = btn.dataset.abcModeSelect;
       modeConfirmed = true;
       modeButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
-      advanceStep();
+      // No advanceStep() here (2026-11 follow-up) — the mode's own
+      // sub-choice now rides along on this same page, so this click
+      // just reveals it; Continue does the advancing.
+      renderWizardStep();
       render();
     });
   });

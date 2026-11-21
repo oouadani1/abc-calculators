@@ -821,6 +821,14 @@ label.abc-question {
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--abc-space-sm);
+  /* This row stands in for a plain <p class="abc-question"> as the
+     flex child of .abc-field, so it carries the same margin-bottom
+     every other question gets — the inner .abc-question's own margin
+     is zeroed below to avoid doubling it, not to remove it (that
+     zeroing, with nothing here to replace it, was the actual bug: any
+     question with a hint icon lost its gap to the content below it
+     entirely — found and fixed 2026-11). */
+  margin-bottom: var(--abc-space-sm);
 }
 
 .abc-farecalc-question-row .abc-question {
@@ -833,30 +841,43 @@ label.abc-question {
   margin-top: 2px;
 }
 
+/* Same circumference and hover-shake as the title's lightbulb button
+   (2026-11, "match the lightbulb") — 42px, shake on the inner glyph
+   rather than the button itself, exactly the lightbulb's own split
+   (button changes color, inner icon shakes) so the two read as one
+   consistent icon language. */
 .abc-farecalc-hint-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   border: 1.5px solid var(--abc-farecalc-help-blue);
   background: var(--abc-farecalc-help-blue-tint);
   color: var(--abc-farecalc-help-blue);
   font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
-  line-height: 1;
   cursor: pointer;
   padding: 0;
-  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .abc-farecalc-hint-btn:hover,
 .abc-farecalc-hint-btn[aria-expanded="true"] {
   background: var(--abc-farecalc-help-blue);
   color: #fff;
-  transform: scale(1.08);
+}
+
+.abc-farecalc-hint-icon {
+  font-size: 1.3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Reuses the lightbulb's own shake keyframe (defined above) — same
+   motion, same "look at me" hover cue, now on both icons in the tool. */
+.abc-farecalc-hint-btn:hover .abc-farecalc-hint-icon {
+  animation: abc-farecalc-lightbulb-shake 0.5s ease-in-out;
 }
 
 .abc-farecalc-hint-popover {
@@ -1714,6 +1735,14 @@ label.abc-question {
   margin: 0;
   font-size: var(--abc-font-size-sm);
   color: var(--abc-ink-muted);
+}
+
+/* --bu-mint (the darkened shade), not --bu-mint-bright — same
+   plain-text-on-white exception the Reduced Fare/Bluebikes hyperlinks
+   already use, since the literal bright accent fails contrast as text. */
+.abc-farecalc-credit-link {
+  color: var(--bu-mint);
+  text-decoration: underline;
 }
 
 .abc-farecalc-bu-logo img {
