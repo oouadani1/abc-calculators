@@ -955,12 +955,6 @@ label.abc-question {
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
 }
 
-/* Wider variant for a hint that includes a map image (2026-11,
-   Medical Campus garage map) — the default 300px would shrink a map's
-   labels past legible. */
-.abc-farecalc-hint-popover-wide {
-  width: min(420px, 85vw);
-}
 
 .abc-farecalc-hint-popover p {
   margin: 0;

@@ -1378,12 +1378,20 @@ function buInitCalculator(rootEl) {
         return { label: "Get to campus", value: touched ? (topMode === "driving" ? "Drive" : "Transit") : "—" };
       }
       case "driving": {
-        const touched = gridTouchedFor("[data-abc-campus-select]");
-        if (!touched) return { label: "Parking", value: "—" };
+        // Gated on EITHER the campus grid or the zone/garage grid being
+        // touched, not campus alone (2026-11 bug fix) — Charles River is
+        // the default campus, so someone who clicks straight into "Zone
+        // 2" without ever clicking "Charles River Campus" itself (it's
+        // already active, no reason to click it) had the campus-only
+        // gate permanently stuck at "—" even after picking a real zone.
         if (campus === "charles-river") {
+          const touched = gridTouchedFor("[data-abc-crc-zone-select]") || gridTouchedFor("[data-abc-campus-select]");
+          if (!touched) return { label: "Parking", value: "—" };
           const zone = currentCrcZone();
           return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
         }
+        const touched = gridTouchedFor("[data-abc-medical-location-select]") || gridTouchedFor("[data-abc-campus-select]");
+        if (!touched) return { label: "Parking", value: "—" };
         const location = currentMedicalLocation();
         // "Street" -> "St." for this compact chip only (2026-11 ask) —
         // the full question/garage picker elsewhere keeps the real name.
@@ -1529,11 +1537,17 @@ function buInitCalculator(rootEl) {
    * (a resolved selection, feeding buCalcParking()), factored out so
    * renderBreadcrumb() can decide whether to show that DOM value or $0. */
   function drivingEstimateReady() {
-    if (!gridTouchedFor("[data-abc-campus-select]")) return false;
+    // Same "either grid counts" fix as breadcrumbStepInfo()'s "driving"
+    // case above (2026-11 bug fix) — this used to require the CAMPUS
+    // grid touched first, so clicking straight into "Zone 2" without
+    // ever clicking "Charles River Campus" (already the default) left
+    // the estimate permanently stuck at $0 even with a real zone picked.
     if (campus === "charles-river") {
-      return gridTouchedFor("[data-abc-crc-zone-select]") && !!currentCrcZone();
+      const touched = gridTouchedFor("[data-abc-crc-zone-select]") || gridTouchedFor("[data-abc-campus-select]");
+      return touched && !!currentCrcZone();
     }
-    if (!gridTouchedFor("[data-abc-medical-location-select]")) return false;
+    const touched = gridTouchedFor("[data-abc-medical-location-select]") || gridTouchedFor("[data-abc-campus-select]");
+    if (!touched) return false;
     const location = currentMedicalLocation();
     if (!location) return false;
     if (location.daily && !gridTouchedFor("[data-abc-medical-daily-select]")) return false;
