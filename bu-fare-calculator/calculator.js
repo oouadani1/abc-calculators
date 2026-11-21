@@ -138,21 +138,41 @@ const BU_CONFIG = {
     { id: "cr-zone-9", label: "Zone 9", group: "rail", oneWayFare: 12.75, monthlyPrice: 406.00, reducedOneWayFare: 6.25, reducedMonthlyPrice: 199.00 },
     { id: "cr-zone-10", label: "Zone 10", group: "rail", oneWayFare: 13.25, monthlyPrice: 426.00, reducedOneWayFare: 6.50, reducedMonthlyPrice: 209.00 },
 
-    // Ferry: one-way and monthly prices confirmed live on
-    // mbta.com/fares/ferry-fares (2026-10). MBTA fare-integrates ferry
-    // monthly passes with the equivalent Commuter Rail zone where one
-    // exists, which is exactly why Winthrop/Quincy's and Lynn's prices
-    // below match cr-zone-1 and cr-zone-2 above dollar-for-dollar (not a
-    // coincidence) — their Reduced Fare prices are reused from those
-    // confirmed zones for the same reason. Hingham/Hull has no CR-zone
-    // equivalent; its regular prices are confirmed, but its reduced
-    // MONTHLY price has no published figure, so (like the CR zone 1-9
-    // reduced monthly prices above) it's estimated via the same ~50%-of-
-    // regular ratio the other confirmed routes follow — flagged in the
-    // footer, don't present as exact.
-    { id: "ferry-winthrop-quincy", label: "Winthrop/Quincy Ferry", group: "ferry", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00 },
+    // Ferry: one-way and monthly prices re-confirmed live on
+    // mbta.com/fares/ferry-fares and mbta.com/fares/reduced (2026-11).
+    // MBTA fare-integrates ferry monthly passes with the equivalent
+    // Commuter Rail zone where one exists, which is exactly why Inner
+    // Harbor's/Winthrop-Quincy's/Lynn's prices below match cr-zone-1a/
+    // cr-zone-1/cr-zone-2 above dollar-for-dollar (not a coincidence) —
+    // their Reduced Fare prices are reused from those confirmed zones
+    // for the same reason, including Inner Harbor's reduced MONTHLY
+    // ($30, confirmed, not estimated — it fare-integrates with zone 1A
+    // same as the other two). Hingham/Hull has no CR-zone equivalent;
+    // both its regular AND reduced prices are now directly confirmed on
+    // mbta.com (2026-11 re-check corrected monthlyPrice from a stale
+    // $329 to the real $319, and reducedMonthlyPrice from a round-9
+    // ~50%-ratio ESTIMATE of $161 to the real, now-published $164 —
+    // don't re-estimate this one, it's confirmed).
+    { id: "ferry-inner-harbor", label: "Inner Harbor Ferry", group: "ferry", oneWayFare: 2.40, monthlyPrice: 90.00, reducedOneWayFare: 1.10, reducedMonthlyPrice: 30.00 },
+    { id: "ferry-winthrop-quincy", label: "Winthrop/Quincy Ferry", group: "ferry", oneWayFare: 6.50, monthlyPrice: 214.00, reducedOneWayFare: 3.25, reducedMonthlyPrice: 105.00,
+      // Winthrop Landing's MBTA lot is free (mbta.com/parking/stations-
+      // and-rates, 2026-11) — Quincy's own ferry-dock parking wasn't
+      // separately found/verified, so this represents Winthrop's lot
+      // only; flagged here the same way a shared CR station's "largest
+      // lot" pick is flagged elsewhere in this file.
+      parkingRate: 0.00 },
+    // Lynn's FERRY terminal parking rate is NOT confirmed — the only
+    // "Lynn" rows on mbta.com/parking/stations-and-rates are Commuter
+    // Rail facilities (a different physical location from the ferry
+    // dock), so no parkingRate is set here rather than guessing with
+    // the wrong station's number. Revisit once the real ferry-terminal
+    // rate is found.
     { id: "ferry-lynn", label: "Lynn Ferry", group: "ferry", oneWayFare: 7.00, monthlyPrice: 232.00, reducedOneWayFare: 3.50, reducedMonthlyPrice: 114.00 },
-    { id: "ferry-hingham-hull", label: "Hingham/Hull Ferry", group: "ferry", oneWayFare: 9.75, monthlyPrice: 329.00, reducedOneWayFare: 4.85, reducedMonthlyPrice: 161.00 },
+    // Hingham Shipyard (the Hingham/Hull route's actual ferry terminal)
+    // is $2/day on mbta.com/parking/stations-and-rates (2026-11) —
+    // deliberately NOT Pemberton Point/"Hull" (free with a Hull
+    // resident sticker only, and not a route terminus per the user).
+    { id: "ferry-hingham-hull", label: "Hingham/Hull Ferry", group: "ferry", oneWayFare: 9.75, monthlyPrice: 319.00, reducedOneWayFare: 4.85, reducedMonthlyPrice: 164.00, parkingRate: 2.00 },
   ],
 
   // Bluebikes membership add-on: optional, independent of transit choice,
@@ -640,6 +660,8 @@ function buInitCalculator(rootEl) {
   let stationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let rapidStationParking = false; // Subway & Bus only — same question, MBTA_RAPID_STATIONS instead of BU_STATIONS
   let rapidStationParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
+  let ferryParking = false; // Ferry only — same question, keyed off the route's own parkingRate (no station search needed)
+  let ferryParkingDays = 3; // capped at parkRideDaysCap() — see clampParkingDaysToTrips()
   let bluebikesAdded = false; // optional Bluebikes membership add-on, folded into both cards
 
   // ---- True one-step-at-a-time pagination (2026-11, "I want to see each
@@ -1123,6 +1145,46 @@ function buInitCalculator(rootEl) {
     parkRideDaysCap
   );
 
+  // ---- Ferry park-and-ride (2026-11): same BU parking subsidy, same
+  // two-line itemization, but keyed off the FERRY ROUTE's own
+  // parkingRate directly (no station search needed — the route itself
+  // already determines the one terminal, unlike Subway & Bus/Commuter
+  // Rail which have many possible stations). Only shown when the
+  // current route actually has a confirmed rate (Winthrop/Quincy,
+  // Hingham/Hull) — see wizardStepApplies("parkride") for Lynn/Inner
+  // Harbor's exclusion. ----
+  const ferryParkingField = rootEl.querySelector("[data-abc-ferry-parking-field]");
+  const ferryParkingButtons = rootEl.querySelectorAll("[data-abc-ferry-parking-select]");
+  const ferryParkingDaysField = rootEl.querySelector("[data-abc-ferry-parking-days-field]");
+
+  function updateFerryParkingFieldVisibility() {
+    if (!ferryParkingField) return;
+    const route = buGetPassOption(ferryRouteId);
+    const hasParking = mode === "ferry" && !!(route && route.parkingRate != null);
+    const onStep = WIZARD_STEPS[currentStepIndex] === "parkride" && hasParking;
+    setStepVisible(ferryParkingField, onStep, "block");
+    if (!hasParking && ferryParking) {
+      ferryParking = false;
+      ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryParkingSelect === "no"));
+    }
+    setStepVisible(ferryParkingDaysField, onStep && ferryParking, "block");
+  }
+
+  ferryParkingButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      ferryParking = btn.dataset.abcFerryParkingSelect === "yes";
+      ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+      updateFerryParkingFieldVisibility();
+      if (ferryParkingDaysStepper) ferryParkingDaysStepper.repaint();
+      render();
+    });
+  });
+
+  const ferryParkingDaysStepper = initStepper(
+    "data-abc-ferry-parking-days-stepper", 1, () => ferryParkingDays, (v) => { ferryParkingDays = v; }, 0,
+    parkRideDaysCap
+  );
+
   /** Max days/week you could plausibly need to drive-and-park at a
    * station. Driving's own trips field is already a direct day count
    * (0-7), used as-is. Pay-Per-Ride's is round-trips/week, which doesn't
@@ -1142,12 +1204,14 @@ function buInitCalculator(rootEl) {
     const cap = parkRideDaysCap();
     if (stationParkingDays > cap) stationParkingDays = Math.max(0, cap);
     if (rapidStationParkingDays > cap) rapidStationParkingDays = Math.max(0, cap);
+    if (ferryParkingDays > cap) ferryParkingDays = Math.max(0, cap);
     // Repaint unconditionally, not just when a value actually got clamped —
     // otherwise each stepper's own `max` attribute (and native spinner/
     // validity state) can go stale when the cap only RISES, since nothing
     // else touches these two steppers in that case.
     if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
     if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
+    if (ferryParkingDaysStepper) ferryParkingDaysStepper.repaint();
   }
 
   function currentPassId() {
@@ -1257,7 +1321,11 @@ function buInitCalculator(rootEl) {
         const station = buGetStation(currentStationLabel());
         return !!(station && station.parkingRate != null);
       }
-      return false; // ferry — no MBTA parking-lot data yet
+      if (mode === "ferry") {
+        const route = buGetPassOption(ferryRouteId);
+        return !!(route && route.parkingRate != null); // only Winthrop/Quincy and Hingham/Hull have a confirmed rate
+      }
+      return false;
     }
     return true; // topmode, mode, reduced, results always apply once reached
   }
@@ -1297,17 +1365,12 @@ function buInitCalculator(rootEl) {
   function breadcrumbStepInfo(stepId) {
     switch (stepId) {
       case "topmode": {
+        // Kept deliberately bare (2026-11, "keep simple" ask) — just
+        // "Transit"/"Drive", no frequency detail folded in anymore; the
+        // full sentence and the day count are both still visible on the
+        // page itself, the chip is just a compact breadcrumb now.
         const touched = gridTouchedFor("[data-abc-top-mode-select]");
-        if (!touched) return { label: "Get to campus", value: "—" };
-        // Frequency rides along on this same page now (2026-11), so its
-        // value is folded into this one chip rather than getting a chip
-        // of its own — same "one chip per bundled page" rule the
-        // subquestion page's tier+park-ride combo already follows.
-        const modeText = topMode === "driving" ? "I drive" : "I take transit";
-        const freqText = topMode === "driving"
-          ? `${tripsPerWeek} day${tripsPerWeek === 1 ? "" : "s"}/wk`
-          : `${tripsPerWeek} rt/wk`;
-        return { label: "Get to campus", value: `${modeText} · ${freqText}` };
+        return { label: "Get to campus", value: touched ? (topMode === "driving" ? "Drive" : "Transit") : "—" };
       }
       case "driving": {
         const touched = gridTouchedFor("[data-abc-campus-select]");
@@ -1317,32 +1380,17 @@ function buInitCalculator(rootEl) {
           return { label: "Parking", value: zone ? `CRC, ${zone.label.replace(/ \(.*\)$/, "")}` : "—" };
         }
         const location = currentMedicalLocation();
-        return { label: "Parking", value: location ? location.label : "—" };
+        // "Street" -> "St." for this compact chip only (2026-11 ask) —
+        // the full question/garage picker elsewhere keeps the real name.
+        return { label: "Parking", value: location ? location.label.replace(/\bStreet\b/g, "St.") : "—" };
       }
       case "mode": {
-        // Mode's own sub-choice (tier pills / station input / ferry
-        // routes) is bundled onto this same page now (2026-11 follow-
-        // up), so it's one combined chip rather than a separate
-        // "subquestion" chip — park-and-ride moved OUT to its own
-        // "parkride" chip below, since it's no longer on this page.
-        const modeTouched = gridTouchedFor("[data-abc-mode-select]");
-        if (!modeTouched) return { label: "Mode", value: "—" };
-        const modeText = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
-        let subText = "—";
-        if (mode === "subway") {
-          const touched = gridTouchedFor("[data-abc-pass-tier-select]");
-          const tier = buGetPassOption(passTier);
-          subText = touched && tier ? tier.label : "—";
-        } else if (mode === "rail") {
-          const label = currentStationLabel();
-          const station = buGetStation(label);
-          subText = station ? label : "—";
-        } else {
-          const touched = gridTouchedFor("[data-abc-ferry-route-select]");
-          const route = buGetPassOption(ferryRouteId);
-          subText = touched && route ? route.label : "—";
-        }
-        return { label: "Mode", value: subText === "—" ? modeText : `${modeText} · ${subText}` };
+        // Kept deliberately bare (2026-11, "keep simple" ask) — just the
+        // mode category ("Commuter Rail", not "Commuter Rail · South
+        // Station"); the sub-choice itself is still fully visible on the
+        // page, this chip no longer repeats it.
+        const touched = gridTouchedFor("[data-abc-mode-select]");
+        return { label: "Mode", value: touched ? { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode] : "—" };
       }
       case "parkride": {
         if (mode === "subway") {
@@ -1355,14 +1403,18 @@ function buInitCalculator(rootEl) {
           if (!gridTouchedFor("[data-abc-station-parking-select]")) return { label: "Park & Ride", value: "—" };
           return { label: "Park & Ride", value: stationParking ? "Yes" : "No" };
         }
-        return null; // ferry — wizardStepApplies() already skips this step entirely
+        // Ferry — only reachable at all when wizardStepApplies() already
+        // confirmed the route has a real parkingRate (Winthrop/Quincy or
+        // Hingham/Hull); Lynn/Inner Harbor skip this step entirely.
+        if (!gridTouchedFor("[data-abc-ferry-parking-select]")) return { label: "Park & Ride", value: "—" };
+        return { label: "Park & Ride", value: ferryParking ? "Yes" : "No" };
       }
       case "reduced": {
         const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
         const bikeTouched = gridTouchedFor("[data-abc-bluebikes-select]");
         const reducedVal = reducedTouched ? (reducedFare ? "Yes" : "No") : "—";
         const bikeVal = bikeTouched ? (bluebikesAdded ? "Yes" : "No") : "—";
-        return { label: "Reduced / Bike", value: `${reducedVal} · ${bikeVal}` };
+        return { label: "Add-ons", value: `${reducedVal} · ${bikeVal}` };
       }
       default:
         return null;
@@ -1454,6 +1506,9 @@ function buInitCalculator(rootEl) {
       } else if (mode === "subway" && rapidStationParking) {
         const rapidStation = buGetRapidStation(currentRapidStationLabel());
         if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
+      } else if (mode === "ferry" && ferryParking) {
+        const route = buGetPassOption(ferryRouteId);
+        if (route && route.parkingRate != null) parkingSubsidy = buCalcStationParkingSubsidy(route.parkingRate, ferryParkingDays);
       }
       const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
       const passParkingAddon = parkingSubsidy ? parkingSubsidy.netCost : 0;
@@ -1508,13 +1563,13 @@ function buInitCalculator(rootEl) {
     rows.push(["How do you currently get to campus?", topMode === "driving" ? "I drive" : "I take transit"]);
 
     if (topMode === "driving") {
-      rows.push(["Which campus do you park on?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
+      rows.push(["Which campus do you drive to?", campus === "charles-river" ? "Charles River Campus" : "Medical Campus"]);
       if (campus === "charles-river") {
         const zone = currentCrcZone();
         rows.push(["In which Flex Permit Zone do you usually park?", zone ? zone.label : ""]);
       } else {
         const location = currentMedicalLocation();
-        rows.push(["Which garage?", location ? location.label : ""]);
+        rows.push(["In which garage do you usually park?", location ? location.label : ""]);
         if (location && location.daily) {
           rows.push(["Monthly permit or daily rate?", medicalDaily ? "Daily Rate" : "Monthly Permit"]);
         }
@@ -1544,6 +1599,11 @@ function buInitCalculator(rootEl) {
     } else {
       const route = buGetPassOption(ferryRouteId);
       rows.push(["Which ferry route do you take?", route ? route.label : ""]);
+      if (route && route.parkingRate != null) {
+        rows.push(["Will you drive to and park at the ferry terminal?", ferryParking
+          ? `Yes (${ferryParkingDays} day${ferryParkingDays === 1 ? "" : "s"}/week)`
+          : "No"]);
+      }
     }
 
     rows.push(["I qualify for Reduced Fare", reducedFare ? "Yes" : "No"]);
@@ -1578,7 +1638,16 @@ function buInitCalculator(rootEl) {
     // stepper default should be showing on a page where nothing's
     // been picked yet (same "don't paint an unmade choice" rule the
     // buttons themselves follow).
-    setStepVisible(tripsField, stepId === "topmode" && topModeConfirmed, "");
+    const tripsBundled = stepId === "topmode" && topModeConfirmed;
+    setStepVisible(tripsField, tripsBundled, "");
+    // topModeField's own CSS min-height (for when it's the page's SOLE
+    // content, before anything's picked) would otherwise stack with
+    // tripsField's own spacing the moment both are visible together,
+    // compounding into a large dead gap between the buttons and the
+    // revealed question below them — cleared by inline style once a
+    // sibling appears, restored (by clearing the override back to "")
+    // once it's alone again (2026-11, "tight to its parent" fix).
+    if (topModeField) topModeField.style.minHeight = tripsBundled ? "0" : "";
     setStepVisible(driveFields, stepId === "driving", "");
     setStepVisible(modeField, stepId === "mode", "");
     // Rides along on the SAME page as the mode picker now (2026-11
@@ -1586,14 +1655,18 @@ function buInitCalculator(rootEl) {
     // a real click happens, same "don't paint an unmade choice" rule
     // every other step follows (park-and-ride, previously bundled in
     // here, now lives on its own "parkride" step instead).
-    setStepVisible(subwayTierField, stepId === "mode" && modeConfirmed && mode === "subway");
-    setStepVisible(railZoneField, stepId === "mode" && modeConfirmed && mode === "rail");
-    setStepVisible(ferryRouteField, stepId === "mode" && modeConfirmed && mode === "ferry");
+    const subchoiceBundled = stepId === "mode" && modeConfirmed;
+    setStepVisible(subwayTierField, subchoiceBundled && mode === "subway");
+    setStepVisible(railZoneField, subchoiceBundled && mode === "rail");
+    setStepVisible(ferryRouteField, subchoiceBundled && mode === "ferry");
+    // Same min-height clearing as topModeField above, for the same reason.
+    if (modeField) modeField.style.minHeight = subchoiceBundled ? "0" : "";
     setStepVisible(reducedFareField, stepId === "reduced", "");
     setStepVisible(cardsEl, stepId === "results", "flex");
 
     updateStationParkingFieldVisibility();
     updateRapidStationParkingFieldVisibility();
+    updateFerryParkingFieldVisibility();
     updatePromoUI();
 
     if (tripsField) {
@@ -1674,6 +1747,8 @@ function buInitCalculator(rootEl) {
     stationParkingDays = 3;
     rapidStationParking = false;
     rapidStationParkingDays = 3;
+    ferryParking = false;
+    ferryParkingDays = 3;
     bluebikesAdded = false;
     topModeConfirmed = false;
     modeConfirmed = false;
@@ -1699,12 +1774,14 @@ function buInitCalculator(rootEl) {
     bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcBluebikesSelect === "no"));
     stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
+    ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryParkingSelect === "no"));
     if (rapidStationInput) rapidStationInput.value = "";
     setStepVisible(tripsHint, false);
     updateMedicalDailyFieldVisibility();
     if (tripsStepper) tripsStepper.repaint();
     if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
     if (rapidStationParkingDaysStepper) rapidStationParkingDaysStepper.repaint();
+    if (ferryParkingDaysStepper) ferryParkingDaysStepper.repaint();
 
     renderWizardStep();
     render();
@@ -1847,16 +1924,23 @@ function buInitCalculator(rootEl) {
     // is the comparison pass whether someone's paying per ride on this
     // exact mode, or driving and sizing up what they'd pay on it instead. ----
     const result = buCalcAll(currentPassId(), oneWayTripsPerWeek, reducedFare, includeSubwayLeg);
-    // Station parking subsidy: BU_STATIONS for Commuter Rail, or
-    // MBTA_RAPID_STATIONS for Subway & Bus — same subsidy either way,
-    // just a different dataset depending on mode (see
-    // buCalcStationParkingSubsidy's doc comment).
+    // Station parking subsidy: BU_STATIONS for Commuter Rail,
+    // MBTA_RAPID_STATIONS for Subway & Bus, or the ferry route's own
+    // parkingRate (2026-11 — only Winthrop/Quincy and Hingham/Hull have
+    // a confirmed rate; Lynn and Inner Harbor stay null, same "don't
+    // show the feature where there's no real data" rule every other
+    // mode already follows). Same subsidy either way, just a different
+    // dataset depending on mode (see buCalcStationParkingSubsidy's doc
+    // comment).
     let parkingSubsidy = null;
     if (mode === "rail" && stationParking && currentStation && currentStation.parkingRate != null) {
       parkingSubsidy = buCalcStationParkingSubsidy(currentStation.parkingRate, stationParkingDays);
     } else if (mode === "subway" && rapidStationParking) {
       const rapidStation = buGetRapidStation(currentRapidStationLabel());
       if (rapidStation) parkingSubsidy = buCalcStationParkingSubsidy(rapidStation.parkingRate, rapidStationParkingDays);
+    } else if (mode === "ferry" && ferryParking) {
+      const route = buGetPassOption(ferryRouteId);
+      if (route && route.parkingRate != null) parkingSubsidy = buCalcStationParkingSubsidy(route.parkingRate, ferryParkingDays);
     }
     const bluebikesMonthlyCost = bluebikesAdded ? BU_CONFIG.bluebikesAnnualPrice / 12 : 0;
     // Parking is asymmetric (ride pays the full rate, pass gets the
@@ -1930,14 +2014,22 @@ function buInitCalculator(rootEl) {
     // the full cost plus the subsidy deducted from it. ----
     const passParkingRow = rootEl.querySelector("[data-abc-pass-station-parking-row]");
     const passParkingSubsidyRow = rootEl.querySelector("[data-abc-pass-station-parking-subsidy-row]");
+    // Winthrop Landing's MBTA lot is free (ferry/Winthrop-Quincy route) —
+    // a genuine perk worth surfacing plainly rather than as an itemized
+    // "$0.00 x $0.00" double row that would just read as noise (2026-11,
+    // "promote awareness" ask). Every other parking rate still gets the
+    // normal itemized rate + subsidy breakdown.
+    const parkingIsFree = parkingSubsidy && parkingSubsidy.rate === 0;
     let parkingLabel = "";
     if (parkingSubsidy) {
-      parkingLabel = `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
+      parkingLabel = parkingIsFree
+        ? "Parking is free at Winthrop Landing"
+        : `MBTA station parking (${abcFormatCurrency(parkingSubsidy.rate)}/day × ${parkingSubsidy.daysPerWeek} day${parkingSubsidy.daysPerWeek === 1 ? "" : "s"}/week × ${BU_CONFIG.weeksPerMonth.toFixed(2)} weeks/month)`;
       rootEl.querySelector("[data-abc-pass-station-parking-label]").textContent = parkingLabel;
       passRemaining += roundAndShow("[data-abc-pass-station-parking-amt]", parkingSubsidy.fullMonthlyCost, false);
-      passRemaining += roundAndShow("[data-abc-pass-station-parking-subsidy-amt]", parkingSubsidy.subsidyAmt, true);
+      if (!parkingIsFree) passRemaining += roundAndShow("[data-abc-pass-station-parking-subsidy-amt]", parkingSubsidy.subsidyAmt, true);
       if (passParkingRow) passParkingRow.style.display = "flex";
-      if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "flex";
+      if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = parkingIsFree ? "none" : "flex";
     } else {
       if (passParkingRow) passParkingRow.style.display = "none";
       if (passParkingSubsidyRow) passParkingSubsidyRow.style.display = "none";

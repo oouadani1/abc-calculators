@@ -240,15 +240,65 @@
    renderBreadcrumb() in calculator.js on every step/answer change.
    Colors track --abc-farecalc-accent so it re-themes with Commuter
    Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
+.abc-farecalc-breadcrumb-row {
+  display: flex;
+  align-items: stretch;
+  gap: var(--abc-space-sm);
+  margin-bottom: var(--abc-space-md);
+}
+
 .abc-farecalc-breadcrumb {
   display: flex;
   align-items: center;
-  gap: var(--abc-space-md);
-  margin-bottom: var(--abc-space-md);
+  flex: 1 1 auto;
+  min-width: 0;
   padding: 10px var(--abc-space-md);
   background: #fff;
   border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
+}
+
+/* Split out from the breadcrumb strip itself (2026-11 follow-up) so a
+   cost change stands out on its own, not blended into the same white
+   pill as the chips — same mint-green-fill-with-dark-ink treatment the
+   winner card's "Recommended for you" badge already uses elsewhere in
+   this tool. align-items: stretch on the row above (the flex default)
+   already matches this bubble's height to the breadcrumb's, no extra
+   sizing math needed. */
+.abc-farecalc-estimate-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  gap: 2px;
+  padding: 10px var(--abc-space-lg);
+  background: var(--bu-mint-bright);
+  color: var(--bu-ink);
+  border-radius: var(--abc-radius-pill);
+}
+
+.abc-farecalc-estimate-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.abc-farecalc-estimate-amt {
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 560px) {
+  .abc-farecalc-breadcrumb-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .abc-farecalc-estimate-bubble {
+    flex-direction: row;
+    gap: 8px;
+  }
 }
 
 .abc-farecalc-breadcrumb-track {
@@ -283,7 +333,11 @@
    circle's left edge IS the "beginning of this chip" position. */
 .abc-farecalc-breadcrumb-bus {
   position: absolute;
-  top: -2px;
+  /* Was -2px, which sat partly above the track's own padding-box edge
+     and got sliced off by .abc-farecalc-breadcrumb-track's
+     overflow-y: hidden (2026-11, "bus icon gets clipped" fix) — 0
+     keeps the whole circle inside the clipped area. */
+  top: 0;
   width: 24px;
   height: 24px;
   display: flex;
@@ -358,37 +412,6 @@
   font-weight: 400;
 }
 
-.abc-farecalc-breadcrumb-estimate {
-  flex: none;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  line-height: 1.15;
-}
-
-.abc-farecalc-breadcrumb-estimate-label {
-  font-size: 0.68rem;
-  color: var(--abc-ink-muted);
-}
-
-.abc-farecalc-breadcrumb-estimate-amt {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--bu-ink);
-}
-
-@media (max-width: 560px) {
-  .abc-farecalc-breadcrumb {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--abc-space-sm);
-  }
-  .abc-farecalc-breadcrumb-estimate {
-    flex-direction: row;
-    align-items: baseline;
-    gap: 6px;
-  }
-}
 
 /* ---- Card detail accordion (2026-11): collapses each card's itemized
    math behind "See how we calculated this" — the headline total,
@@ -403,16 +426,29 @@
   margin: var(--abc-space-md) 0;
 }
 
-/* The comfortable minimum height lives on each step itself, not on
-   the (now plain block) container around it — on the Results step
-   every one of these is hidden and the container has nothing in it
-   at all, so a min-height up on the container would reserve a tall
-   empty gap above the cards for no reason, the exact "awkward
-   negative space" complaint this whole pagination model exists to
-   avoid. Only a field-group that's actually the visible step pays
-   this cost. */
 .abc-farecalc-field-group {
   min-width: 0;
+}
+
+/* The comfortable minimum height lives only on field-groups that can
+   be the SOLE visible content of a step (preventing a jarring resize
+   between steps of very different natural heights) — NOT on ones that
+   always ride along under a sibling on a bundled page (the frequency
+   stepper under topMode, a mode's sub-choice under the mode picker).
+   Applying it to BOTH halves of a bundled page used to compound into
+   an ~84px dead gap between the parent's buttons and the revealed
+   child question (2026-11 fix, "conditional questions should be tight
+   to their parent") — bundled content now gets only its own natural
+   spacing, no artificial floor under it. Results has no field-group
+   visible at all (cards live in a separate sibling), so nothing here
+   needs excluding for that step the way a grid-level min-height would. */
+[data-abc-top-mode-field],
+[data-abc-drive-fields],
+[data-abc-mode-field],
+[data-abc-rapid-station-parking-field],
+[data-abc-station-parking-field],
+[data-abc-ferry-parking-field],
+[data-abc-reduced-fare-field] {
   min-height: 180px;
 }
 
@@ -427,6 +463,26 @@
   min-height: 140px;
   display: flex;
   align-items: center;
+}
+
+/* The hint text below the stepper used to be a normal-flow sibling,
+   so its box height participated in the row's centering above — the
+   stepper visibly jumped upward the instant the hint appeared, since
+   the (now taller) group re-centered around its new combined height.
+   Taking it out of flow with absolute positioning means its own
+   appearance/disappearance can never move anything else in the row;
+   the stepper's position is now fixed, determined only by its own
+   height (2026-11, "don't want the ticker to jump" fix). */
+[data-abc-trips-field] .abc-field {
+  position: relative;
+}
+
+[data-abc-trips-field] [data-abc-trips-hint] {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: var(--abc-space-sm);
 }
 
 /* ---- "Semi-pagination" reveal (2026-11): played once by JS
@@ -711,7 +767,7 @@ label.abc-question {
   .abc-farecalc-title-actions,
   .abc-farecalc-wizard-nav,
   .abc-farecalc-results-actions,
-  .abc-farecalc-breadcrumb,
+  .abc-farecalc-breadcrumb-row,
   .abc-details {
     display: none !important;
   }
@@ -890,6 +946,13 @@ label.abc-question {
   background: var(--abc-farecalc-help-blue-tint);
   border-color: var(--abc-farecalc-help-blue);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+/* Wider variant for a hint that includes a map image (2026-11,
+   Medical Campus garage map) — the default 300px would shrink a map's
+   labels past legible. */
+.abc-farecalc-hint-popover-wide {
+  width: min(420px, 85vw);
 }
 
 .abc-farecalc-hint-popover p {
