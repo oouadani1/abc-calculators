@@ -235,21 +235,50 @@
    stacking, a leftover single-step centering rule, a missing margin
    on a row that assumed something above it already had one). Treat
    these as the canonical values; when touching spacing anywhere in
-   this file, reuse one of these rather than inventing a new number:
+   this file, reuse one of these rather than inventing a new number —
+   and when checking one, MEASURE the real rendered gap via
+   getBoundingClientRect() rather than trusting the margin-top value
+   alone (see the flex-gap gotcha below, which makes the two not
+   always the same number).
 
    - 8px (var(--abc-space-sm)): a question to its own answer
      (.abc-question's own margin-bottom — see
      .abc-farecalc-field-group .abc-question / .abc-farecalc
      .abc-question). This is the "tightest" gap in the tool.
-   - 16px (var(--abc-space-md)): every "section" gap — breadcrumb strip
-     to the first question (.abc-farecalc-breadcrumb-row's own
-     margin-bottom), the assumptions accordion to the Back/Print nav
-     row (.abc-farecalc-wizard-nav's margin-top), and the grid's own
-     margin-bottom before the nav row on every other step.
    - 24px (var(--abc-space-lg)): a bundled SECOND question riding along
-     under a sibling's own answer (.abc-farecalc-subfield's own
-     margin-top) — e.g. Bluebikes under Reduced Fare, "Monthly or
-     Daily" under the medical garage pick.
+     under a sibling's own answer — e.g. the driving page's Flex Permit
+     Zone question under the campus pick (the user's own reference for
+     "the spacing I like best"), Bluebikes/Reduced Fare, "Monthly or
+     Daily" under the medical garage pick, and mode's sub-choice field-
+     group riding under the mode picker. This is a REAL rendered 24px,
+     confirmed via getBoundingClientRect() on the driving page, not a
+     round-number guess.
+   - 16px (var(--abc-space-md)): every other "section" gap — breadcrumb
+     strip to the first question (.abc-farecalc-breadcrumb-row's own
+     margin-bottom), the assumptions accordion to the Back/Print nav
+     row (.abc-farecalc-wizard-nav's margin-top), the grid's own
+     margin-bottom before the nav row on every other step, AND (not a
+     coincidence — see the flex-gap note right below) the exact margin
+     value needed on a .abc-farecalc-subfield that happens to sit inside
+     a flex .abc-field to reach the SAME 24px total as everywhere else.
+
+   Flex-gap gotcha, don't re-trip on this: .abc-field (shared base.css)
+   is `display:flex; gap: var(--abc-space-sm)` — an 8px gap that
+   silently ADDS to any margin-top on a flex child riding along inside
+   it, on top of that child's own margin. A .abc-farecalc-subfield
+   sitting directly inside a plain block container (e.g. the medical-
+   daily-field case, nested in a plain <div data-abc-medical-fields>)
+   needs the full 24px (var(--abc-space-lg)) on itself to hit the 24px
+   target. The SAME class sitting directly inside .abc-field (e.g.
+   Reduced Fare, a flex child of .abc-field right after the Bluebikes
+   choice-grid) only needs 16px (var(--abc-space-md)) on itself, since
+   the flex gap already contributes the other 8px — see the
+   [data-abc-reduced-fare-field] .abc-farecalc-subfield override below
+   .abc-farecalc-subfield's own base rule. Two instances of the exact
+   same class, two different correct margin-top values, because their
+   parents use two different layout modes — always re-measure the
+   ACTUAL gap after touching either one, don't just copy the other's
+   margin-top number across.
 
    What NOT to do: don't give a field-group its own min-height assuming
    it's always alone on its step — bundled pages (topMode+frequency,
@@ -527,6 +556,23 @@
 [data-abc-ferry-parking-field],
 [data-abc-reduced-fare-field] {
   min-height: 180px;
+}
+
+/* Mode's sub-choice (tier pills / station search / ferry routes) is a
+   SEPARATE top-level field-group from [data-abc-mode-field] itself, not
+   a nested .abc-farecalc-subfield — so it fell back to .abc-input-row's
+   own 8px margin-bottom (the shared "question to its own answer" gap),
+   reading noticeably tighter than every other bundled page in the tool.
+   .abc-farecalc-grid is `display:block` (no flex-gap of its own between
+   sibling field-groups), so the full 24px has to come from this margin
+   alone — matches the real, measured total gap on the driving page
+   (crc-fields' 16px inline margin-top + .abc-field's own 8px flex-gap =
+   24px), the one the user pointed to as "the spacing I like best"
+   (2026-11 — see STANDARD SPACING above .abc-farecalc-grid). */
+[data-abc-subway-tier-field],
+[data-abc-rail-zone-field],
+[data-abc-ferry-route-field] {
+  margin-top: var(--abc-space-lg);
 }
 
 
@@ -1431,13 +1477,32 @@ label.abc-question {
 }
 
 /* A secondary question riding along on the same page as the primary
-   one above it (park-and-ride under a mode's tier/station pick,
-   Bluebikes under Reduced Fare, "monthly or daily" under the garage
-   pick) — same .abc-question/.abc-choice-grid components, just
-   indented in spacing (not margin) to read as a follow-up, not a
-   second unrelated step. */
+   one above it (Reduced Fare under Bluebikes, "monthly or daily" under
+   the garage pick) — same .abc-question/.abc-choice-grid components,
+   just indented in spacing (not margin) to read as a follow-up, not a
+   second unrelated step. 24px total, matching the driving page's
+   campus-to-zone gap (the one the user explicitly said to replicate
+   everywhere) — see the STANDARD SPACING comment above
+   .abc-farecalc-grid for why this is the base/default value, and why
+   [data-abc-reduced-fare-field] overrides it down to 16px right below. */
 .abc-farecalc-subfield {
   margin-top: var(--abc-space-lg);
+}
+
+/* Reduced Fare's own subfield sits inside a plain .abc-field (base.css),
+   which is itself `display:flex; gap: var(--abc-space-sm)` — that 8px
+   flex gap ALREADY applies between the Bluebikes choice-grid above and
+   this subfield, stacking on top of whatever margin-top the subfield
+   itself adds. The medical-daily-field use of .abc-farecalc-subfield
+   (above) has no such flex-gap parent, so it needs the full 24px itself
+   to hit the same real 24px total — this one needs only 16px on top of
+   the already-present 8px flex gap to land on the identical total
+   (measured empirically via getBoundingClientRect, not assumed from the
+   margin value alone — the two instances of .abc-farecalc-subfield in
+   this tool sit in genuinely different flex contexts, so one shared
+   margin-top can't produce the same visual gap in both). */
+[data-abc-reduced-fare-field] .abc-farecalc-subfield {
+  margin-top: var(--abc-space-md);
 }
 
 /* ---- Comparison cards: arithmetic layout. Stacked by default, going

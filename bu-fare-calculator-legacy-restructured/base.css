@@ -1,0 +1,528 @@
+/* ============================================================
+   ABC Calculators — Shared Design Tokens & Base Components
+   Used by both mbta-fare-calculator and bluebikes-membership-calculator.
+   Tool-specific files (calculator.css) layer on top of this with their
+   own prefixed classes (.abc-farecalc-*, .abc-bikecalc-*) — this file
+   only defines shared primitives, never tool-specific selectors.
+
+   Flat, solid, bold — no gradients, no glass/blur. Palette pulled from
+   abettercity.org's live site (screenshot-verified, 2026-07-10): teal
+   and orange are ABC's boldest accents, paired with navy as the base.
+   ============================================================ */
+
+:root {
+  /* ABC brand colors */
+  --abc-teal: #13A6B5;
+  --abc-teal-deep: #0E7F8B;
+  --abc-teal-tint: #E4F5F7;
+  --abc-orange: #E96E17;
+  --abc-orange-deep: #C25A0E;
+  --abc-orange-tint: #FDEEE2;
+  --abc-navy: #134072;
+  --abc-navy-deep: #0C2C50;
+
+  /* Semantic colors */
+  --abc-ink: #142433;
+  --abc-ink-muted: #5B6B7A;
+  --abc-ink-faint: #8B9AA8;
+  --abc-page-bg: #F6F8FA;
+  --abc-card-bg: #FFFFFF;
+  --abc-border: #DDE4EA;
+
+  /* Spacing */
+  --abc-space-xs: 4px;
+  --abc-space-sm: 8px;
+  --abc-space-md: 16px;
+  --abc-space-lg: 24px;
+  --abc-space-xl: 32px;
+
+  /* Typography */
+  --abc-font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --abc-font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --abc-font-size-sm: 0.875rem;
+  --abc-font-size-base: 1rem;
+  --abc-font-size-lg: 1.15rem;
+  --abc-font-size-xl: 1.5rem;
+  --abc-font-size-xxl: 2.25rem;
+
+  /* Radius / shadow */
+  --abc-radius: 16px;
+  --abc-radius-sm: 10px;
+  --abc-radius-pill: 999px;
+  --abc-shadow-card: 0 1px 2px rgba(19, 64, 114, 0.06), 0 4px 12px rgba(19, 64, 114, 0.06);
+}
+
+/* ---- Layout shell ---- */
+.abc-calc {
+  font-family: var(--abc-font-sans);
+  color: var(--abc-ink);
+  padding: var(--abc-space-xl);
+  border-radius: var(--abc-radius);
+  max-width: 720px;
+  margin: 0 auto;
+  box-sizing: border-box;
+  background: var(--abc-page-bg);
+  border: 1px solid var(--abc-border);
+  /* Responsive rules should react to the width of whatever container
+     this widget actually gets embedded in, not the browser viewport —
+     a ModX page can constrain us to a narrow column on a wide desktop
+     screen, where a viewport-based @media query would never fire. */
+  container-type: inline-size;
+  container-name: abc-calc;
+}
+
+.abc-calc * {
+  box-sizing: border-box;
+}
+
+.abc-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--abc-teal-deep);
+  margin: 0 0 var(--abc-space-xs);
+}
+
+.abc-title {
+  font-size: var(--abc-font-size-xl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  margin: 0 0 var(--abc-space-xs);
+  letter-spacing: -0.01em;
+}
+
+.abc-subtitle {
+  font-size: var(--abc-font-size-base);
+  color: var(--abc-ink-muted);
+  margin: 0 0 var(--abc-space-lg);
+  line-height: 1.5;
+  max-width: 50ch;
+}
+
+.abc-question {
+  font-size: var(--abc-font-size-lg);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  margin: var(--abc-space-lg) 0 var(--abc-space-md);
+}
+
+.abc-question:first-of-type {
+  margin-top: 0;
+}
+
+/* ---- Input row / fields ---- */
+.abc-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abc-space-md);
+  align-items: flex-start;
+  margin-bottom: var(--abc-space-md);
+}
+
+.abc-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--abc-space-sm);
+  flex: 1 1 220px;
+}
+
+.abc-field label {
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+}
+
+.abc-field-hint {
+  font-size: 0.78rem;
+  color: var(--abc-ink-faint);
+  line-height: 1.4;
+}
+
+.abc-field-hint a {
+  color: var(--abc-teal-deep);
+  font-weight: 600;
+}
+
+.abc-select,
+.abc-number-input {
+  font-family: inherit;
+  font-size: var(--abc-font-size-base);
+  padding: 10px var(--abc-space-md);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-sm);
+  background: var(--abc-card-bg);
+  color: var(--abc-ink);
+}
+
+.abc-select:focus,
+.abc-number-input:focus {
+  outline: none;
+  border-color: var(--abc-teal);
+  box-shadow: 0 0 0 3px var(--abc-teal-tint);
+}
+
+/* ---- Slider ---- */
+.abc-slider-row {
+  display: flex;
+  align-items: center;
+  gap: var(--abc-space-md);
+}
+
+.abc-slider {
+  flex: 1;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 6px;
+  border-radius: var(--abc-radius-pill);
+  background: var(--abc-border);
+  outline: none;
+}
+
+.abc-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--abc-teal);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(19, 64, 114, 0.35);
+  cursor: pointer;
+}
+
+.abc-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--abc-teal);
+  border: 3px solid #fff;
+  box-shadow: 0 1px 4px rgba(19, 64, 114, 0.35);
+  cursor: pointer;
+}
+
+.abc-slider-value {
+  font-family: var(--abc-font-mono);
+  font-weight: 600;
+  font-size: var(--abc-font-size-lg);
+  color: var(--abc-navy-deep);
+  min-width: 3.5em;
+  text-align: right;
+}
+
+/* ---- Choice buttons (plain-language multiple choice) ---- */
+.abc-choice-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abc-space-sm);
+}
+
+.abc-choice-button {
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  padding: 10px var(--abc-space-md);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  background: var(--abc-card-bg);
+  color: var(--abc-ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+/* Hover-only effects guarded behind (hover: hover) so touchscreens —
+   which fire :hover on tap and have no real "mouse leave" — never get
+   stuck showing a hover state until the next unrelated tap. Purely a
+   feature-detection wrapper; desktop/trackpad behavior is unchanged. */
+@media (hover: hover) and (pointer: fine) {
+  .abc-choice-button:hover {
+    border-color: var(--abc-teal);
+  }
+}
+
+.abc-choice-button.abc-active {
+  background: var(--abc-navy);
+  border-color: var(--abc-navy);
+  color: #fff;
+}
+
+/* ---- Toggle switch ---- */
+.abc-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: var(--abc-space-sm);
+}
+
+.abc-toggle {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+}
+
+.abc-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.abc-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--abc-border);
+  border-radius: var(--abc-radius-pill);
+  transition: background 0.15s ease;
+}
+
+.abc-toggle-slider::before {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.15s ease;
+}
+
+.abc-toggle input:checked + .abc-toggle-slider {
+  background: var(--abc-teal);
+}
+
+.abc-toggle input:checked + .abc-toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* ---- Buttons ---- */
+.abc-btn {
+  font-family: inherit;
+  font-size: var(--abc-font-size-base);
+  font-weight: 600;
+  padding: 12px 24px;
+  border-radius: var(--abc-radius-pill);
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.12s ease;
+}
+
+.abc-btn-primary {
+  background: var(--abc-teal);
+  color: #fff;
+}
+
+.abc-btn-ghost {
+  background: transparent;
+  color: var(--abc-ink-muted);
+  padding: 12px 16px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-btn-primary:hover {
+    opacity: 0.9;
+  }
+
+  .abc-btn-ghost:hover {
+    color: var(--abc-navy);
+  }
+}
+
+/* ---- Result cards ---- */
+.abc-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--abc-space-md);
+  margin-bottom: var(--abc-space-lg);
+}
+
+.abc-card {
+  flex: 1 1 220px;
+  background: var(--abc-card-bg);
+  border: 1.5px solid var(--abc-border);
+  border-radius: var(--abc-radius);
+  padding: var(--abc-space-lg);
+  box-shadow: var(--abc-shadow-card);
+  position: relative;
+}
+
+.abc-card-winner {
+  border: 2px solid var(--abc-teal);
+  background: var(--abc-teal-tint);
+}
+
+.abc-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--abc-teal);
+  padding: 4px 10px;
+  border-radius: var(--abc-radius-pill);
+  margin-bottom: var(--abc-space-sm);
+}
+
+.abc-card h3 {
+  margin: 0 0 6px;
+  font-size: var(--abc-font-size-base);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+}
+
+.abc-card .abc-card-figure {
+  font-family: var(--abc-font-mono);
+  font-size: var(--abc-font-size-xxl);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  margin: 2px 0 6px;
+  letter-spacing: -0.02em;
+}
+
+.abc-card-winner .abc-card-figure {
+  color: var(--abc-teal-deep);
+}
+
+.abc-card .abc-card-sub {
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+  line-height: 1.4;
+}
+
+.abc-card ul {
+  margin: var(--abc-space-md) 0 0;
+  padding-left: 1.1em;
+  font-size: var(--abc-font-size-sm);
+  color: var(--abc-ink-muted);
+}
+
+.abc-card li + li {
+  margin-top: var(--abc-space-xs);
+}
+
+/* ---- Next steps callout (orange — the second electric accent) ---- */
+.abc-callout {
+  background: var(--abc-orange-tint);
+  border: 1.5px solid var(--abc-orange);
+  border-radius: var(--abc-radius-sm);
+  padding: var(--abc-space-lg);
+  margin-bottom: var(--abc-space-md);
+}
+
+.abc-callout h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 6px;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--abc-orange-deep);
+}
+
+.abc-callout p {
+  margin: 0;
+  font-size: var(--abc-font-size-base);
+  line-height: 1.55;
+  color: var(--abc-ink);
+}
+
+/* ---- Progressive disclosure (native <details>, no JS needed) ---- */
+.abc-details {
+  margin-top: var(--abc-space-md);
+  font-size: 0.8rem;
+  color: var(--abc-ink-faint);
+}
+
+.abc-details summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--abc-ink-muted);
+  list-style: none;
+}
+
+.abc-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.abc-details summary::before {
+  content: "+ ";
+  color: var(--abc-teal-deep);
+}
+
+.abc-details[open] summary::before {
+  content: "\2212 ";
+}
+
+.abc-details-body {
+  margin-top: var(--abc-space-sm);
+  line-height: 1.6;
+  padding-left: var(--abc-space-sm);
+  border-left: 2px solid var(--abc-border);
+}
+
+/* ---- Small caution tag (plain-language "not confirmed yet") ---- */
+.abc-tag-caution {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--abc-orange-deep);
+  background: var(--abc-orange-tint);
+  padding: 2px 8px;
+  border-radius: var(--abc-radius-pill);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.abc-caution-note {
+  margin: var(--abc-space-sm) 0 0;
+  padding: var(--abc-space-sm) var(--abc-space-md);
+  background: var(--abc-orange-tint);
+  border-radius: var(--abc-radius-sm);
+  font-size: 0.78rem;
+  color: var(--abc-orange-deep);
+  line-height: 1.5;
+}
+
+/* ---- Link back / restart ---- */
+.abc-text-link {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-teal-deep);
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .abc-text-link:hover {
+    color: var(--abc-navy);
+  }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 520px) {
+  .abc-calc {
+    padding: var(--abc-space-lg);
+  }
+  .abc-input-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .abc-cards {
+    flex-direction: column;
+  }
+}
