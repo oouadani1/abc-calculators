@@ -313,44 +313,42 @@
    Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
 .abc-farecalc-breadcrumb-row {
   display: flex;
-  /* stretch (2026-11 follow-up, back from an intermediate flex-end pass):
-     the caption now lives INSIDE the estimate bubble (see
-     .abc-farecalc-estimate-bubble below) rather than above it in its own
-     wrapper, so the bubble is a plain single flex item again — stretch
-     makes it match the breadcrumb pill's height exactly, same as before
-     the caption existed. */
-  align-items: stretch;
+  /* flex-end, not stretch (2026-11 follow-up, reverted back from a brief
+     stretch pass): the caption lives ABOVE the bubble again in its own
+     .abc-farecalc-estimate-wrap column (putting it INSIDE the pill
+     constrained the sliding knob to the leftover space under a divider,
+     visibly deforming it relative to the pill's own proportions) —
+     flex-end keeps the shorter breadcrumb pill's baseline aligned with
+     this taller column instead of stretching to match it. */
+  align-items: flex-end;
   gap: var(--abc-space-sm);
   margin-bottom: var(--abc-space-md);
 }
 
-/* Caption + divider inside the bubble (2026-11 follow-up: "keep the est.
-   title within the pill... keep the same height as the breadcrumb strip")
-   — centered label, then a divider in the same style/position as the
-   breadcrumb's own track line, separating it from the cost row below. */
-.abc-farecalc-estimate-caption {
-  margin: 0;
-  font-size: 0.6rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--abc-ink-muted);
-  text-align: center;
-  white-space: nowrap;
+/* Caption above the bubble (2026-11 follow-up, reverted back to this
+   position after a brief in-pill pass) — its own column so the
+   breadcrumb row's align-items: flex-end above only has to reconcile ONE
+   extra element's height, not reach inside the bubble itself. Typography
+   deliberately matches .abc-farecalc-breadcrumb-chip-label exactly (same
+   font-size/weight/transform/letter-spacing/color as "GET TO CAMPUS",
+   "PARKING", etc.) rather than its own smaller bolder style from the
+   in-pill pass, per the user's own reference. Fully spelled "Estimated"
+   (not "Est.") since this position has the room for it. */
+.abc-farecalc-estimate-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   flex: none;
 }
 
-/* Same 2px/var(--abc-border)/rounded line as .abc-farecalc-breadcrumb-line
-   (2026-11 follow-up, "same horizontal line used on the breadcrumb strip,
-   on the same plane"), inset the same 4px from each edge — just a plain
-   flow element here rather than absolutely positioned, since this pill
-   has no bus icon riding along it. */
-.abc-farecalc-estimate-divider {
-  flex: none;
-  height: 2px;
-  margin: 2px 4px 0;
-  background: var(--abc-border);
-  border-radius: 2px;
+.abc-farecalc-estimate-caption {
+  margin: 0;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--abc-ink-muted);
+  white-space: nowrap;
 }
 
 .abc-farecalc-breadcrumb {
@@ -390,31 +388,17 @@
    dynamically besides which one is winning. */
 .abc-farecalc-estimate-bubble {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
   flex: none;
   width: 260px;
-  padding: 10px 0;
+  padding: 0;
   background: var(--abc-farecalc-estimate-track-bg);
   color: var(--bu-ink);
   border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
   position: relative;
-}
-
-/* Holds the two cost sides + the sliding knob — a separate flex child
-   from the caption/divider above it (2026-11 follow-up) so the knob's
-   absolute-positioned inset (below) is relative to just this row's own
-   height, not the whole bubble including the caption. flex: 1 1 auto
-   lets it absorb whatever height .abc-farecalc-breadcrumb-row's
-   align-items: stretch hands the bubble beyond the caption/divider's own
-   natural height. */
-.abc-farecalc-estimate-row {
-  position: relative;
-  display: flex;
-  flex: 1 1 auto;
-  flex-direction: row;
-  align-items: stretch;
-  justify-content: center;
 }
 
 /* The sliding "knob" (2026-11 follow-up, after comparing against an
@@ -494,10 +478,10 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .abc-farecalc-estimate-bubble {
+  .abc-farecalc-estimate-wrap {
     /* align-items: stretch on the column above (set two lines up) would
        otherwise force this to the breadcrumb's full width — sized to
-       its own fixed 260px content instead, left-aligned under the
+       its own (fixed 260px) content instead, left-aligned under the
        breadcrumb strip (2026-11 mobile fix). */
     align-self: flex-start;
   }
