@@ -669,9 +669,12 @@
   /* The dual-cost bubble's constant track color (2026-11, iOS-toggle-
      inspired redesign) — always this from first render onward, never
      switching identity; the sliding mint-green knob is what marks
-     "cheaper." White to match the breadcrumb strip's own white pill
-     beside it (changed from an earlier gray, 2026-11 follow-up). */
-  --abc-farecalc-estimate-track-bg: #FFFFFF;
+     "cheaper." A soft off-white (2026-11 follow-up: "find a middle
+     ground" between an earlier darker gray and a later pure-white pass
+     — pure white read as indistinguishable from the breadcrumb strip's
+     own white pill right beside it) — just enough tint to read as a
+     distinct surface without going back to a heavy gray slab. */
+  --abc-farecalc-estimate-track-bg: #EEF1F4;
 }
 
 .abc-farecalc {
@@ -888,28 +891,21 @@
    Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
 .abc-farecalc-breadcrumb-row {
   display: flex;
-  /* flex-end, not stretch (2026-11 follow-up) — the estimate wrap grew a
-     caption above the bubble (see .abc-farecalc-estimate-wrap below),
-     making it taller than the breadcrumb pill beside it; stretch would
-     force that pill to awkwardly match the taller column's height
-     instead of just letting both sit on the same baseline. */
-  align-items: flex-end;
+  /* stretch (2026-11 follow-up, back from an intermediate flex-end pass):
+     the caption now lives INSIDE the estimate bubble (see
+     .abc-farecalc-estimate-bubble below) rather than above it in its own
+     wrapper, so the bubble is a plain single flex item again — stretch
+     makes it match the breadcrumb pill's height exactly, same as before
+     the caption existed. */
+  align-items: stretch;
   gap: var(--abc-space-sm);
   margin-bottom: var(--abc-space-md);
 }
 
-/* Small caption above the bubble (2026-11 follow-up, "entitle the cost
-   ticker Est. Monthly Cost So Far") — its own column so the breadcrumb
-   row's align-items: flex-end above only has to reconcile ONE extra
-   element's height, not reach inside the bubble itself. */
-.abc-farecalc-estimate-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  flex: none;
-}
-
+/* Caption + divider inside the bubble (2026-11 follow-up: "keep the est.
+   title within the pill... keep the same height as the breadcrumb strip")
+   — centered label, then a divider in the same style/position as the
+   breadcrumb's own track line, separating it from the cost row below. */
 .abc-farecalc-estimate-caption {
   margin: 0;
   font-size: 0.6rem;
@@ -917,7 +913,22 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--abc-ink-muted);
+  text-align: center;
   white-space: nowrap;
+  flex: none;
+}
+
+/* Same 2px/var(--abc-border)/rounded line as .abc-farecalc-breadcrumb-line
+   (2026-11 follow-up, "same horizontal line used on the breadcrumb strip,
+   on the same plane"), inset the same 4px from each edge — just a plain
+   flow element here rather than absolutely positioned, since this pill
+   has no bus icon riding along it. */
+.abc-farecalc-estimate-divider {
+  flex: none;
+  height: 2px;
+  margin: 2px 4px 0;
+  background: var(--abc-border);
+  border-radius: 2px;
 }
 
 .abc-farecalc-breadcrumb {
@@ -957,17 +968,31 @@
    dynamically besides which one is winning. */
 .abc-farecalc-estimate-bubble {
   display: flex;
-  flex-direction: row;
-  align-items: stretch;
-  justify-content: center;
+  flex-direction: column;
   flex: none;
   width: 260px;
-  padding: 0;
+  padding: 10px 0;
   background: var(--abc-farecalc-estimate-track-bg);
   color: var(--bu-ink);
   border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
   position: relative;
+}
+
+/* Holds the two cost sides + the sliding knob — a separate flex child
+   from the caption/divider above it (2026-11 follow-up) so the knob's
+   absolute-positioned inset (below) is relative to just this row's own
+   height, not the whole bubble including the caption. flex: 1 1 auto
+   lets it absorb whatever height .abc-farecalc-breadcrumb-row's
+   align-items: stretch hands the bubble beyond the caption/divider's own
+   natural height. */
+.abc-farecalc-estimate-row {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
 }
 
 /* The sliding "knob" (2026-11 follow-up, after comparing against an
@@ -1047,13 +1072,11 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .abc-farecalc-estimate-wrap {
+  .abc-farecalc-estimate-bubble {
     /* align-items: stretch on the column above (set two lines up) would
        otherwise force this to the breadcrumb's full width — sized to
-       its own (now fixed 260px) content instead, left-aligned under the
-       breadcrumb strip (2026-11 mobile fix; moved from the bubble
-       itself onto this wrapper once the caption gave the bubble a
-       sibling to share a column with). */
+       its own fixed 260px content instead, left-aligned under the
+       breadcrumb strip (2026-11 mobile fix). */
     align-self: flex-start;
   }
   /* The chip row routinely overflows at phone widths (more steps than
@@ -2538,14 +2561,6 @@ label.abc-question {
 }
 
 
-/* ---- CRC zone pills: only the zone name is bold, the price in
-   parentheses is a lighter secondary detail. ---- */
-.abc-farecalc-pill-detail {
-  margin-left: 4px;
-  font-weight: 400;
-  opacity: 0.85;
-}
-
 /* ---- Drive mode: campus/zone/garage sub-pickers reuse .abc-choice-grid
    and .abc-choice-button as-is. The two result cards' h3 picks up the
    shared small/muted .abc-card h3 style for free, same as every other
@@ -2694,7 +2709,7 @@ label.abc-question {
         </div>
       </div>
     </div>
-    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. This calculator helps you compare the monthly cost of driving to campus or paying per ride to BU's subsidy.</p>
+    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. This calculator helps you compare BU's subsidy to the monthly cost of driving to campus or paying per ride.</p>
 
     <!-- Breadcrumb strip + running estimate (2026-11): one chip per step
          already in your path and a small bus riding along a track to show
@@ -2731,18 +2746,19 @@ label.abc-question {
            calculator.js. Each amount is still read straight off its
            card's own DOM text (never recomputed independently) for the
            same rounding-consistency reason documented there. -->
-      <div class="abc-farecalc-estimate-wrap">
+      <div class="abc-farecalc-estimate-bubble" data-abc-estimate-bubble>
         <p class="abc-farecalc-estimate-caption">Est. Monthly Cost So Far</p>
-        <div class="abc-farecalc-estimate-bubble" data-abc-estimate-bubble>
-        <div class="abc-farecalc-estimate-highlight" data-abc-estimate-highlight aria-hidden="true"></div>
-        <div class="abc-farecalc-estimate-side" data-abc-estimate-side-1>
-          <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
-          <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-1>$0</span>
-        </div>
-        <div class="abc-farecalc-estimate-side" data-abc-estimate-side-2>
-          <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
-          <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
-        </div>
+        <div class="abc-farecalc-estimate-divider" aria-hidden="true"></div>
+        <div class="abc-farecalc-estimate-row">
+          <div class="abc-farecalc-estimate-highlight" data-abc-estimate-highlight aria-hidden="true"></div>
+          <div class="abc-farecalc-estimate-side" data-abc-estimate-side-1>
+            <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
+            <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-1>$0</span>
+          </div>
+          <div class="abc-farecalc-estimate-side" data-abc-estimate-side-2>
+            <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
+            <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2781,8 +2797,8 @@ label.abc-question {
                 </div>
               </div>
               <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-crc-zone-select="crc-zone-1"><span class="abc-farecalc-pill-label">Zone 1</span> <span class="abc-farecalc-pill-detail">($14/day)</span></button>
-                <button type="button" class="abc-choice-button" data-abc-crc-zone-select="crc-zone-2"><span class="abc-farecalc-pill-label">Zone 2</span> <span class="abc-farecalc-pill-detail">($10/day)</span></button>
+                <button type="button" class="abc-choice-button abc-active" data-abc-crc-zone-select="crc-zone-1">Zone 1</button>
+                <button type="button" class="abc-choice-button" data-abc-crc-zone-select="crc-zone-2">Zone 2</button>
               </div>
             </div>
 
@@ -2798,8 +2814,8 @@ label.abc-question {
                 </div>
               </div>
               <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-medical-location-select="crosstown"><span class="abc-farecalc-pill-label">Crosstown Garage</span> <span class="abc-farecalc-pill-detail">($25/day or $249/mo)</span></button>
-                <button type="button" class="abc-choice-button" data-abc-medical-location-select="610-albany"><span class="abc-farecalc-pill-label">610 Albany Street Garage</span> <span class="abc-farecalc-pill-detail">($181/mo)</span></button>
+                <button type="button" class="abc-choice-button abc-active" data-abc-medical-location-select="crosstown">Crosstown Garage</button>
+                <button type="button" class="abc-choice-button" data-abc-medical-location-select="610-albany">610 Albany Street Garage</button>
               </div>
               <div class="abc-farecalc-subfield" data-abc-medical-daily-field style="display: none;">
                 <p class="abc-question">Monthly permit or daily rate?</p>
