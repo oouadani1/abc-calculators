@@ -1043,6 +1043,27 @@ function buInitCalculator(rootEl) {
     return stationInput ? stationInput.value.trim() : "";
   }
 
+  /** Whether `mode`'s own sub-choice (tier pills / typed station / ferry
+   * route) has actually been resolved — the same per-mode rule
+   * `continueBtn.disabled` already uses to gate advancing off the "mode"
+   * step, factored out so renderBreadcrumb()'s estimate gating can reuse
+   * it exactly instead of keeping a second, looser copy. Needed because
+   * `modeConfirmed` alone only means "the top-level Subway/Rail/Ferry
+   * button was clicked" — it says nothing about whether the SPECIFIC
+   * bus-vs-link tier or ferry route is a real pick or still just sitting
+   * on its default (2026-11 bug fix: Subway & Bus and Ferry both have a
+   * pre-selected default sub-choice, so clicking just the top-level mode
+   * button was enough to "preload" a real dollar figure in the estimate
+   * bubble from that still-unconfirmed default — Commuter Rail never hit
+   * this, since its station combobox starts empty with no default to
+   * leak). */
+  function modeSubChoiceConfirmed() {
+    if (mode === "subway") return subwayTierConfirmed;
+    if (mode === "rail") return !!buGetStation(currentStationLabel());
+    if (mode === "ferry") return ferryRouteConfirmed;
+    return false;
+  }
+
   /** Resolves the Commuter Rail pass id from the selected station, when
    * one matches a real station; otherwise unresolved (nothing priced yet). */
   function employeeRailPassId() {
@@ -1539,7 +1560,7 @@ function buInitCalculator(rootEl) {
       } else {
         estimateAmt1.textContent = zero;
       }
-      ready2 = modeConfirmed;
+      ready2 = modeConfirmed && modeSubChoiceConfirmed();
       if (ready2) {
         const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
         estimateLabel2.textContent = modeLabel;
@@ -1557,8 +1578,8 @@ function buInitCalculator(rootEl) {
     } else {
       estimateLabel1.textContent = "BU Pass";
       estimateLabel2.textContent = "Pay-per-ride";
-      ready1 = ready2 = modeConfirmed;
-      if (modeConfirmed) {
+      ready1 = ready2 = modeConfirmed && modeSubChoiceConfirmed();
+      if (ready1) {
         const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
         const rideFinalEl = rootEl.querySelector("[data-abc-ride-final]");
         estimateAmt1.textContent = passFinalEl ? passFinalEl.textContent : zero;
@@ -1816,10 +1837,7 @@ function buInitCalculator(rootEl) {
       // past topMode, or "mode" + whichever sub-choice it carries,
       // with nothing actually picked yet.
       continueBtn.disabled = (stepId === "topmode" && !topModeConfirmed) || (stepId === "mode" && (
-        !modeConfirmed ||
-        (mode === "subway" && !subwayTierConfirmed) ||
-        (mode === "rail" && !buGetStation(currentStationLabel())) ||
-        (mode === "ferry" && !ferryRouteConfirmed)
+        !modeConfirmed || !modeSubChoiceConfirmed()
       ));
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
@@ -1968,8 +1986,8 @@ function buInitCalculator(rootEl) {
     return { repaint: paint };
   }
 
-  // "When adding your round-trips, include any trips you take..." used
-  // to sit permanently in the page subtitle; now it only appears once
+  // "Include all your round-trips, from daily commutes..." used to sit
+  // permanently in the page subtitle; now it only appears once
   // someone actually starts using this stepper (2026-11 ask), via the
   // same one-time slide-up reveal every conditional field in this tool
   // uses — see setStepVisible()'s doc comment. Round-trip-specific

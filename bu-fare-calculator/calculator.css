@@ -89,11 +89,11 @@
   --bu-mint-tint: #E3FBF2;
   --bu-ink: #212121; /* sampled from the same stylesheet */
   /* The dual-cost bubble's constant track color (2026-11, iOS-toggle-
-     inspired redesign) — always this gray from first render onward,
-     never switching identity; the sliding mint-green knob is what marks
-     "cheaper." Distinct enough from the page's own #EEF1F4 background
-     to still read as a filled pill shape. */
-  --abc-farecalc-estimate-loser-bg: #C9CFD6;
+     inspired redesign) — always this from first render onward, never
+     switching identity; the sliding mint-green knob is what marks
+     "cheaper." White to match the breadcrumb strip's own white pill
+     beside it (changed from an earlier gray, 2026-11 follow-up). */
+  --abc-farecalc-estimate-track-bg: #FFFFFF;
 }
 
 .abc-farecalc {
@@ -310,9 +310,36 @@
    Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
 .abc-farecalc-breadcrumb-row {
   display: flex;
-  align-items: stretch;
+  /* flex-end, not stretch (2026-11 follow-up) — the estimate wrap grew a
+     caption above the bubble (see .abc-farecalc-estimate-wrap below),
+     making it taller than the breadcrumb pill beside it; stretch would
+     force that pill to awkwardly match the taller column's height
+     instead of just letting both sit on the same baseline. */
+  align-items: flex-end;
   gap: var(--abc-space-sm);
   margin-bottom: var(--abc-space-md);
+}
+
+/* Small caption above the bubble (2026-11 follow-up, "entitle the cost
+   ticker Est. Monthly Cost So Far") — its own column so the breadcrumb
+   row's align-items: flex-end above only has to reconcile ONE extra
+   element's height, not reach inside the bubble itself. */
+.abc-farecalc-estimate-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.abc-farecalc-estimate-caption {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--abc-ink-muted);
+  white-space: nowrap;
 }
 
 .abc-farecalc-breadcrumb {
@@ -358,8 +385,9 @@
   flex: none;
   width: 260px;
   padding: 0;
-  background: var(--abc-farecalc-estimate-loser-bg);
+  background: var(--abc-farecalc-estimate-track-bg);
   color: var(--bu-ink);
+  border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
   position: relative;
 }
@@ -441,13 +469,13 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .abc-farecalc-estimate-bubble {
-    /* align-items: stretch on the column above (set two lines up)
-       would otherwise force this to the breadcrumb's full width — sized
-       to its own content instead, left-aligned under the breadcrumb
-       strip (2026-11 mobile fix). Stays a row (not stacked) — two short
-       label+number columns side by side is still narrower than the
-       phone screen itself, see the width test in project memory. */
+  .abc-farecalc-estimate-wrap {
+    /* align-items: stretch on the column above (set two lines up) would
+       otherwise force this to the breadcrumb's full width — sized to
+       its own (now fixed 260px) content instead, left-aligned under the
+       breadcrumb strip (2026-11 mobile fix; moved from the bubble
+       itself onto this wrapper once the caption gave the bubble a
+       sibling to share a column with). */
     align-self: flex-start;
   }
   /* The chip row routinely overflows at phone widths (more steps than

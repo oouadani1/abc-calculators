@@ -667,11 +667,11 @@
   --bu-mint-tint: #E3FBF2;
   --bu-ink: #212121; /* sampled from the same stylesheet */
   /* The dual-cost bubble's constant track color (2026-11, iOS-toggle-
-     inspired redesign) — always this gray from first render onward,
-     never switching identity; the sliding mint-green knob is what marks
-     "cheaper." Distinct enough from the page's own #EEF1F4 background
-     to still read as a filled pill shape. */
-  --abc-farecalc-estimate-loser-bg: #C9CFD6;
+     inspired redesign) — always this from first render onward, never
+     switching identity; the sliding mint-green knob is what marks
+     "cheaper." White to match the breadcrumb strip's own white pill
+     beside it (changed from an earlier gray, 2026-11 follow-up). */
+  --abc-farecalc-estimate-track-bg: #FFFFFF;
 }
 
 .abc-farecalc {
@@ -888,9 +888,36 @@
    Rail/Ferry automatically, same as every pill/stepper in this tool. ---- */
 .abc-farecalc-breadcrumb-row {
   display: flex;
-  align-items: stretch;
+  /* flex-end, not stretch (2026-11 follow-up) — the estimate wrap grew a
+     caption above the bubble (see .abc-farecalc-estimate-wrap below),
+     making it taller than the breadcrumb pill beside it; stretch would
+     force that pill to awkwardly match the taller column's height
+     instead of just letting both sit on the same baseline. */
+  align-items: flex-end;
   gap: var(--abc-space-sm);
   margin-bottom: var(--abc-space-md);
+}
+
+/* Small caption above the bubble (2026-11 follow-up, "entitle the cost
+   ticker Est. Monthly Cost So Far") — its own column so the breadcrumb
+   row's align-items: flex-end above only has to reconcile ONE extra
+   element's height, not reach inside the bubble itself. */
+.abc-farecalc-estimate-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+}
+
+.abc-farecalc-estimate-caption {
+  margin: 0;
+  font-size: 0.6rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--abc-ink-muted);
+  white-space: nowrap;
 }
 
 .abc-farecalc-breadcrumb {
@@ -936,8 +963,9 @@
   flex: none;
   width: 260px;
   padding: 0;
-  background: var(--abc-farecalc-estimate-loser-bg);
+  background: var(--abc-farecalc-estimate-track-bg);
   color: var(--bu-ink);
+  border: 1.5px solid var(--abc-border);
   border-radius: var(--abc-radius-pill);
   position: relative;
 }
@@ -1019,13 +1047,13 @@
     flex-direction: column;
     align-items: stretch;
   }
-  .abc-farecalc-estimate-bubble {
-    /* align-items: stretch on the column above (set two lines up)
-       would otherwise force this to the breadcrumb's full width — sized
-       to its own content instead, left-aligned under the breadcrumb
-       strip (2026-11 mobile fix). Stays a row (not stacked) — two short
-       label+number columns side by side is still narrower than the
-       phone screen itself, see the width test in project memory. */
+  .abc-farecalc-estimate-wrap {
+    /* align-items: stretch on the column above (set two lines up) would
+       otherwise force this to the breadcrumb's full width — sized to
+       its own (now fixed 260px) content instead, left-aligned under the
+       breadcrumb strip (2026-11 mobile fix; moved from the bubble
+       itself onto this wrapper once the caption gave the bubble a
+       sibling to share a column with). */
     align-self: flex-start;
   }
   /* The chip row routinely overflows at phone widths (more steps than
@@ -2666,7 +2694,7 @@ label.abc-question {
         </div>
       </div>
     </div>
-    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members.</p>
+    <p class="abc-subtitle">BU provides a 50% monthly transit subsidy for its regular faculty and staff members. This calculator helps you compare the monthly cost of driving to campus or paying per ride to BU's subsidy.</p>
 
     <!-- Breadcrumb strip + running estimate (2026-11): one chip per step
          already in your path and a small bus riding along a track to show
@@ -2703,7 +2731,9 @@ label.abc-question {
            calculator.js. Each amount is still read straight off its
            card's own DOM text (never recomputed independently) for the
            same rounding-consistency reason documented there. -->
-      <div class="abc-farecalc-estimate-bubble" data-abc-estimate-bubble>
+      <div class="abc-farecalc-estimate-wrap">
+        <p class="abc-farecalc-estimate-caption">Est. Monthly Cost So Far</p>
+        <div class="abc-farecalc-estimate-bubble" data-abc-estimate-bubble>
         <div class="abc-farecalc-estimate-highlight" data-abc-estimate-highlight aria-hidden="true"></div>
         <div class="abc-farecalc-estimate-side" data-abc-estimate-side-1>
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-1>BU Pass</span>
@@ -2712,6 +2742,7 @@ label.abc-question {
         <div class="abc-farecalc-estimate-side" data-abc-estimate-side-2>
           <span class="abc-farecalc-estimate-sublabel" data-abc-estimate-label-2>Pay-per-ride</span>
           <span class="abc-farecalc-estimate-amt" data-abc-estimate-amt-2>$0</span>
+        </div>
         </div>
       </div>
     </div>
@@ -2767,8 +2798,8 @@ label.abc-question {
                 </div>
               </div>
               <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button abc-active" data-abc-medical-location-select="crosstown">Crosstown Garage</button>
-                <button type="button" class="abc-choice-button" data-abc-medical-location-select="610-albany">610 Albany Street Garage</button>
+                <button type="button" class="abc-choice-button abc-active" data-abc-medical-location-select="crosstown"><span class="abc-farecalc-pill-label">Crosstown Garage</span> <span class="abc-farecalc-pill-detail">($25/day or $249/mo)</span></button>
+                <button type="button" class="abc-choice-button" data-abc-medical-location-select="610-albany"><span class="abc-farecalc-pill-label">610 Albany Street Garage</span> <span class="abc-farecalc-pill-detail">($181/mo)</span></button>
               </div>
               <div class="abc-farecalc-subfield" data-abc-medical-daily-field style="display: none;">
                 <p class="abc-question">Monthly permit or daily rate?</p>
@@ -2793,7 +2824,7 @@ label.abc-question {
               </div>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
             </div>
-            <p class="abc-field-hint" data-abc-trips-hint style="display: none;">When adding your round-trips, include any trips you take, such as going to work, during the workday, on weekends, and more.</p>
+            <p class="abc-field-hint" data-abc-trips-hint style="display: none;">Include all your round-trips, from daily commutes and workday errands to weekend travel.</p>
           </div>
         </div>
       </div>
@@ -4274,6 +4305,27 @@ function buInitCalculator(rootEl) {
     return stationInput ? stationInput.value.trim() : "";
   }
 
+  /** Whether `mode`'s own sub-choice (tier pills / typed station / ferry
+   * route) has actually been resolved — the same per-mode rule
+   * `continueBtn.disabled` already uses to gate advancing off the "mode"
+   * step, factored out so renderBreadcrumb()'s estimate gating can reuse
+   * it exactly instead of keeping a second, looser copy. Needed because
+   * `modeConfirmed` alone only means "the top-level Subway/Rail/Ferry
+   * button was clicked" — it says nothing about whether the SPECIFIC
+   * bus-vs-link tier or ferry route is a real pick or still just sitting
+   * on its default (2026-11 bug fix: Subway & Bus and Ferry both have a
+   * pre-selected default sub-choice, so clicking just the top-level mode
+   * button was enough to "preload" a real dollar figure in the estimate
+   * bubble from that still-unconfirmed default — Commuter Rail never hit
+   * this, since its station combobox starts empty with no default to
+   * leak). */
+  function modeSubChoiceConfirmed() {
+    if (mode === "subway") return subwayTierConfirmed;
+    if (mode === "rail") return !!buGetStation(currentStationLabel());
+    if (mode === "ferry") return ferryRouteConfirmed;
+    return false;
+  }
+
   /** Resolves the Commuter Rail pass id from the selected station, when
    * one matches a real station; otherwise unresolved (nothing priced yet). */
   function employeeRailPassId() {
@@ -4770,7 +4822,7 @@ function buInitCalculator(rootEl) {
       } else {
         estimateAmt1.textContent = zero;
       }
-      ready2 = modeConfirmed;
+      ready2 = modeConfirmed && modeSubChoiceConfirmed();
       if (ready2) {
         const modeLabel = { subway: "Subway & Bus", rail: "Commuter Rail", ferry: "Ferry" }[mode];
         estimateLabel2.textContent = modeLabel;
@@ -4788,8 +4840,8 @@ function buInitCalculator(rootEl) {
     } else {
       estimateLabel1.textContent = "BU Pass";
       estimateLabel2.textContent = "Pay-per-ride";
-      ready1 = ready2 = modeConfirmed;
-      if (modeConfirmed) {
+      ready1 = ready2 = modeConfirmed && modeSubChoiceConfirmed();
+      if (ready1) {
         const passFinalEl = rootEl.querySelector("[data-abc-pass-final]");
         const rideFinalEl = rootEl.querySelector("[data-abc-ride-final]");
         estimateAmt1.textContent = passFinalEl ? passFinalEl.textContent : zero;
@@ -5047,10 +5099,7 @@ function buInitCalculator(rootEl) {
       // past topMode, or "mode" + whichever sub-choice it carries,
       // with nothing actually picked yet.
       continueBtn.disabled = (stepId === "topmode" && !topModeConfirmed) || (stepId === "mode" && (
-        !modeConfirmed ||
-        (mode === "subway" && !subwayTierConfirmed) ||
-        (mode === "rail" && !buGetStation(currentStationLabel())) ||
-        (mode === "ferry" && !ferryRouteConfirmed)
+        !modeConfirmed || !modeSubChoiceConfirmed()
       ));
     }
     if (resetBtn) resetBtn.style.display = currentStepIndex > 0 ? "" : "none";
@@ -5199,8 +5248,8 @@ function buInitCalculator(rootEl) {
     return { repaint: paint };
   }
 
-  // "When adding your round-trips, include any trips you take..." used
-  // to sit permanently in the page subtitle; now it only appears once
+  // "Include all your round-trips, from daily commutes..." used to sit
+  // permanently in the page subtitle; now it only appears once
   // someone actually starts using this stepper (2026-11 ask), via the
   // same one-time slide-up reveal every conditional field in this tool
   // uses — see setStepVisible()'s doc comment. Round-trip-specific
