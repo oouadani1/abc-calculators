@@ -2348,9 +2348,15 @@ function buInitCalculator(rootEl) {
       // makes sense as a recommendation when the pass is the actual
       // winner. Hidden individually, and the whole section collapses to
       // nothing if none apply, rather than ever showing an empty "Ready
-      // to enroll?" header. ----
+      // to enroll?" header. Also gated on actually being on the "results"
+      // step (2026-11 follow-up, "only appear on the last page") — this
+      // function recomputes on every answer change regardless of which
+      // step you're currently on (e.g. checking Bluebikes on the add-ons
+      // step), so without this check the section would pop up early,
+      // underneath a still-earlier step's own content. ----
       const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
       if (enrollSection) {
+        const onResultsStep = WIZARD_STEPS[currentStepIndex] === "results";
         const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
         const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
         const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
@@ -2360,7 +2366,7 @@ function buInitCalculator(rootEl) {
         if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
         if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
         if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
-        enrollSection.style.display = (showPass || showParking || showBluebikes) ? "block" : "none";
+        enrollSection.style.display = (onResultsStep && (showPass || showParking || showBluebikes)) ? "block" : "none";
       }
     }
   }
