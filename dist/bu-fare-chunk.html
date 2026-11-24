@@ -2182,7 +2182,7 @@ label.abc-question {
 .abc-farecalc-checkbox {
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 14px;
   cursor: pointer;
 }
 
@@ -2198,14 +2198,16 @@ label.abc-question {
   padding: 0;
 }
 
+/* Big and round (2026-11 follow-up: "bigger... big, round checkbox") —
+   36px circle, not the small rounded-square from the first pass. */
 .abc-farecalc-checkbox-box {
   flex: none;
-  width: 22px;
-  height: 22px;
-  margin-top: 1px;
+  width: 36px;
+  height: 36px;
+  margin-top: -4px;
   box-sizing: border-box;
-  border: 1.5px solid var(--abc-border);
-  border-radius: 6px;
+  border: 2px solid var(--abc-border);
+  border-radius: 50%;
   background: #fff;
   position: relative;
   transition: background 0.15s ease, border-color 0.15s ease;
@@ -2215,12 +2217,12 @@ label.abc-question {
   content: "";
   position: absolute;
   display: none;
-  left: 7px;
-  top: 3px;
-  width: 5px;
-  height: 10px;
+  left: 12px;
+  top: 7px;
+  width: 9px;
+  height: 17px;
   border: solid var(--bu-ink);
-  border-width: 0 2px 2px 0;
+  border-width: 0 3px 3px 0;
   transform: rotate(45deg);
 }
 
@@ -2242,8 +2244,13 @@ label.abc-question {
   border-color: var(--bu-mint-bright);
 }
 
+/* Matches .abc-farecalc-field-group .abc-question exactly (2026-11
+   follow-up: "leave as the same size as the questions they were once
+   before") — this tool's own bumped-up 1.3rem/Sora question style, not
+   the smaller shared base.css default these first rendered at. */
 .abc-farecalc-checkbox-label {
-  font-size: var(--abc-font-size-lg);
+  font-family: "Sora", "IBM Plex Sans", sans-serif;
+  font-size: 1.3rem;
   font-weight: 600;
   color: var(--abc-navy-deep);
   line-height: 1.3;
