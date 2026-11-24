@@ -2181,8 +2181,8 @@ label.abc-question {
    accessibility semantics all still come from the real control. ---- */
 .abc-farecalc-checkbox {
   display: flex;
-  align-items: flex-start;
-  gap: 14px;
+  align-items: center;
+  gap: var(--abc-space-md);
   cursor: pointer;
 }
 
@@ -2198,13 +2198,16 @@ label.abc-question {
   padding: 0;
 }
 
-/* Big and round (2026-11 follow-up: "bigger... big, round checkbox") —
-   36px circle, not the small rounded-square from the first pass. */
+/* Circumference matches .abc-farecalc .abc-choice-button's own height
+   exactly (2026-11 follow-up: "equal to the width of other answer
+   buttons used throughout the tool") — 76px, confirmed via
+   getBoundingClientRect() against the mode-picker buttons, not a round
+   number guessed from the earlier 36px pass. Border-width (2px) also
+   matches .abc-choice-button's own border-width for the same reason. */
 .abc-farecalc-checkbox-box {
   flex: none;
-  width: 36px;
-  height: 36px;
-  margin-top: -4px;
+  width: 76px;
+  height: 76px;
   box-sizing: border-box;
   border: 2px solid var(--abc-border);
   border-radius: 50%;
@@ -2217,12 +2220,12 @@ label.abc-question {
   content: "";
   position: absolute;
   display: none;
-  left: 12px;
-  top: 7px;
-  width: 9px;
-  height: 17px;
+  left: 25px;
+  top: 15px;
+  width: 19px;
+  height: 36px;
   border: solid var(--bu-ink);
-  border-width: 0 3px 3px 0;
+  border-width: 0 6px 6px 0;
   transform: rotate(45deg);
 }
 
