@@ -1462,7 +1462,12 @@ function buInitCalculator(rootEl) {
         // value from first render onward, unlike a pre-active "No"
         // button, which needed its own click before the chip could
         // trust it as a real answer rather than a leftover default.
-        return { label: "Add-ons", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
+        // Bluebikes first, Reduced Fare second (2026-11 follow-up, Carl
+        // Larson catch) — matches the actual on-page checkbox order
+        // (index.html: Bluebikes checkbox, then Reduced Fare nested
+        // below it); this chip had them reversed, a leftover from when
+        // Reduced Fare was built before Bluebikes in an earlier round.
+        return { label: "Add-ons", value: `${bluebikesAdded ? "Yes" : "No"} · ${reducedFare ? "Yes" : "No"}` };
       }
       default:
         return null;
@@ -2357,13 +2362,29 @@ function buInitCalculator(rootEl) {
       const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
       if (enrollSection) {
         const onResultsStep = WIZARD_STEPS[currentStepIndex] === "results";
-        const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
+        const enrollPassWrap = enrollSection.querySelector("[data-abc-enroll-pass-wrap]");
+        const enrollPassLabel = enrollSection.querySelector("[data-abc-enroll-pass-label]");
         const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
         const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
         const showPass = passWins;
         const showParking = stationParking || rapidStationParking || ferryParking;
         const showBluebikes = bluebikesAdded;
-        if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
+        if (enrollPassWrap) enrollPassWrap.style.display = showPass ? "flex" : "none";
+        // Names the exact product to pick during enrollment (2026-11
+        // follow-up, Carl Larson: "listing the pass type they should
+        // get... adjacent to the link") — e.g. "Reduced Fare Commuter
+        // Rail Zone 6". "Commuter Rail " only prefixes rail passes,
+        // since a bare zone number ("Zone 6") is ambiguous once it's
+        // sitting next to a generic "MBTA Monthly Pass Benefit" button,
+        // outside the result card's own mode-specific context; Subway &
+        // Bus/ferry labels ("LinkPass (Subway + Bus)", "Inner Harbor
+        // Ferry") already name themselves, so no prefix needed there.
+        if (enrollPassLabel && showPass && result.pass) {
+          let passLabel = result.pass.label;
+          if (result.pass.group === "rail") passLabel = `Commuter Rail ${passLabel}`;
+          if (reducedFare) passLabel = `Reduced Fare ${passLabel}`;
+          enrollPassLabel.textContent = passLabel;
+        }
         if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
         if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
         enrollSection.style.display = (onResultsStep && (showPass || showParking || showBluebikes)) ? "block" : "none";

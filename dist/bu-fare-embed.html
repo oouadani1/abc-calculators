@@ -2411,7 +2411,27 @@ label.abc-question {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   gap: var(--abc-space-md);
+}
+
+/* Wraps just the Pass button (2026-11 follow-up, Carl Larson: "listing
+   the pass type they should get... adjacent to the link") — the other
+   2 buttons stay plain <a> flex children since only the Pass benefit
+   needs a product-specific label above it. A flex column so the label
+   sits centered directly above its own button, not the whole row. */
+.abc-farecalc-enroll-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.abc-farecalc-enroll-pass-label {
+  margin: 0;
+  font-size: var(--abc-font-size-sm);
+  font-weight: 600;
+  color: var(--abc-ink-muted);
 }
 
 .abc-farecalc-enroll-btn {
@@ -2444,6 +2464,10 @@ label.abc-question {
 }
 
 @media (max-width: 560px) {
+  .abc-farecalc-enroll-item {
+    flex: 1 1 100%;
+    width: 100%;
+  }
   .abc-farecalc-enroll-btn {
     flex: 1 1 100%;
     justify-content: center;
@@ -3325,10 +3349,13 @@ label.abc-question {
     <div class="abc-farecalc-enroll" data-abc-enroll-section style="display: none;">
       <p class="abc-farecalc-enroll-title">Ready to enroll?</p>
       <div class="abc-farecalc-enroll-buttons">
-        <a class="abc-farecalc-enroll-btn" data-abc-enroll-pass href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#pass" target="_blank" rel="noopener" style="display: none;">
-          MBTA Monthly Pass Benefit
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
-        </a>
+        <div class="abc-farecalc-enroll-item" data-abc-enroll-pass-wrap style="display: none;">
+          <p class="abc-farecalc-enroll-pass-label" data-abc-enroll-pass-label></p>
+          <a class="abc-farecalc-enroll-btn" data-abc-enroll-pass href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#pass" target="_blank" rel="noopener">
+            MBTA Monthly Pass Benefit
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+          </a>
+        </div>
         <a class="abc-farecalc-enroll-btn" data-abc-enroll-parking href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#parking" target="_blank" rel="noopener" style="display: none;">
           Transit Station Parking Benefit
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
@@ -4910,7 +4937,12 @@ function buInitCalculator(rootEl) {
         // value from first render onward, unlike a pre-active "No"
         // button, which needed its own click before the chip could
         // trust it as a real answer rather than a leftover default.
-        return { label: "Add-ons", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
+        // Bluebikes first, Reduced Fare second (2026-11 follow-up, Carl
+        // Larson catch) — matches the actual on-page checkbox order
+        // (index.html: Bluebikes checkbox, then Reduced Fare nested
+        // below it); this chip had them reversed, a leftover from when
+        // Reduced Fare was built before Bluebikes in an earlier round.
+        return { label: "Add-ons", value: `${bluebikesAdded ? "Yes" : "No"} · ${reducedFare ? "Yes" : "No"}` };
       }
       default:
         return null;
@@ -5805,13 +5837,29 @@ function buInitCalculator(rootEl) {
       const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
       if (enrollSection) {
         const onResultsStep = WIZARD_STEPS[currentStepIndex] === "results";
-        const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
+        const enrollPassWrap = enrollSection.querySelector("[data-abc-enroll-pass-wrap]");
+        const enrollPassLabel = enrollSection.querySelector("[data-abc-enroll-pass-label]");
         const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
         const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
         const showPass = passWins;
         const showParking = stationParking || rapidStationParking || ferryParking;
         const showBluebikes = bluebikesAdded;
-        if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
+        if (enrollPassWrap) enrollPassWrap.style.display = showPass ? "flex" : "none";
+        // Names the exact product to pick during enrollment (2026-11
+        // follow-up, Carl Larson: "listing the pass type they should
+        // get... adjacent to the link") — e.g. "Reduced Fare Commuter
+        // Rail Zone 6". "Commuter Rail " only prefixes rail passes,
+        // since a bare zone number ("Zone 6") is ambiguous once it's
+        // sitting next to a generic "MBTA Monthly Pass Benefit" button,
+        // outside the result card's own mode-specific context; Subway &
+        // Bus/ferry labels ("LinkPass (Subway + Bus)", "Inner Harbor
+        // Ferry") already name themselves, so no prefix needed there.
+        if (enrollPassLabel && showPass && result.pass) {
+          let passLabel = result.pass.label;
+          if (result.pass.group === "rail") passLabel = `Commuter Rail ${passLabel}`;
+          if (reducedFare) passLabel = `Reduced Fare ${passLabel}`;
+          enrollPassLabel.textContent = passLabel;
+        }
         if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
         if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
         enrollSection.style.display = (onResultsStep && (showPass || showParking || showBluebikes)) ? "block" : "none";
