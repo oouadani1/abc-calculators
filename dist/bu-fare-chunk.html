@@ -2168,6 +2168,87 @@ label.abc-question {
   margin-top: var(--abc-space-md);
 }
 
+/* ---- Add-ons checkboxes (Bluebikes, Reduced Fare) — 2026-11 follow-up,
+   Carl Larson feedback: these two are genuinely optional, and a Yes/No
+   button pair (even with "No" pre-active) still read as something you
+   had to deliberately answer before moving on. A checkbox makes "skip
+   this, I don't want it" the obvious, zero-click default, same real
+   state (`reducedFare`/`bluebikesAdded` both start false either way) —
+   just a clearer signal of optionality than the button pair gave it.
+   Custom box (native checkboxes can't be styled consistently across
+   browsers) — the real <input> stays in the DOM and keyboard/screen-
+   reader operable, just visually hidden, so focus/checked state and
+   accessibility semantics all still come from the real control. ---- */
+.abc-farecalc-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.abc-farecalc-checkbox input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+}
+
+.abc-farecalc-checkbox-box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--abc-border);
+  border-radius: 6px;
+  background: #fff;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.abc-farecalc-checkbox-box::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--bu-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:checked ~ .abc-farecalc-checkbox-box {
+  background: var(--bu-mint-bright);
+  border-color: var(--bu-mint-bright);
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:checked ~ .abc-farecalc-checkbox-box::after {
+  display: block;
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:focus-visible ~ .abc-farecalc-checkbox-box {
+  outline: 2px solid var(--bu-mint-bright);
+  outline-offset: 2px;
+}
+
+.abc-farecalc-checkbox:hover .abc-farecalc-checkbox-box {
+  border-color: var(--bu-mint-bright);
+}
+
+.abc-farecalc-checkbox-label {
+  font-size: var(--abc-font-size-lg);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  line-height: 1.3;
+}
+
 /* ---- Comparison cards: arithmetic layout. Stacked by default, going
    side-by-side once the container is wide enough (see the @container
    rule below) — now the common case at this tool's widened 880px
@@ -2879,7 +2960,16 @@ label.abc-question {
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
-        <p class="abc-question">Which station do you commute from?</p>
+        <div class="abc-farecalc-question-row">
+          <p class="abc-question">Which station do you commute from?</p>
+          <div class="abc-farecalc-hint-wrap" data-abc-hint>
+            <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true"><span class="abc-farecalc-hint-icon">?</span></button>
+            <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
+              <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
+              <p>Not sure which station? <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the MBTA Commuter Rail Map</a>. This tool will automatically calculate your Zone.</p>
+            </div>
+          </div>
+        </div>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-field-hint-wrap">
@@ -3003,18 +3093,18 @@ label.abc-question {
       <div class="abc-farecalc-field-group" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <p class="abc-question">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a> for <span data-abc-bluebikes-price>$6</span> a month</p>
-            <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button" data-abc-bluebikes-select="yes">Yes</button>
-              <button type="button" class="abc-choice-button abc-active" data-abc-bluebikes-select="no">No</button>
-            </div>
+            <label class="abc-farecalc-checkbox">
+              <input type="checkbox" data-abc-bluebikes-select />
+              <span class="abc-farecalc-checkbox-box" aria-hidden="true"></span>
+              <span class="abc-farecalc-checkbox-label">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a> for <span data-abc-bluebikes-price>$6</span> a month</span>
+            </label>
 
             <div class="abc-farecalc-subfield">
-              <p class="abc-question">I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></p>
-              <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button" data-abc-reduced-fare-select="yes">Yes</button>
-                <button type="button" class="abc-choice-button abc-active" data-abc-reduced-fare-select="no">No</button>
-              </div>
+              <label class="abc-farecalc-checkbox">
+                <input type="checkbox" data-abc-reduced-fare-select />
+                <span class="abc-farecalc-checkbox-box" aria-hidden="true"></span>
+                <span class="abc-farecalc-checkbox-label">I qualify for a <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">reduced fare pass</a> because I am over 65 or disabled.</span>
+              </label>
             </div>
           </div>
         </div>
@@ -3035,7 +3125,7 @@ label.abc-question {
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
 
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">
@@ -3070,7 +3160,7 @@ label.abc-question {
         <h3>BU Subsidized MBTA Pass</h3>
         <p class="abc-farecalc-card-subtitle" data-abc-pass-subtitle></p>
 
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">
@@ -3120,7 +3210,7 @@ label.abc-question {
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3 data-abc-drive-label>Driving to Campus</h3>
         <ul class="abc-farecalc-line-notes" data-abc-drive-context-note></ul>
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">
@@ -4163,18 +4253,18 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  // ---- Bluebikes membership add-on: Yes/No pill pair, same component
-  // every other question in this tool uses (2026-11 — replaced the
-  // checkbox here and on every other toggle question, for one
-  // consistent look instead of two different input styles). ----
-  const bluebikesButtons = rootEl.querySelectorAll("[data-abc-bluebikes-select]");
-  bluebikesButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      bluebikesAdded = btn.dataset.abcBluebikesSelect === "yes";
-      bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+  // ---- Bluebikes membership add-on: a real opt-in checkbox again
+  // (2026-11 follow-up, Carl Larson feedback — reverses the prior
+  // Yes/No-pill-pair pass) — unchecked is both the honest default AND
+  // visually obvious as "skip this," so there's nothing to click to move
+  // on if you don't want it. ----
+  const bluebikesCheckbox = rootEl.querySelector("[data-abc-bluebikes-select]");
+  if (bluebikesCheckbox) {
+    bluebikesCheckbox.addEventListener("change", () => {
+      bluebikesAdded = bluebikesCheckbox.checked;
       render();
     });
-  });
+  }
 
   /** W3C ARIA "combobox with list autocomplete" pattern — the documented
    * accessible way to build a type-ahead search field with a popup list
@@ -4518,19 +4608,19 @@ function buInitCalculator(rootEl) {
   // Ferry alike (MBTA's reduced program spans all of them), and feeds
   // Card 1 (the BU-subsidized pass) regardless of topMode, since
   // Driving still needs Reduced Fare to price the pass it's compared
-  // against. Yes/No pill pair, always on the "reduced" step. Subway &
-  // Bus resolves to the same $30 reduced product regardless of which
-  // tier pill was picked (MBTA doesn't sell a separate reduced bus-only
-  // pass), but that pick stays fully independent of this one either way. ----
-  const reducedFareButtons = rootEl.querySelectorAll("[data-abc-reduced-fare-select]");
-  function setReducedFare(value) {
-    reducedFare = value;
-    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", (b.dataset.abcReducedFareSelect === "yes") === value));
-    render();
+  // against. A real opt-in checkbox again (2026-11 follow-up, Carl
+  // Larson feedback — same reasoning as the Bluebikes checkbox above),
+  // always on the "reduced" step. Subway & Bus resolves to the same $30
+  // reduced product regardless of which tier pill was picked (MBTA
+  // doesn't sell a separate reduced bus-only pass), but that pick stays
+  // fully independent of this one either way. ----
+  const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-select]");
+  if (reducedFareCheckbox) {
+    reducedFareCheckbox.addEventListener("change", () => {
+      reducedFare = reducedFareCheckbox.checked;
+      render();
+    });
   }
-  reducedFareButtons.forEach((btn) => {
-    btn.addEventListener("click", () => setReducedFare(btn.dataset.abcReducedFareSelect === "yes"));
-  });
 
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
@@ -4709,11 +4799,12 @@ function buInitCalculator(rootEl) {
         return { label: "Park & Ride", value: ferryParking ? "Yes" : "No" };
       }
       case "reduced": {
-        const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
-        const bikeTouched = gridTouchedFor("[data-abc-bluebikes-select]");
-        const reducedVal = reducedTouched ? (reducedFare ? "Yes" : "No") : "—";
-        const bikeVal = bikeTouched ? (bluebikesAdded ? "Yes" : "No") : "—";
-        return { label: "Add-ons", value: `${reducedVal} · ${bikeVal}` };
+        // No "touched" gating here (2026-11 follow-up) — now that both
+        // are real checkboxes, unchecked IS the honest, unambiguous
+        // value from first render onward, unlike a pre-active "No"
+        // button, which needed its own click before the chip could
+        // trust it as a real answer rather than a leftover default.
+        return { label: "Add-ons", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
       }
       default:
         return null;
@@ -5148,8 +5239,8 @@ function buInitCalculator(rootEl) {
     if (medicalFields) medicalFields.style.display = "none";
     medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalDailySelect === "monthly"));
     if (stationInput) stationInput.value = "";
-    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcReducedFareSelect === "no"));
-    bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcBluebikesSelect === "no"));
+    if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
+    if (bluebikesCheckbox) bluebikesCheckbox.checked = false;
     stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryParkingSelect === "no"));
@@ -5572,16 +5663,20 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
-      // Driving's own total only ever covers parking — no fuel or
-      // insurance — so whenever Driving comes out ahead, that specific
+      // Driving's own total only ever covers parking — no fuel, tolls, or
+      // wear and tear — so whenever Driving comes out ahead, that specific
       // savings figure understates driving's real cost; flagged right
       // in the sentence (2026-11 ask), not shown when the PASS wins
       // (irrelevant there) or in the Pay-Per-Ride branch (no driving
-      // involved at all).
+      // involved at all). Deliberately NOT "insurance" (2026-11 follow-up,
+      // Carl Larson feedback) — someone switching to transit would
+      // realistically keep their car and keep paying for insurance either
+      // way, so insurance isn't a real savings; fuel/tolls/wear-and-tear
+      // are the costs that actually track with fewer driving days.
       const caveatEl = winnerCard.querySelector("[data-abc-savings-caveat]");
       if (caveatEl) {
         caveatEl.textContent = (topMode === "driving" && !passWins)
-          ? ", not taking into account fuel and insurance"
+          ? ", not taking into account fuel, tolls, and vehicle wear and tear"
           : "";
       }
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";

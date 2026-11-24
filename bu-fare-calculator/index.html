@@ -259,7 +259,16 @@
       </div>
 
       <div class="abc-farecalc-field-group" data-abc-rail-zone-field style="display: none;">
-        <p class="abc-question">Which station do you commute from?</p>
+        <div class="abc-farecalc-question-row">
+          <p class="abc-question">Which station do you commute from?</p>
+          <div class="abc-farecalc-hint-wrap" data-abc-hint>
+            <button type="button" class="abc-farecalc-hint-btn" data-abc-hint-toggle aria-label="More info" aria-expanded="false" aria-haspopup="true"><span class="abc-farecalc-hint-icon">?</span></button>
+            <div class="abc-callout abc-farecalc-hint-popover" data-abc-hint-popover style="display: none;">
+              <button type="button" class="abc-farecalc-hint-close" data-abc-hint-close aria-label="Close">&times;</button>
+              <p>Not sure which station? <a href="https://cdn.mbta.com/sites/default/files/2021-03/2021-03-23-cr-fare-zones.pdf" target="_blank" rel="noopener">View the MBTA Commuter Rail Map</a>. This tool will automatically calculate your Zone.</p>
+            </div>
+          </div>
+        </div>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
             <div class="abc-field-hint-wrap">
@@ -383,18 +392,18 @@
       <div class="abc-farecalc-field-group" data-abc-reduced-fare-field>
         <div class="abc-input-row">
           <div class="abc-field" style="flex-basis: 100%;">
-            <p class="abc-question">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a> for <span data-abc-bluebikes-price>$6</span> a month</p>
-            <div class="abc-choice-grid">
-              <button type="button" class="abc-choice-button" data-abc-bluebikes-select="yes">Yes</button>
-              <button type="button" class="abc-choice-button abc-active" data-abc-bluebikes-select="no">No</button>
-            </div>
+            <label class="abc-farecalc-checkbox">
+              <input type="checkbox" data-abc-bluebikes-select />
+              <span class="abc-farecalc-checkbox-box" aria-hidden="true"></span>
+              <span class="abc-farecalc-checkbox-label">I also want BU's <a href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener">discounted Bluebikes membership</a> for <span data-abc-bluebikes-price>$6</span> a month</span>
+            </label>
 
             <div class="abc-farecalc-subfield">
-              <p class="abc-question">I qualify for <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">Reduced Fare</a></p>
-              <div class="abc-choice-grid">
-                <button type="button" class="abc-choice-button" data-abc-reduced-fare-select="yes">Yes</button>
-                <button type="button" class="abc-choice-button abc-active" data-abc-reduced-fare-select="no">No</button>
-              </div>
+              <label class="abc-farecalc-checkbox">
+                <input type="checkbox" data-abc-reduced-fare-select />
+                <span class="abc-farecalc-checkbox-box" aria-hidden="true"></span>
+                <span class="abc-farecalc-checkbox-label">I qualify for a <a href="https://www.mbta.com/fares/reduced" target="_blank" rel="noopener">reduced fare pass</a> because I am over 65 or disabled.</span>
+              </label>
             </div>
           </div>
         </div>
@@ -415,7 +424,7 @@
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3>Pay-Per-Ride</h3>
 
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">
@@ -450,7 +459,7 @@
         <h3>BU Subsidized MBTA Pass</h3>
         <p class="abc-farecalc-card-subtitle" data-abc-pass-subtitle></p>
 
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">
@@ -500,7 +509,7 @@
         <span class="abc-badge" data-abc-badge>Recommended for you</span>
         <h3 data-abc-drive-label>Driving to Campus</h3>
         <ul class="abc-farecalc-line-notes" data-abc-drive-context-note></ul>
-        <details class="abc-details abc-farecalc-card-details">
+        <details class="abc-details abc-farecalc-card-details" open>
           <summary>See how we calculated this</summary>
           <div class="abc-details-body">
             <div class="abc-farecalc-line">

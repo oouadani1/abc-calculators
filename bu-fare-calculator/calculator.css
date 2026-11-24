@@ -1599,6 +1599,87 @@ label.abc-question {
   margin-top: var(--abc-space-md);
 }
 
+/* ---- Add-ons checkboxes (Bluebikes, Reduced Fare) — 2026-11 follow-up,
+   Carl Larson feedback: these two are genuinely optional, and a Yes/No
+   button pair (even with "No" pre-active) still read as something you
+   had to deliberately answer before moving on. A checkbox makes "skip
+   this, I don't want it" the obvious, zero-click default, same real
+   state (`reducedFare`/`bluebikesAdded` both start false either way) —
+   just a clearer signal of optionality than the button pair gave it.
+   Custom box (native checkboxes can't be styled consistently across
+   browsers) — the real <input> stays in the DOM and keyboard/screen-
+   reader operable, just visually hidden, so focus/checked state and
+   accessibility semantics all still come from the real control. ---- */
+.abc-farecalc-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.abc-farecalc-checkbox input[type="checkbox"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  padding: 0;
+}
+
+.abc-farecalc-checkbox-box {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--abc-border);
+  border-radius: 6px;
+  background: #fff;
+  position: relative;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.abc-farecalc-checkbox-box::after {
+  content: "";
+  position: absolute;
+  display: none;
+  left: 7px;
+  top: 3px;
+  width: 5px;
+  height: 10px;
+  border: solid var(--bu-ink);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:checked ~ .abc-farecalc-checkbox-box {
+  background: var(--bu-mint-bright);
+  border-color: var(--bu-mint-bright);
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:checked ~ .abc-farecalc-checkbox-box::after {
+  display: block;
+}
+
+.abc-farecalc-checkbox input[type="checkbox"]:focus-visible ~ .abc-farecalc-checkbox-box {
+  outline: 2px solid var(--bu-mint-bright);
+  outline-offset: 2px;
+}
+
+.abc-farecalc-checkbox:hover .abc-farecalc-checkbox-box {
+  border-color: var(--bu-mint-bright);
+}
+
+.abc-farecalc-checkbox-label {
+  font-size: var(--abc-font-size-lg);
+  font-weight: 600;
+  color: var(--abc-navy-deep);
+  line-height: 1.3;
+}
+
 /* ---- Comparison cards: arithmetic layout. Stacked by default, going
    side-by-side once the container is wide enough (see the @container
    rule below) — now the common case at this tool's widened 880px

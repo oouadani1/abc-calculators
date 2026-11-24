@@ -911,18 +911,18 @@ function buInitCalculator(rootEl) {
     });
   });
 
-  // ---- Bluebikes membership add-on: Yes/No pill pair, same component
-  // every other question in this tool uses (2026-11 — replaced the
-  // checkbox here and on every other toggle question, for one
-  // consistent look instead of two different input styles). ----
-  const bluebikesButtons = rootEl.querySelectorAll("[data-abc-bluebikes-select]");
-  bluebikesButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      bluebikesAdded = btn.dataset.abcBluebikesSelect === "yes";
-      bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b === btn));
+  // ---- Bluebikes membership add-on: a real opt-in checkbox again
+  // (2026-11 follow-up, Carl Larson feedback — reverses the prior
+  // Yes/No-pill-pair pass) — unchecked is both the honest default AND
+  // visually obvious as "skip this," so there's nothing to click to move
+  // on if you don't want it. ----
+  const bluebikesCheckbox = rootEl.querySelector("[data-abc-bluebikes-select]");
+  if (bluebikesCheckbox) {
+    bluebikesCheckbox.addEventListener("change", () => {
+      bluebikesAdded = bluebikesCheckbox.checked;
       render();
     });
-  });
+  }
 
   /** W3C ARIA "combobox with list autocomplete" pattern — the documented
    * accessible way to build a type-ahead search field with a popup list
@@ -1266,19 +1266,19 @@ function buInitCalculator(rootEl) {
   // Ferry alike (MBTA's reduced program spans all of them), and feeds
   // Card 1 (the BU-subsidized pass) regardless of topMode, since
   // Driving still needs Reduced Fare to price the pass it's compared
-  // against. Yes/No pill pair, always on the "reduced" step. Subway &
-  // Bus resolves to the same $30 reduced product regardless of which
-  // tier pill was picked (MBTA doesn't sell a separate reduced bus-only
-  // pass), but that pick stays fully independent of this one either way. ----
-  const reducedFareButtons = rootEl.querySelectorAll("[data-abc-reduced-fare-select]");
-  function setReducedFare(value) {
-    reducedFare = value;
-    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", (b.dataset.abcReducedFareSelect === "yes") === value));
-    render();
+  // against. A real opt-in checkbox again (2026-11 follow-up, Carl
+  // Larson feedback — same reasoning as the Bluebikes checkbox above),
+  // always on the "reduced" step. Subway & Bus resolves to the same $30
+  // reduced product regardless of which tier pill was picked (MBTA
+  // doesn't sell a separate reduced bus-only pass), but that pick stays
+  // fully independent of this one either way. ----
+  const reducedFareCheckbox = rootEl.querySelector("[data-abc-reduced-fare-select]");
+  if (reducedFareCheckbox) {
+    reducedFareCheckbox.addEventListener("change", () => {
+      reducedFare = reducedFareCheckbox.checked;
+      render();
+    });
   }
-  reducedFareButtons.forEach((btn) => {
-    btn.addEventListener("click", () => setReducedFare(btn.dataset.abcReducedFareSelect === "yes"));
-  });
 
   // ---- Drive mode: campus -> lot/garage fields ----
   const campusButtons = rootEl.querySelectorAll("[data-abc-campus-select]");
@@ -1457,11 +1457,12 @@ function buInitCalculator(rootEl) {
         return { label: "Park & Ride", value: ferryParking ? "Yes" : "No" };
       }
       case "reduced": {
-        const reducedTouched = gridTouchedFor("[data-abc-reduced-fare-select]");
-        const bikeTouched = gridTouchedFor("[data-abc-bluebikes-select]");
-        const reducedVal = reducedTouched ? (reducedFare ? "Yes" : "No") : "—";
-        const bikeVal = bikeTouched ? (bluebikesAdded ? "Yes" : "No") : "—";
-        return { label: "Add-ons", value: `${reducedVal} · ${bikeVal}` };
+        // No "touched" gating here (2026-11 follow-up) — now that both
+        // are real checkboxes, unchecked IS the honest, unambiguous
+        // value from first render onward, unlike a pre-active "No"
+        // button, which needed its own click before the chip could
+        // trust it as a real answer rather than a leftover default.
+        return { label: "Add-ons", value: `${reducedFare ? "Yes" : "No"} · ${bluebikesAdded ? "Yes" : "No"}` };
       }
       default:
         return null;
@@ -1896,8 +1897,8 @@ function buInitCalculator(rootEl) {
     if (medicalFields) medicalFields.style.display = "none";
     medicalDailyButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcMedicalDailySelect === "monthly"));
     if (stationInput) stationInput.value = "";
-    reducedFareButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcReducedFareSelect === "no"));
-    bluebikesButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcBluebikesSelect === "no"));
+    if (reducedFareCheckbox) reducedFareCheckbox.checked = false;
+    if (bluebikesCheckbox) bluebikesCheckbox.checked = false;
     stationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcStationParkingSelect === "no"));
     rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryParkingSelect === "no"));
@@ -2320,16 +2321,20 @@ function buInitCalculator(rootEl) {
       winnerCard.querySelector("[data-abc-savings-line]").style.display = diff > 0.5 ? "block" : "none";
       winnerCard.querySelector("[data-abc-savings-amt]").textContent = abcFormatCurrencyWhole(abcRoundToDollar(diff * 12));
       winnerCard.querySelector("[data-abc-savings-vs]").textContent = otherOptionLabel;
-      // Driving's own total only ever covers parking — no fuel or
-      // insurance — so whenever Driving comes out ahead, that specific
+      // Driving's own total only ever covers parking — no fuel, tolls, or
+      // wear and tear — so whenever Driving comes out ahead, that specific
       // savings figure understates driving's real cost; flagged right
       // in the sentence (2026-11 ask), not shown when the PASS wins
       // (irrelevant there) or in the Pay-Per-Ride branch (no driving
-      // involved at all).
+      // involved at all). Deliberately NOT "insurance" (2026-11 follow-up,
+      // Carl Larson feedback) — someone switching to transit would
+      // realistically keep their car and keep paying for insurance either
+      // way, so insurance isn't a real savings; fuel/tolls/wear-and-tear
+      // are the costs that actually track with fewer driving days.
       const caveatEl = winnerCard.querySelector("[data-abc-savings-caveat]");
       if (caveatEl) {
         caveatEl.textContent = (topMode === "driving" && !passWins)
-          ? ", not taking into account fuel and insurance"
+          ? ", not taking into account fuel, tolls, and vehicle wear and tear"
           : "";
       }
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
