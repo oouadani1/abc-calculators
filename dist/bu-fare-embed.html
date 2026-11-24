@@ -2386,6 +2386,70 @@ label.abc-question {
   color: var(--mbta-green);
 }
 
+/* ---- Enroll CTAs (2026-11) — up to 3 real links to BU's own enrollment
+   pages, shown once below both/all result cards rather than duplicated
+   inside each one, since Station Parking and Bluebikes can both apply
+   regardless of which card won. flex-wrap so 1, 2, or 3 buttons all lay
+   out cleanly without the row ever forcing a horizontal scroll or
+   looking sparse/off-center with just one. ---- */
+.abc-farecalc-enroll {
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-lg);
+  border-top: 1px solid var(--abc-border);
+  text-align: center;
+}
+
+.abc-farecalc-enroll-title {
+  margin: 0 0 var(--abc-space-md);
+  font-family: "Sora", "IBM Plex Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-enroll-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--abc-space-md);
+}
+
+.abc-farecalc-enroll-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: "Sora", "IBM Plex Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--abc-navy-deep);
+  background: #fff;
+  border: 2px solid var(--abc-navy-deep);
+  border-radius: var(--abc-radius-pill);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-farecalc-enroll-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+@media (hover: hover) {
+  .abc-farecalc-enroll-btn:hover {
+    background: var(--abc-navy-deep);
+    color: #fff;
+  }
+}
+
+@media (max-width: 560px) {
+  .abc-farecalc-enroll-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
 /* ---- Cross-link to the Bluebikes calculator ---- */
 .abc-farecalc-crosslink {
   margin-top: var(--abc-space-lg);
@@ -3251,6 +3315,29 @@ label.abc-question {
         </p>
       </div>
 
+    </div>
+
+    <!-- Enroll CTAs (2026-11): up to 3 links to BU's real enrollment pages,
+         one per benefit the user's own answers actually touched — never
+         all 3 by default, so it never crowds the results even when it
+         could show every button at once. See renderResults() in
+         calculator.js for the per-button visibility rules. -->
+    <div class="abc-farecalc-enroll" data-abc-enroll-section style="display: none;">
+      <p class="abc-farecalc-enroll-title">Ready to enroll?</p>
+      <div class="abc-farecalc-enroll-buttons">
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-pass href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#pass" target="_blank" rel="noopener" style="display: none;">
+          MBTA Monthly Pass Benefit
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-parking href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#parking" target="_blank" rel="noopener" style="display: none;">
+          Transit Station Parking Benefit
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-bluebikes href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener" style="display: none;">
+          Bluebikes Discount
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+      </div>
     </div>
 
 
@@ -5699,6 +5786,30 @@ function buInitCalculator(rootEl) {
           : "";
       }
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+
+      // ---- Enroll CTAs (2026-11): up to 3 real BU enrollment links, each
+      // gated on the specific thing it's for, not on which card won —
+      // Transit Station Parking and Bluebikes are both things the user
+      // opted INTO regardless of which side came out cheaper, so those
+      // two stay independent of passWins; only the Pass benefit itself is
+      // gated on passWins, since enrolling in BU's subsidized pass only
+      // makes sense as a recommendation when the pass is the actual
+      // winner. Hidden individually, and the whole section collapses to
+      // nothing if none apply, rather than ever showing an empty "Ready
+      // to enroll?" header. ----
+      const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
+      if (enrollSection) {
+        const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
+        const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
+        const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
+        const showPass = passWins;
+        const showParking = stationParking || rapidStationParking || ferryParking;
+        const showBluebikes = bluebikesAdded;
+        if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
+        if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
+        if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
+        enrollSection.style.display = (showPass || showParking || showBluebikes) ? "block" : "none";
+      }
     }
   }
 

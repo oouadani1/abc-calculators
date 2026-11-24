@@ -1808,6 +1808,70 @@ label.abc-question {
   color: var(--mbta-green);
 }
 
+/* ---- Enroll CTAs (2026-11) — up to 3 real links to BU's own enrollment
+   pages, shown once below both/all result cards rather than duplicated
+   inside each one, since Station Parking and Bluebikes can both apply
+   regardless of which card won. flex-wrap so 1, 2, or 3 buttons all lay
+   out cleanly without the row ever forcing a horizontal scroll or
+   looking sparse/off-center with just one. ---- */
+.abc-farecalc-enroll {
+  margin-top: var(--abc-space-lg);
+  padding-top: var(--abc-space-lg);
+  border-top: 1px solid var(--abc-border);
+  text-align: center;
+}
+
+.abc-farecalc-enroll-title {
+  margin: 0 0 var(--abc-space-md);
+  font-family: "Sora", "IBM Plex Sans", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--abc-navy-deep);
+}
+
+.abc-farecalc-enroll-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--abc-space-md);
+}
+
+.abc-farecalc-enroll-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 28px;
+  font-family: "Sora", "IBM Plex Sans", sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--abc-navy-deep);
+  background: #fff;
+  border: 2px solid var(--abc-navy-deep);
+  border-radius: var(--abc-radius-pill);
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.abc-farecalc-enroll-btn svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+@media (hover: hover) {
+  .abc-farecalc-enroll-btn:hover {
+    background: var(--abc-navy-deep);
+    color: #fff;
+  }
+}
+
+@media (max-width: 560px) {
+  .abc-farecalc-enroll-btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
 /* ---- Cross-link to the Bluebikes calculator ---- */
 .abc-farecalc-crosslink {
   margin-top: var(--abc-space-lg);

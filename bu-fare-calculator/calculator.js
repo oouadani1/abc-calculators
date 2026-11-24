@@ -2338,6 +2338,30 @@ function buInitCalculator(rootEl) {
           : "";
       }
       loserCard.querySelector("[data-abc-savings-line]").style.display = "none";
+
+      // ---- Enroll CTAs (2026-11): up to 3 real BU enrollment links, each
+      // gated on the specific thing it's for, not on which card won —
+      // Transit Station Parking and Bluebikes are both things the user
+      // opted INTO regardless of which side came out cheaper, so those
+      // two stay independent of passWins; only the Pass benefit itself is
+      // gated on passWins, since enrolling in BU's subsidized pass only
+      // makes sense as a recommendation when the pass is the actual
+      // winner. Hidden individually, and the whole section collapses to
+      // nothing if none apply, rather than ever showing an empty "Ready
+      // to enroll?" header. ----
+      const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
+      if (enrollSection) {
+        const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
+        const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
+        const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
+        const showPass = passWins;
+        const showParking = stationParking || rapidStationParking || ferryParking;
+        const showBluebikes = bluebikesAdded;
+        if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
+        if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
+        if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
+        enrollSection.style.display = (showPass || showParking || showBluebikes) ? "block" : "none";
+      }
     }
   }
 

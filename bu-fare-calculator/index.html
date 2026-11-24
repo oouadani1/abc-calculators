@@ -533,6 +533,29 @@
 
     </div>
 
+    <!-- Enroll CTAs (2026-11): up to 3 links to BU's real enrollment pages,
+         one per benefit the user's own answers actually touched — never
+         all 3 by default, so it never crowds the results even when it
+         could show every button at once. See renderResults() in
+         calculator.js for the per-button visibility rules. -->
+    <div class="abc-farecalc-enroll" data-abc-enroll-section style="display: none;">
+      <p class="abc-farecalc-enroll-title">Ready to enroll?</p>
+      <div class="abc-farecalc-enroll-buttons">
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-pass href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#pass" target="_blank" rel="noopener" style="display: none;">
+          MBTA Monthly Pass Benefit
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-parking href="https://www.bu.edu/transportation/public-transit/employee-mbta-benefits/#parking" target="_blank" rel="noopener" style="display: none;">
+          Transit Station Parking Benefit
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+        <a class="abc-farecalc-enroll-btn" data-abc-enroll-bluebikes href="https://www.bu.edu/transportation/bicycling/bluebikes-discount/" target="_blank" rel="noopener" style="display: none;">
+          Bluebikes Discount
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7" /><path d="M8 7h9v9" /></svg>
+        </a>
+      </div>
+    </div>
+
 
     <details class="abc-details" data-abc-assumptions-details style="display: none;">
       <summary>Where we got these numbers</summary>
