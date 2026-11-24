@@ -1837,25 +1837,6 @@ label.abc-question {
   gap: var(--abc-space-md);
 }
 
-/* Wraps just the Pass button (2026-11 follow-up, Carl Larson: "listing
-   the pass type they should get... adjacent to the link") — the other
-   2 buttons stay plain <a> flex children since only the Pass benefit
-   needs a product-specific label above it. A flex column so the label
-   sits centered directly above its own button, not the whole row. */
-.abc-farecalc-enroll-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.abc-farecalc-enroll-pass-label {
-  margin: 0;
-  font-size: var(--abc-font-size-sm);
-  font-weight: 600;
-  color: var(--abc-ink-muted);
-}
-
 .abc-farecalc-enroll-btn {
   display: inline-flex;
   align-items: center;
@@ -1886,10 +1867,6 @@ label.abc-question {
 }
 
 @media (max-width: 560px) {
-  .abc-farecalc-enroll-item {
-    flex: 1 1 100%;
-    width: 100%;
-  }
   .abc-farecalc-enroll-btn {
     flex: 1 1 100%;
     justify-content: center;

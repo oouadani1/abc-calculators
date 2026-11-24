@@ -2362,28 +2362,46 @@ function buInitCalculator(rootEl) {
       const enrollSection = rootEl.querySelector("[data-abc-enroll-section]");
       if (enrollSection) {
         const onResultsStep = WIZARD_STEPS[currentStepIndex] === "results";
-        const enrollPassWrap = enrollSection.querySelector("[data-abc-enroll-pass-wrap]");
-        const enrollPassLabel = enrollSection.querySelector("[data-abc-enroll-pass-label]");
+        const enrollPass = enrollSection.querySelector("[data-abc-enroll-pass]");
+        const enrollPassText = enrollSection.querySelector("[data-abc-enroll-pass-text]");
         const enrollParking = enrollSection.querySelector("[data-abc-enroll-parking]");
         const enrollBluebikes = enrollSection.querySelector("[data-abc-enroll-bluebikes]");
         const showPass = passWins;
         const showParking = stationParking || rapidStationParking || ferryParking;
         const showBluebikes = bluebikesAdded;
-        if (enrollPassWrap) enrollPassWrap.style.display = showPass ? "flex" : "none";
-        // Names the exact product to pick during enrollment (2026-11
-        // follow-up, Carl Larson: "listing the pass type they should
-        // get... adjacent to the link") — e.g. "Reduced Fare Commuter
-        // Rail Zone 6". "Commuter Rail " only prefixes rail passes,
-        // since a bare zone number ("Zone 6") is ambiguous once it's
-        // sitting next to a generic "MBTA Monthly Pass Benefit" button,
-        // outside the result card's own mode-specific context; Subway &
-        // Bus/ferry labels ("LinkPass (Subway + Bus)", "Inner Harbor
-        // Ferry") already name themselves, so no prefix needed there.
-        if (enrollPassLabel && showPass && result.pass) {
-          let passLabel = result.pass.label;
-          if (result.pass.group === "rail") passLabel = `Commuter Rail ${passLabel}`;
-          if (reducedFare) passLabel = `Reduced Fare ${passLabel}`;
-          enrollPassLabel.textContent = passLabel;
+        if (enrollPass) enrollPass.style.display = showPass ? "inline-flex" : "none";
+        // Names the exact product to enroll in, baked INTO the button's
+        // own text (2026-11 follow-up: a caption above the button threw
+        // off the row's top alignment against the other 2 buttons; "lets
+        // ... keep the top-aligned position of the buttons always
+        // fixed... dynamically render their pass within the button").
+        // Uses BU's own Edenred pass-type naming (bu.edu's pass-type
+        // chart, the image the user supplied) rather than this tool's
+        // own longer display labels — "Bus Pass"/"LinkPass" (2026-11
+        // follow-up: "spell out Link Pass and Bus Pass" — the chart's own
+        // row labels are the terser "Bus"/"Link", but spelled out here
+        // per the user's explicit ask; matches this tool's own existing
+        // BU_CONFIG.passOptions labels for these two IDs, just without
+        // LinkPass's own "(Subway + Bus)" parenthetical, redundant next
+        // to "Monthly BU Pass:"); bare "Zone 6" etc. for rail (no
+        // "Commuter Rail" prefix — the chart doesn't use one, this is
+        // assumed to be how Edenred's own product picker is worded); and
+        // "Boat Pass" for every ferry route alike, since Edenred
+        // apparently sells one generic boat pass rather than a separate
+        // product per route — deliberately NOT this tool's own specific
+        // route label ("Inner Harbor Ferry" etc.), which only matters for
+        // pricing here, not for what to actually pick during enrollment.
+        if (enrollPassText && showPass && result.pass) {
+          let productName = "";
+          if (result.pass.group === "subway") {
+            productName = result.pass.id === "local-bus" ? "Bus Pass" : "LinkPass";
+          } else if (result.pass.group === "rail") {
+            productName = result.pass.label;
+          } else if (result.pass.group === "ferry") {
+            productName = "Boat Pass";
+          }
+          if (reducedFare) productName = `Reduced Fare ${productName}`;
+          enrollPassText.textContent = `Monthly BU Pass: ${productName}`;
         }
         if (enrollParking) enrollParking.style.display = showParking ? "inline-flex" : "none";
         if (enrollBluebikes) enrollBluebikes.style.display = showBluebikes ? "inline-flex" : "none";
