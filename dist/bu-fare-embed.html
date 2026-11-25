@@ -2975,7 +2975,7 @@ label.abc-question {
             <div class="abc-farecalc-stepper abc-farecalc-count-stepper" data-abc-trips-stepper>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-minus aria-label="Decrease by 1">&minus;</button>
               <div class="abc-farecalc-stepper-value-wrap">
-                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="10" value="3" inputmode="numeric" aria-label="Round-trips per week" />
+                <input type="number" class="abc-farecalc-stepper-input" data-abc-stepper-value min="0" max="10" value="5" inputmode="numeric" aria-label="Round-trips per week" />
               </div>
               <button type="button" class="abc-farecalc-stepper-btn" data-abc-stepper-plus aria-label="Increase by 1">+</button>
             </div>
@@ -3536,7 +3536,11 @@ const BU_CONFIG = {
   tripsStep: 1,
   tripsMax: Infinity,
   driveTripsMax: 7, // a week only has 7 days to drive to campus on
-  defaultTripsPerWeek: 3, // 3 round-trips/week, a typical 3-day office week
+  // 5 round-trips/week (2026-11 follow-up, Carl Larson feedback — raised
+  // from 3): remote work isn't available to all BU employees, so a
+  // near-full-time in-office commute is the more representative default
+  // than a hybrid 3-day week.
+  defaultTripsPerWeek: 5,
 
   // Temporary Commuter Rail promo: 50% off monthly passes, Zone 1A
   // excluded. Still applies to BU employees same as everyone else; BU's
@@ -5357,7 +5361,10 @@ function buInitCalculator(rootEl) {
     rapidStationParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcRapidStationParkingSelect === "no"));
     ferryParkingButtons.forEach((b) => b.classList.toggle("abc-active", b.dataset.abcFerryParkingSelect === "no"));
     if (rapidStationInput) rapidStationInput.value = "";
-    setStepVisible(tripsHint, false);
+    // topMode is reset to "pay-per-ride" above, so the hint should be
+    // showing again after reset, same as on first load once that mode's
+    // picked — not force-hidden the way a pre-touch default used to be.
+    setStepVisible(tripsHint, topMode !== "driving");
     updateMedicalDailyFieldVisibility();
     if (tripsStepper) tripsStepper.repaint();
     if (stationParkingDaysStepper) stationParkingDaysStepper.repaint();
@@ -5387,10 +5394,15 @@ function buInitCalculator(rootEl) {
       }
       clampParkingDaysToTrips();
       if (tripsStepper) tripsStepper.repaint();
-      // Hide the round-trips hint the moment Driving is picked — it only
-      // gets revealed again by actually using the stepper (see
-      // tripsStepper's setValue above), never just by switching back.
-      if (topMode === "driving") setStepVisible(tripsHint, false);
+      // Shows/hides the round-trips hint based on topMode alone (2026-11
+      // follow-up, Carl Larson: someone who accepts the default 5
+      // round-trips/week never touches the stepper, so gating the hint
+      // on "has this been changed" meant the people most likely to need
+      // the reminder — errands, weekend trips, anything beyond a
+      // straight commute — were the ones least likely to ever see it).
+      // Round-trip wording only makes sense for Pay-Per-Ride, never
+      // Driving's "days a week" framing.
+      setStepVisible(tripsHint, topMode !== "driving");
       // No longer auto-advances (2026-11) — the frequency stepper now
       // rides along on this same page, so this click only reveals it;
       // Continue (now unlocked by topModeConfirmed) does the advancing.
@@ -5441,13 +5453,17 @@ function buInitCalculator(rootEl) {
     return { repaint: paint };
   }
 
-  // "Include all your round-trips, from daily commutes..." used to sit
-  // permanently in the page subtitle; now it only appears once
-  // someone actually starts using this stepper (2026-11 ask), via the
-  // same one-time slide-up reveal every conditional field in this tool
-  // uses — see setStepVisible()'s doc comment. Round-trip-specific
-  // wording, so it only makes sense for Pay-Per-Ride, not Driving's
-  // "days a week" framing.
+  // "Include all your round-trips, from daily commutes..." — shown
+  // permanently whenever topMode is Pay-Per-Ride (2026-11 follow-up,
+  // Carl Larson feedback), not just revealed after the stepper is
+  // touched as an earlier round had it: someone who keeps the default
+  // value never triggers a "changed" event, so gating visibility on
+  // that meant the hint was least likely to reach exactly the people
+  // who'd benefit from the reminder. The actual show/hide toggle still
+  // lives on topMode's own click handler and this stepper's onChange
+  // below (both call setStepVisible with the same topMode-based
+  // condition) — Round-trip-specific wording, so it only makes sense
+  // for Pay-Per-Ride, not Driving's "days a week" framing.
   const tripsHint = rootEl.querySelector("[data-abc-trips-hint]");
   const tripsStepper = initStepper(
     "data-abc-trips-stepper", BU_CONFIG.tripsStep, () => tripsPerWeek,
